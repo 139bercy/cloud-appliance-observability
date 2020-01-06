@@ -1,0 +1,291 @@
+heat_template_version: 2017-09-01
+
+description: Graylog deployment
+
+#######################################################
+# Parameters
+parameters:
+    image_id:
+        type: string
+        description: Operating system image to use
+        default: ubuntu18.04_server
+
+    node_net_id:
+        type: string
+        description: Network ID to use for the appliance
+
+#    os_username:
+#        type: string
+#        description: Cloud username for some internal batches
+#
+#    os_password:
+#        type: string
+#        description: Cloud password for some internal batches
+#        hidden: true
+#
+#    os_auth_url:
+#        type: string
+#        description: Cloud auth URL
+#
+    git_repo_url:
+        type: string
+        description: cloud-appliance-observability repo
+        default: https://github.com/139bercy/cloud-appliance-observability
+
+    git_repo_checkout:
+        type: string
+        description: branch/tag/commit to use
+        default: master
+
+    default_secgroup_id:
+        type: string
+        description: Default security group to use
+
+    internet_http_proxy_url:
+        type: string
+        description: HTTP proxy
+
+    internet_http_no_proxy:
+        type: string
+        description: Proxy skiplist
+
+    flavor:
+        type: string
+        description: Cloud flavor to use
+
+    elasticsearch_size_gb:
+        type: number
+        description: Elasticsearch data size (Gb)
+        default: 100
+
+    graylog_size_gb:
+        type: number
+        description: Graylog data size (Gb)
+        default: 10
+
+    graylog_admin_name:
+        type: string
+        description: Graylog admin username
+
+    graylog_admin_password:
+        type: string
+        description: Graylog admin password
+        hidden: true
+
+    graylog_endpoint_url:
+       type: string
+       description: Public hostname used to connect against Graylog
+
+resources:
+
+#######################################################
+# Startup script
+
+    node_boot_script:
+        type: OS::Heat::SoftwareConfig
+        properties:
+            config:
+                str_replace:
+                    params:
+                        $internet_http_proxy_url: { get_param : internet_http_proxy_url }
+                        $internet_http_no_proxy: { get_param : internet_http_no_proxy }
+
+                        $git_repo_checkout: { get_param: git_repo_checkout }
+                        $git_repo_url: { get_param: git_repo_url }
+
+                        #$os_password: { get_param: os_password }
+                        #$os_username: { get_param: os_username }
+                        #$os_auth_url: { get_param: os_auth_url }
+
+                        $graylog_admin_name: { get_param: graylog_admin_name }
+                        $graylog_admin_password: { get_param: graylog_admin_password }
+                        $graylog_endpoint_url: { get_param: graylog_endpoint_url }
+
+                        $cinder_docker_volume: { get_resource: appliance_docker_volume }
+                        $cinder_elasticsearch_volume: { get_resource: appliance_elasticsearch_volume }
+                        $cinder_graylog_volume: { get_resource: appliance_graylog_volume }
+
+                    template: |
+                        #!/bin/bash
+                        set -x
+
+                        # Proxy
+                        export HTTPS_PROXY=$internet_http_proxy_url
+                        export HTTP_PROXY=$internet_http_proxy_url
+                        export NO_PROXY=$internet_http_no_proxy,127.0.0.1,localhost,0.0.0.0
+                        export https_proxy=$internet_http_proxy_url
+                        export http_proxy=$internet_http_proxy_url
+                        export no_proxy=$internet_http_no_proxy,127.0.0.1,localhost,0.0.0.0
+
+                        # Install required packages to start git-ops-based auto-configuratiom
+                        if which yum > /dev/null 2>&1 ; then
+                            sed -i 's/gpgcheck=1/gpgcheck=1\nproxy=_none_/g' /etc/yum.repos.d/centos.repo
+
+                            if [ ! -z "$HTTP_PROXY" ] ; then
+                                grep -q proxy= /etc/yum.conf || echo "proxy=$HTTP_PROXY" >> /etc/yum.conf
+                            fi
+
+                            yum install --assumeyes ansible git
+                        else
+                            apt update
+                            apt -y install ansible git
+                        fi
+                        
+                        # Configure ansible to work without an entire environment set
+                        sed -i 's/~/\/root/' /etc/ansible/ansible.cfg
+                        sed -i 's/^#remote_tmp/remote_tmp/' /etc/ansible/ansible.cfg
+                        sed -i 's/^#local_tmp/remote_tmp/' /etc/ansible/ansible.cfg
+
+                        # Create local facts folder
+                        mkdir -p /etc/ansible/facts.d
+
+                        # Clone the bootstrap git repository
+                        export REPO_PATH=/root/appliance
+                        export ETC_PATH=$REPO_PATH/etc
+                        export PLAYBOOK=$REPO_PATH/logs/graylog.appliance.playbook.yml
+
+                        ## Set the Openstack credentials
+                        #export OS_AUTH_URL="$os_auth_url"
+                        #export OS_PROJECT_ID=$(awk -F'"' '/project_id/ {print $4}' /run/cloud-init/instance-data.json)
+                        #export OS_USER_DOMAIN_NAME="Default"
+                        #export OS_USERNAME="$os_username"
+                        #export OS_PASSWORD="$os_password"
+                        #export OS_REGION_NAME="RegionOne"
+                        #export OS_INTERFACE=public
+                        #export OS_IDENTITY_API_VERSION=3
+
+                        # Set the volumes' IDs
+                        export DOCKER_VOLUME=$cinder_docker_volume
+                        export GRAYLOG_VOLUME=$cinder_graylog_volume
+                        export ELASTICSEARCH_VOLUME=$cinder_elasticsearch_volume
+                        
+                        # Set the Graylog credentials
+                        export GRAYLOG_ADMIN_NAME="$graylog_admin_name"
+                        export GRAYLOG_ADMIN_PASSWORD="$graylog_admin_password"
+                        export GRAYLOG_ENDPOINT_URL="$graylog_endpoint_url"
+
+                        # Autoconf the appliance
+                        git clone -b $git_repo_checkout $git_repo_url $REPO_PATH || exit 1
+                        . $REPO_PATH/logs/graylog.appliance.autoconf.sh
+
+                        # Stop secure shell
+                        systemctl stop ssh
+                        systemctl disable ssh
+
+#######################################################
+# Security group
+
+    graylog_appliance_secgroup:
+        type: OS::Neutron::SecurityGroup
+        properties:
+            description: Security group with Graylog-specific ports
+            name: graylog-appliance
+            rules: [
+                {
+                    protocol: tcp,
+                    port_range_min: 80,
+                    port_range_max: 80,
+                    remote_ip_prefix: 0.0.0.0/0,
+                    direction: ingress
+                },
+                {
+                    protocol: tcp,
+                    port_range_min: 514,
+                    port_range_max: 514,
+                    remote_ip_prefix: 0.0.0.0/0,
+                    direction: ingress
+                },
+                {
+                    protocol: udp,
+                    port_range_min: 514,
+                    port_range_max: 514,
+                    remote_ip_prefix: 0.0.0.0/0,
+                    direction: ingress
+                },
+                {
+                    protocol: tcp,
+                    port_range_min: 12201,
+                    port_range_max: 12201,
+                    remote_ip_prefix: 0.0.0.0/0,
+                    direction: ingress
+                },
+                {
+                    protocol: udp,
+                    port_range_min: 12201,
+                    port_range_max: 12201,
+                    remote_ip_prefix: 0.0.0.0/0,
+                    direction: ingress
+                }
+            ]
+
+#######################################################
+# Appliance
+
+    appliance_front_port:
+        type: OS::Neutron::Port
+        properties:
+            network_id: { get_param: node_net_id }
+            security_groups: [
+                { get_param: default_secgroup_id }
+            ]
+            security_groups: [
+                { get_param: default_secgroup_id },
+                { get_resource: graylog_appliance_secgroup }
+            ]
+#            fixed_ips:
+#                - subnet_id: { get_resource: node_subnet }
+
+    appliance:
+        type: OS::Nova::Server
+        properties:
+            name: graylog
+            image: { get_param: image_id }
+            flavor: { get_param: flavor }
+            networks:
+                - port: { get_resource: appliance_front_port }
+            metadata: {
+                group: observability
+            }
+            user_data_format: SOFTWARE_CONFIG
+            user_data: { get_resource: node_boot_script }
+
+    appliance_graylog_volume:
+        type: OS::Cinder::Volume
+        properties:
+            name: graylog-graylog-appliance
+            size: { get_param: graylog_size_gb }
+
+    appliance_graylog_attachment:
+        type: OS::Cinder::VolumeAttachment
+        properties:
+            volume_id: { get_resource: appliance_graylog_volume }
+            instance_uuid: { get_resource: appliance }
+
+    appliance_docker_volume:
+        type: OS::Cinder::Volume
+        properties:
+            name: docker-graylog-appliance
+            size: 3
+
+    appliance_docker_attachment:
+        type: OS::Cinder::VolumeAttachment
+        properties:
+            volume_id: { get_resource: appliance_docker_volume }
+            instance_uuid: { get_resource: appliance }
+
+    appliance_elasticsearch_volume:
+        type: OS::Cinder::Volume
+        properties:
+            name: elasticsearch-graylog-appliance
+            size: { get_param: elasticsearch_size_gb }
+
+    appliance_elasticsearch_attachment:
+        type: OS::Cinder::VolumeAttachment
+        properties:
+            volume_id: { get_resource: appliance_elasticsearch_volume }
+            instance_uuid: { get_resource: appliance }
+
+#######################################################
+# Outputs
+
+#outputs:

@@ -1,0 +1,265 @@
+###############################################################################
+# OS-Ready
+#
+- name: Configuration des nodes
+  hosts: localhost
+  tags: os-ready
+
+  roles:
+    - role: ansible-bootstrap-system
+#    - role: ansible-telegraf
+#    - role: ansible-consul
+#    - role: ansible-dnsmasq
+
+###############################################################################
+# Docker
+#
+- name: Configuration de docker
+  hosts: localhost
+  tags: docker
+
+  pre_tasks:
+    - name: Tuning mémoire
+      sysctl:
+        name: vm.max_map_count
+        value: 262144
+        sysctl_set: yes
+        state: present
+
+    - name: Installation de docker (debian)
+      when: ansible_os_family | lower == 'debian'
+      block:
+        - name: Installation de docker
+          apt: name={{ item }} state=present
+          with_items:
+            - docker.io
+            - xfsprogs
+
+    - name: Lancement de docker
+      service: name=docker state=started
+
+    # Docker
+    - when:
+        - lookup('env', 'DOCKER_VOLUME') is defined
+        - lookup('env', 'DOCKER_VOLUME') | length > 0
+      block:
+        - name: Listing des VG
+          command: vgs --options name
+          register: vg_list
+
+        - when: vg_list.stdout.find('docker') < 0
+          block:
+            - name: Détection du volume docker
+              set_fact: docker_device_short_id="{{ lookup('env', 'DOCKER_VOLUME') }}"
+
+            - name: Get docker device name from /dev/disk/by-id/
+              register: cinder_volume
+              shell: find /dev/disk/by-id/ -name "*{{ docker_device_short_id }}*"
+
+            - name: Set full disk name
+              set_fact: docker_device="{{ cinder_volume.stdout }}"
+
+            - name: Création du VG pour docker
+              lvg: vg=docker pv="{{ docker_device }}"
+
+        - name: Création du LV docker/data
+          lvol: vg=docker lv=data size=80%VG
+
+        - name: Formattage de docker-data
+          filesystem: dev=/dev/mapper/docker-data fstype=xfs
+
+        - name: Montage de docker-data
+          mount:
+            path: /var/lib/docker
+            src: /dev/mapper/docker-data
+            state: mounted
+            fstype: xfs
+
+    - name: New setup to detect docker artifacts
+      setup:
+
+  roles:
+#    - role: ansible-dnsmasq
+    - role: ansible-docker
+    - role: ansible-rclone
+
+###############################################################################
+# Configuration d'elasticsearch
+#
+- name: Configuration d'elasticsearch
+  hosts: localhost
+  tags: elasticsearch
+
+  tasks:
+    - name: Listing des VG
+      command: vgs --options name
+      register: vg_list
+
+    - when: vg_list.stdout.find('elasticsearch') < 0
+      block:
+        - name: Détection du volume elasticsearch
+          set_fact: elasticsearch_device_short_id="{{ lookup('env', 'ELASTICSEARCH_VOLUME') }}"
+
+        - name: Get elasticsearch device name from /dev/disk/by-id/
+          register: cinder_volume
+          shell: find /dev/disk/by-id/ -name "*{{ elasticsearch_device_short_id }}*"
+
+        - name: Set full disk name
+          set_fact: elasticsearch_device="{{ cinder_volume.stdout }}"
+
+        - name: Création du VG elasticsearch
+          lvg: vg=elasticsearch pv="{{ elasticsearch_device }}"
+
+    - name: Création du LV
+      lvol: vg=elasticsearch lv=data size=80%VG
+
+    - name: Formattage
+      filesystem: dev=/dev/mapper/elasticsearch-data fstype=xfs
+
+    - name: Montage
+      mount:
+        path: /var/lib/elasticsearch
+        src: /dev/mapper/elasticsearch-data
+        state: mounted
+        fstype: xfs
+
+    - name: Mise en place des permissions
+      file:
+        path: /var/lib/elasticsearch
+        state: directory
+        owner: 1000
+        mode: 0755
+
+    - name: Lancement du conteneur
+      docker_container:
+          name: elasticsearch
+          image: "elasticsearch:6.6.2"
+          state: started
+          pull: true
+          published_ports: []
+          volumes:
+             - "/var/lib/elasticsearch:/usr/share/elasticsearch/data"
+          env:
+             discovery.type: "single-node"
+             # Configuration globale
+             cluster.name: "logs"
+             node.name: "{{ ansible_hostname }}"
+             # Points d'accès
+             network.bind_host: "0.0.0.0"
+             # Java
+             ES_JAVA_OPTS: "-Xms{{ (ansible_memtotal_mb * 0.3) | int }}m -Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m"
+
+###############################################################################
+# Configuration de Graylog
+#
+- name: Configuration de graylog
+  hosts: localhost
+  tags: graylog
+
+  tasks:
+    - name: Listing des VG
+      command: vgs --options name
+      register: vg_list
+
+    - when: vg_list.stdout.find('graylog') < 0
+      block:
+        - name: Détection du volume graylog
+          set_fact: graylog_device_short_id="{{ lookup('env', 'GRAYLOG_VOLUME') }}"
+
+        - name: Get graylog device name from /dev/disk/by-id/
+          register: cinder_volume
+          shell: find /dev/disk/by-id/ -name "*{{ graylog_device_short_id }}*"
+
+        - name: Set full disk name
+          set_fact: graylog_device="{{ cinder_volume.stdout }}"
+
+        - name: Création du VG graylog
+          lvg: vg=graylog pvs="{{ graylog_device }}"
+
+    - name: Création des LV
+      lvol: vg=graylog lv={{ item.lv }} size={{ item.size }}%VG
+      with_items:
+        - lv: data
+          size: 80
+        - lv: mongodb
+          size: 10
+
+    - name: Formattage
+      filesystem: dev=/dev/mapper/graylog-{{ item }} fstype=xfs
+      with_items:
+        - data
+        - mongodb
+
+    - name: Montage des volumes
+      mount:
+        path: "{{ item.path }}"
+        src: "{{ item.src }}"
+        state: mounted
+        fstype: xfs
+      with_items:
+        - path: /var/lib/graylog
+          src: /dev/mapper/graylog-data
+        - path: /var/lib/mongodb
+          src: /dev/mapper/graylog-mongodb
+
+    - name: Mise en place des permissions
+      file:
+        path: /var/lib/graylog
+        state: directory
+        owner: 1100
+        mode: 0755
+
+    - name: Lancement du conteneur mongodb
+      docker_container:
+          name: mongo
+          image: "mongo:3"
+          state: started
+          pull: true
+          published_ports: []
+
+    - name: Génération d'un sel
+      register: graylog_salt
+      shell: head /dev/urandom | tr -dc A-Za-z0-9 | head -c 64
+
+    - name: Lancement du conteneur graylog
+      docker_container:
+          name: graylog
+          image: "graylog/graylog:3.0"
+          state: started
+          pull: true
+          published_ports:
+             - "80:8080/tcp"
+             - "12201:12201/tcp"
+             - "12201:12201/udp"
+             - "514:5140/tcp"
+             - "514:5140/udp"
+          links:
+             - mongo
+             - elasticsearch
+          env:
+             # Configuration du mode maître
+             GRAYLOG_IS_MASTER: "true"
+             GRAYLOG_MESSAGE_JOURNAL_ENABLED: "true"
+
+             # Points d'accès
+             # http://docs.graylog.org/en/3.0/pages/configuration/web_interface.html
+             # Mettre l'URI d'accès externe depuis les postes de travail
+             GRAYLOG_HTTP_EXTERNAL_URI: "{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') }}"
+             GRAYLOG_HTTP_PUBLISH_URI: "http://{{ ansible_default_ipv4.address }}:80"
+             GRAYLOG_HTTP_BIND_ADDRESS: "0.0.0.0:8080"
+
+             # Gestion des secrets
+             GRAYLOG_PASSWORD_SECRET: "{{ graylog_salt.stdout }}"
+             GRAYLOG_ROOT_USERNAME: "{{ graylog_login_admin_local }}"
+             GRAYLOG_ROOT_PASSWORD_SHA2: "{{ graylog_root_password | hash('sha256') }}"
+
+             # Localisation
+             GRAYLOG_ROOT_TIMEZONE: "Europe/Paris"
+
+             # Java
+             GRAYLOG_SERVER_JAVA_OPTS: "-Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m -Xms{{ (ansible_memtotal_mb * 0.3) | int }}m"
+
+             # Datasources
+             #- GRAYLOG_MONGODB_URI                     = "{{ graylog_mongodb_uri }}"
+             #- GRAYLOG_ELASTICSEARCH_HOSTS             = "{{ graylog_elasticsearch_hosts | map('quote') | join(',') }}"
+             #- GRAYLOG_ELASTICSEARCH_DISCOVERY_ENABLED = "true"

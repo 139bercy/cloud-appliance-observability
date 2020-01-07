@@ -33,6 +33,7 @@
           apt: name={{ item }} state=present
           with_items:
             - docker.io
+            - python-docker
             - xfsprogs
 
     - name: Lancement de docker

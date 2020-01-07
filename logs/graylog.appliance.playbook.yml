@@ -50,7 +50,7 @@
         - when: vg_list.stdout.find('docker') < 0
           block:
             - name: Détection du volume docker
-              set_fact: docker_device_short_id="{{ lookup('env', 'DOCKER_VOLUME') }}"
+              set_fact: docker_device_short_id="{{ lookup('env', 'DOCKER_VOLUME')[:20] }}"
 
             - name: Get docker device name from /dev/disk/by-id/
               register: cinder_volume
@@ -60,7 +60,7 @@
               set_fact: docker_device="{{ cinder_volume.stdout }}"
 
             - name: Création du VG pour docker
-              lvg: vg=docker pv="{{ docker_device }}"
+              lvg: vg=docker pvs="{{ docker_device }}"
 
         - name: Création du LV docker/data
           lvol: vg=docker lv=data size=80%VG
@@ -98,7 +98,7 @@
     - when: vg_list.stdout.find('elasticsearch') < 0
       block:
         - name: Détection du volume elasticsearch
-          set_fact: elasticsearch_device_short_id="{{ lookup('env', 'ELASTICSEARCH_VOLUME') }}"
+          set_fact: elasticsearch_device_short_id="{{ lookup('env', 'ELASTICSEARCH_VOLUME')[:20] }}"
 
         - name: Get elasticsearch device name from /dev/disk/by-id/
           register: cinder_volume
@@ -108,7 +108,7 @@
           set_fact: elasticsearch_device="{{ cinder_volume.stdout }}"
 
         - name: Création du VG elasticsearch
-          lvg: vg=elasticsearch pv="{{ elasticsearch_device }}"
+          lvg: vg=elasticsearch pvs="{{ elasticsearch_device }}"
 
     - name: Création du LV
       lvol: vg=elasticsearch lv=data size=80%VG
@@ -164,7 +164,7 @@
     - when: vg_list.stdout.find('graylog') < 0
       block:
         - name: Détection du volume graylog
-          set_fact: graylog_device_short_id="{{ lookup('env', 'GRAYLOG_VOLUME') }}"
+          set_fact: graylog_device_short_id="{{ lookup('env', 'GRAYLOG_VOLUME')[:20] }}"
 
         - name: Get graylog device name from /dev/disk/by-id/
           register: cinder_volume

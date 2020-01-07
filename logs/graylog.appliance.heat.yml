@@ -244,7 +244,8 @@ resources:
             networks:
                 - port: { get_resource: appliance_front_port }
             metadata: {
-                group: observability
+                group: observability,
+                image: { get_param: image_id }
             }
             user_data_format: SOFTWARE_CONFIG
             user_data: { get_resource: node_boot_script }

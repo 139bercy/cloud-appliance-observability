@@ -276,3 +276,208 @@
              #- GRAYLOG_MONGODB_URI                     = "{{ graylog_mongodb_uri }}"
              #- GRAYLOG_ELASTICSEARCH_HOSTS             = "{{ graylog_elasticsearch_hosts | map('quote') | join(',') }}"
              #- GRAYLOG_ELASTICSEARCH_DISCOVERY_ENABLED = "true"
+
+###############################################################################
+# Graylog post-configuration
+#
+- name: Make Graylog ready to use
+  hosts: localhost
+  gather_facts: no
+  become: no
+
+  vars:
+    graylog_api: "http://0.0.0.0:80"
+
+  tasks:
+    - name: Wait for Graylog availability
+      register: graylog_health
+      until: graylog_health.json is defined and graylog_health.status == 200
+      retries: 100
+      delay: 5
+      uri:
+        url: "{{ graylog_api }}/cluster"
+        method: GET
+        user: "{{ graylog_login_admin_local }}"
+        password: "{{ graylog_root_password }}"
+        validate_certs: no
+        status_code:
+            - 200
+            - 503
+        headers:
+            X-Requested-By: ansible
+
+    ###########################################################################
+    
+    - name: Indexes management
+      block:
+        - name: Get default index
+          register: graylog_index_sets
+          retries: 10
+          delay: 30
+          uri:
+            url: "{{ graylog_api }}/system/indices/index_sets"
+            method: GET
+            user: "{{ graylog_login_admin_local }}"
+            password: "{{ graylog_root_password }}"
+            validate_certs: no
+            timeout: 60
+            status_code:
+                - 200
+            headers:
+                X-Requested-By: ansible
+
+        - name: Set default retention policy
+          with_items: "{{ graylog_index_sets.json.index_sets }}"
+          when: item.title == "Default index set"
+          register: default_index_set_result
+          retries: 10
+          delay: 30
+          uri:
+            url: "{{ graylog_api }}/system/indices/index_sets/{{ item.id }}"
+            method: PUT
+            user: "{{ graylog_login_admin_local }}"
+            password: "{{ graylog_root_password }}"
+            body_format: json
+            body: "{{ graylog_default_index_set | to_json }}"
+            validate_certs: no
+            timeout: 60
+            status_code:
+                - 201
+                - 200
+            headers:
+                X-Requested-By: ansible  
+
+    ###########################################################################
+    
+    - name: Pipelines configuration
+      block:
+        - name: Récupération des règles configurées
+          register: graylog_running_rules
+          retries: 10
+          delay: 30
+          uri:
+            url: "{{ graylog_api }}/system/pipelines/rule"
+            method: GET
+            user: "{{ graylog_login_admin_local }}"
+            password: "{{ graylog_root_password }}"
+            validate_certs: no
+            timeout: 60
+            status_code:
+                - 200
+            headers:
+                X-Requested-By: ansible
+
+        - name: Generate rule's name
+          set_fact:
+            graylog_rule_titles: "{{ graylog_running_rules.json | json_query('[*].title') }}"
+            
+        - name: Rules creation
+          with_items: "{{ graylog_rules }}"
+          when: "item.title not in graylog_rule_titles"
+          retries: 10
+          delay: 30
+          uri:
+            url: "{{ graylog_api }}/system/pipelines/rule"
+            method: POST
+            user: "{{ graylog_login_admin_local }}"
+            password: "{{ graylog_root_password }}"
+            body_format: json
+            body: "{{ item | to_json }}"
+            validate_certs: no
+            timeout: 60
+            status_code:
+                - 201
+                - 200
+            headers:
+                X-Requested-By: ansible        
+
+        - name: Get already configured pipelines
+          register: graylog_running_pipelines
+          retries: 10
+          delay: 30
+          uri:
+            url: "{{ graylog_api }}/system/pipelines/pipeline"
+            method: GET
+            user: "{{ graylog_login_admin_local }}"
+            password: "{{ graylog_root_password }}"
+            validate_certs: no
+            timeout: 60
+            status_code:
+                - 200
+            headers:
+                X-Requested-By: ansible
+
+        - name: Generate rule's name
+          set_fact:
+            graylog_pipeline_titles: "{{ graylog_running_pipelines.json | json_query('[*].title') }}"
+
+        - name: Create pipelines
+          with_items: "{{ graylog_pipelines }}"
+          when: "item.title not in graylog_pipeline_titles"
+          retries: 10
+          delay: 30
+          uri:
+            url: "{{ graylog_api }}/system/pipelines/pipeline"
+            method: POST
+            user: "{{ graylog_login_admin_local }}"
+            password: "{{ graylog_root_password }}"
+            body_format: json
+            body: "{{ item | to_json }}"
+            validate_certs: no
+            timeout: 60
+            status_code:
+                - 200
+                - 201
+            headers:
+                X-Requested-By: ansible
+    
+    ###########################################################################
+    
+    - name: Pipelines management
+      block:
+        - name: Get existing pipelines
+          register: graylog_running_pipelines
+          retries: 10
+          delay: 30
+          uri:
+            url: "{{ graylog_api }}/system/pipelines/pipeline"
+            method: GET
+            user: "{{ graylog_login_admin_local }}"
+            password: "{{ graylog_root_password }}"
+            validate_certs: no
+            timeout: 60
+            status_code:
+                - 200
+            headers:
+                X-Requested-By: ansible
+
+        - name: Set default rules
+          set_fact:
+            graylog_default_stream_to_pipeline:
+                stream_id: "000000000000000000000001"
+                pipeline_ids: "{{ graylog_running_pipelines.json | json_query('[*].id') }}"
+       
+        - name: Attach pipelines to the default stream (all messages)
+          register: existing_streams
+          retries: 10
+          delay: 5
+          uri:
+            url: "{{ graylog_api }}/system/pipelines/connections/to_stream"
+            method: POST
+            user: "{{ graylog_login_admin_local }}"
+            password: "{{ graylog_root_password }}"
+            body_format: json
+            body: "{{ graylog_default_stream_to_pipeline | to_json }}"
+            validate_certs: no
+            status_code:
+                - 200
+            headers:
+                Content-Type: "application/json"
+                X-Requested-By: ansible
+
+    - name: Create inputs
+      include_role:
+        name: github/ansible-graylog-input
+      vars:
+        graylog_login: "{{ graylog_login_admin_local }}"
+        graylog_password: "{{ graylog_root_password }}"

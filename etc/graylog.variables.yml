@@ -1,0 +1,150 @@
+graylog_api: https://journaux.{{ traefik_domain_name }}/api
+
+graylog_default_index_set:
+    title: "Default index set"
+    description: "The Graylog default index set"
+    index_prefix: "graylog"
+    shards: 4
+    replicas: 0
+    rotation_strategy_class: "org.graylog2.indexer.rotation.strategies.TimeBasedRotationStrategy"
+    rotation_strategy:
+        type: "org.graylog2.indexer.rotation.strategies.TimeBasedRotationStrategyConfig"
+        rotation_period: "P1D"
+    retention_strategy_class: "org.graylog2.indexer.retention.strategies.DeletionRetentionStrategy"
+    retention_strategy:
+        type: "org.graylog2.indexer.retention.strategies.DeletionRetentionStrategyConfig"
+        max_number_of_indices: 20
+    index_analyzer: standard
+    index_optimization_max_num_segments: 1
+    index_optimization_disabled: false
+    field_type_refresh_interval: 5000
+    writable: true
+    default: true
+
+graylog_default_extractors:
+    -  title: "JSON messages"
+       cut_or_copy: "cut"
+       extractor_type: "json"
+       converters: {}
+       source_field: "message"
+       target_field: ""
+       condition_type: "regex"
+       condition_value: "^\\{"
+       extractor_config:
+          flatten: false
+          list_separator: ", "
+          kv_separator: "="
+          key_prefix: ""
+          key_separator: "_"
+          replace_key_whitespace: false
+          key_whitespace_replacement: "_"
+
+graylog_rules:
+    - title: "syslog_level"
+      description: "syslog_level"
+      source: "rule \"syslog_level\"\nwhen\n  has_field(\"level\")\nthen\n  set_field(\"level\", syslog_level($message.level));\nend"
+
+graylog_pipelines:
+    - title: "syslog_level"
+      description: "Syslog level to string"
+      source: "pipeline \"syslog_level\"\nstage 0 match either\nrule \"syslog_level\"\nend"
+      stages:
+        - stage: 0
+          match_all: false
+          rules:
+            - "syslog_level"
+
+graylog_inputs:
+    - extractors: "{{ graylog_default_extractors }}"
+      input:
+        title: "GELF - Webservice"
+        global: true
+        type: "org.graylog2.inputs.gelf.http.GELFHttpInput"
+        configuration:
+            idle_writer_timeout: 60
+            recv_buffer_size: 1048576
+            max_chunk_size: 65536
+            tcp_keepalive: false
+            enable_cors: true
+            tls_client_auth_cert_file: ""
+            bind_address: "0.0.0.0"
+            tls_cert_file: ""
+            decompress_size_limit: 8388608
+            port: 8081
+            tls_key_file: ""
+            tls_enable: false
+            tls_key_password: ""
+            tls_client_auth: "disabled"
+            override_source: null
+
+    - extractors: "{{ graylog_default_extractors }}"
+      input:
+        title: "GELF - UDP"
+        global: true
+        type: "org.graylog2.inputs.gelf.udp.GELFUDPInput"
+        configuration:
+            override_source: null
+            recv_buffer_size: 262144
+            bind_address: "0.0.0.0"
+            port: 12201
+            decompress_size_limit: 8388608
+
+    - extractors: "{{ graylog_default_extractors }}"
+      input:
+        title: "GELF - TCP"
+        global: true
+        type: "org.graylog2.inputs.gelf.tcp.GELFTCPInput"
+        configuration:
+            recv_buffer_size: 1048576
+            tcp_keepalive: true
+            use_null_delimiter: true
+            tls_client_auth_cert_file: ""
+            bind_address: "0.0.0.0"
+            tls_cert_file: ""
+            decompress_size_limit: 8388608
+            port: 12201
+            tls_key_file: ""
+            tls_enable: false
+            tls_key_password: ""
+            max_message_size: 2097152
+            tls_client_auth: "disabled"
+            override_source: null
+
+    - extractors: []
+      input:
+        title: "Syslog - UDP"
+        global: true
+        type: "org.graylog2.inputs.syslog.udp.SyslogUDPInput"
+        configuration:
+            expand_structured_data: true
+            recv_buffer_size: 1048576
+            port: 5140
+            override_source: null
+            force_rdns: false
+            allow_override_date: true
+            bind_address: "0.0.0.0"
+            store_full_message: false
+
+    - extractors: []
+      input:
+        title: "Syslog - TCP"
+        global: true
+        type: "org.graylog2.inputs.syslog.tcp.SyslogTCPInput"
+        configuration:
+            recv_buffer_size: 1048576
+            tcp_keepalive: false
+            use_null_delimiter: false
+            tls_client_auth_cert_file: ""
+            force_rdns: false
+            bind_address: "0.0.0.0"
+            tls_cert_file: ""
+            store_full_message: false
+            expand_structured_data: true
+            port: 5140
+            tls_key_file: ""
+            tls_enable: false
+            tls_key_password: ""
+            max_message_size: 2097152
+            tls_client_auth: "disabled"
+            override_source: null
+            allow_override_date: true

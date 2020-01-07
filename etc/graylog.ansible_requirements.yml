@@ -1,0 +1,7 @@
+---
+
+# Requirements used by ansible-galaxy tool
+#
+- name: ansible-graylog-input
+  src: https://github.com/mgrzybek/ansible-graylog-input
+  version: master

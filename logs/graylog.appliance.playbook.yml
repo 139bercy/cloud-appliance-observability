@@ -287,9 +287,6 @@
   gather_facts: no
   become: no
 
-  vars:
-    graylog_api: "http://0.0.0.0:80"
-
   tasks:
     - name: Wait for Graylog availability
       register: graylog_health

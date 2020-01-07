@@ -57,7 +57,11 @@
               register: cinder_volume
               shell: find /dev/disk/by-id/ -name "*{{ docker_device_short_id }}*"
 
-            - name: Set full disk name
+            - name: Check docker device result
+              when: cinder_volume.stdout_lines | length < 1
+              fail: msg="Cannot find any cinder device with ID {{ docker_device_short_id }}"
+
+            - name: Set full disk name (docker_device={{ cinder_volume.stdout }})
               set_fact: docker_device="{{ cinder_volume.stdout }}"
 
             - name: Création du VG pour docker
@@ -105,6 +109,10 @@
           register: cinder_volume
           shell: find /dev/disk/by-id/ -name "*{{ elasticsearch_device_short_id }}*"
 
+        - name: Check elasticsearch device result
+          when: cinder_volume.stdout_lines | length < 1
+          fail: msg="Cannot find any cinder device with ID {{ elasticsearch_device_short_id }}"
+ 
         - name: Set full disk name
           set_fact: elasticsearch_device="{{ cinder_volume.stdout }}"
 
@@ -170,6 +178,10 @@
         - name: Get graylog device name from /dev/disk/by-id/
           register: cinder_volume
           shell: find /dev/disk/by-id/ -name "*{{ graylog_device_short_id }}*"
+
+        - name: Check graylog device result
+          when: cinder_volume.stdout_lines | length < 1
+          fail: msg="Cannot find any cinder device with ID {{ graylog_device_short_id }}"
 
         - name: Set full disk name
           set_fact: graylog_device="{{ cinder_volume.stdout }}"

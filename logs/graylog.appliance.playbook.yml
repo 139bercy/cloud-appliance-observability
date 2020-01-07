@@ -476,7 +476,7 @@
 
     - name: Create inputs
       include_role:
-        name: github/ansible-graylog-input
+        name: ansible-graylog-input
       vars:
         graylog_login: "{{ graylog_login_admin_local }}"
         graylog_password: "{{ graylog_root_password }}"

@@ -20,4 +20,5 @@ ansible-playbook -t elasticsearch $PLAYBOOK \
 ansible-playbook -t graylog $PLAYBOOK \
 	-e graylog_login_admin_local="$GRAYLOG_ADMIN_NAME" \
 	-e graylog_root_password="$GRAYLOG_ADMIN_PASSWORD" \
+	-e @$ETC_PATH/graylog.variables.yml \
 	|| exit 1

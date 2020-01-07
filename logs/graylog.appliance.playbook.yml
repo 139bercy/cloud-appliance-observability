@@ -282,6 +282,7 @@
 #
 - name: Make Graylog ready to use
   hosts: localhost
+  tags: graylog
   gather_facts: no
   become: no
 

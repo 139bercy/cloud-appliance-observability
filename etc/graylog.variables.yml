@@ -1,4 +1,4 @@
-graylog_api: https://journaux.{{ traefik_domain_name }}/api
+graylog_api: http://0.0.0.0:80/api
 
 graylog_default_index_set:
     title: "Default index set"

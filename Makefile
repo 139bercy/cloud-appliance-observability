@@ -35,46 +35,56 @@ help:
 .PHONY: logs # Configure graylog service
 logs:
 	test -z ${GRAYLOG_SIZE_GB} \
-		&& (echo ${GRAYLOG_SIZE_GB} is empty ; exit 1)
+		&& (echo GRAYLOG_SIZE_GB is empty ; exit 1) \
+		|| echo
 	test -z ${ELASTECSEARCH_SIZE_GB} \
-		&& (echo ${ELASTECSEARCH_SIZE_GB} is empty ; exit 1)
+		&& (echo ELASTECSEARCH_SIZE_GB is empty ; exit 1) \
+		|| echo
 
 	test -z ${OS_USERNAME} \
-		&& (echo ${OS_USERNAME} is empty ; exit 1)
+		&& (echo OS_USERNAME is empty ; exit 1) \
+		|| echo
 	test -z ${OS_PASSWORD} \
-		&& (echo ${OS_PASSWORD} is empty ; exit 1)
+		&& (echo OS_PASSWORD is empty ; exit 1) \
+		|| echo
 	test -z ${OS_AUTH_URL} \
-		&& (echo ${OS_AUTH_URL} is empty ; exit 1)
+		&& (echo OS_AUTH_URL is empty ; exit 1) \
+		|| echo
 
 	test -z ${GRAYLOG_FLAVOR} \
-		&& (echo ${GRAYLOG_FLAVOR} is empty ; exit 1)
+		&& (echo GRAYLOG_FLAVOR is empty ; exit 1) \
+		|| echo
 	test -z ${GRAYLOG_IMAGE_ID} \
-		&& (echo ${GRAYLOG_IMAGE_ID} is empty ; exit 1)
+		&& (echo GRAYLOG_IMAGE_ID is empty ; exit 1) \
+		|| echo
 	test -z ${GRAYLOG_NET_ID} \
-		&& (echo ${GRAYLOG_NET_ID} is empty ; exit 1)
-	test -z $(GRAYLOG_SECGROUP_ID) \
-		&& (echo ${GRAYLOG_SECGROUP_ID} is empty ; exit 1)
+		&& (echo GRAYLOG_NET_ID is empty ; exit 1) \
+		|| echo
+	test -z ${GRAYLOG_SECGROUP_ID} \
+		&& (echo GRAYLOG_SECGROUP_ID is empty ; exit 1) \
+		|| echo
 
 	test -z ${GRAYLOG_ADMIN} \
-		&& (echo ${GRAYLOG_ADMIN} is empty ; exit 1)
+		&& (echo GRAYLOG_ADMIN is empty ; exit 1) \
+		|| echo
 	test -z ${GRAYLOG_PASSWORD} \
-		&& (echo ${GRAYLOG_PASSWORD} is empty ; exit 1)
-
+		&& (echo GRAYLOG_PASSWORD is empty ; exit 1) \
+		|| echo
 	test -z ${GRAYLOG_ENDPOINT} \
-		&& (echo ${GRAYLOG_ENDPOINT} is empty ; exit 1)
+		&& (echo GRAYLOG_ENDPOINT is empty ; exit 1) \
+		|| echo
 
 	test -z ${GRAYLOG_HTTP_PROXY} \
-		&& (echo ${GRAYLOG_HTTP_PROXY} is empty ; exit 1)
+		&& (echo GRAYLOG_HTTP_PROXY is empty ; exit 1) \
+		|| echo
 	test -z ${GRAYLOG_NO_PROXY} \
-		&& (echo ${GRAYLOG_NO_PROXY} is empty ; exit 1)
+		&& (echo GRAYLOG_NO_PROXY is empty ; exit 1) \
+		|| echo
 
 	openstack stack create \
 		\
 		--parameter graylog_size_gb=${GRAYLOG_SIZE_GB} \
 		--parameter elasticsearch_size_gb=${ELASTECSEARCH_SIZE_GB} \
-		--parameter os_username=${OS_USERNAME} \
-		--parameter os_password=${OS_PASSWORD} \
-		--parameter os_auth_url=${OS_AUTH_URL} \
 		\
 		--parameter flavor=${GRAYLOG_FLAVOR} \
 		--parameter image_id=${GRAYLOG_IMAGE_ID} \
@@ -93,6 +103,7 @@ logs:
 		\
 		--template ${PWD}/logs/graylog.appliance.heat.yml \
 		--wait \
+		--timeout 60 \
 		\
 		logs
 
@@ -109,12 +120,14 @@ metrics:
 .PHONY: clean-logs # Destroy the logs appliance
 clean-logs:
 	openstack stack list | fgrep -q logs \
-		&& openstack stack delete --wait --yes logs
+		&& openstack stack delete --wait --yes logs \
+		|| echo
 
 .PHONY: clean-logs # Destroy the metrics appliance
 clean-metrics:
 	openstack stack list | fgrep -q metrics \
-		&& openstack stack delete --wait --yes metrics
+		&& openstack stack delete --wait --yes metrics \
+		|| echo
 
 .PHONY: clean # Destroy the appliances
 clean: clean-logs clean-metrics
@@ -123,7 +136,7 @@ clean: clean-logs clean-metrics
 # Rebuild
 .PHONY: rebuild-logs # Rebuild the logs appliance
 rebuild-logs:
-	exit 1
+	openstack server rebuild --wait graylog
 
 .PHONY: rebuild-metrics # Rebuild the metrics appliance
 rebuild-metrics:

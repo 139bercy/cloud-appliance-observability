@@ -4,7 +4,7 @@
 #
 
 GIT_REPO_URL=https://github.com/139bercy/cloud-appliance-observability
-GIT_REPO_CHECKOUT=master
+GIT_REPO_CHECKOUT=$(shell git rev-parse --abbrev-ref HEAD)
 
 .PHONY: syntax # Testing YAML syntax
 syntax:
@@ -73,6 +73,10 @@ logs:
 	test -z ${GRAYLOG_ENDPOINT} \
 		&& (echo GRAYLOG_ENDPOINT is empty ; exit 1) \
 		|| echo
+	echo ${GRAYLOG_ENDPOINT} | grep -q /$$ \
+		|| (echo GRAYLOG_ENDPOINT must end with a / ; exit 1)
+	echo ${GRAYLOG_ENDPOINT} | egrep -q "^(https|http)://" \
+		|| (echo GRAYLOG_ENDPOINT must begin with http:// or https:// ; exit 1)
 
 	test -z ${GRAYLOG_HTTP_PROXY} \
 		&& (echo GRAYLOG_HTTP_PROXY is empty ; exit 1) \

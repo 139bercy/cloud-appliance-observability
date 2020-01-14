@@ -252,38 +252,23 @@
           --mount type=bind,src=/var/lib/graylog,target=/var/lib/graylog \
           --publish 80:8080 \
           --publish 81:8081 \
-          --publish 514:5140 \
+          --publish 514:5140/tcp \
+          --publish 514:5140/udp \
           --publish 12201:12201 \
+          -e GRAYLOG_IS_MASTER="true" \
+          -e GRAYLOG_MESSAGE_JOURNAL_ENABLED="true" \
+          -e GRAYLOG_HTTP_EXTERNAL_URI="{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') }}" \
+          -e GRAYLOG_HTTP_PUBLISH_URI="http://{{ ansible_default_ipv4.address }}:80" \
+          -e GRAYLOG_HTTP_BIND_ADDRESS="0.0.0.0:8080" \
+          -e GRAYLOG_PASSWORD_SECRET="{{ graylog_salt.stdout }}" \
+          -e GRAYLOG_ROOT_USERNAME="{{ graylog_login_admin_local }}" \
+          -e GRAYLOG_ROOT_PASSWORD_SHA2="{{ graylog_root_password | hash('sha256') }}" \
+          -e GRAYLOG_ROOT_TIMEZONE="Europe/Paris" \
+          -e GRAYLOG_SERVER_JAVA_OPTS="-Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m -Xms{{ (ansible_memtotal_mb * 0.3) | int }}m" \
+          -e GRAYLOG_MONGODB_URI="mongodb://{{ mongodb_ipaddr }}/graylog" \
+          -e GRAYLOG_ELASTICSEARCH_HOSTS="http://{{ els_ipaddr }}:9200" \
           docker.io/graylog/graylog:3.0
           
-      environment:
-        # Configuration du mode maître
-        GRAYLOG_IS_MASTER: "true"
-        GRAYLOG_MESSAGE_JOURNAL_ENABLED: "true"
-
-        # Points d'accès
-        # http://docs.graylog.org/en/3.0/pages/configuration/web_interface.html
-        # Mettre l'URI d'accès externe depuis les postes de travail
-        GRAYLOG_HTTP_EXTERNAL_URI: "{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') }}"
-        GRAYLOG_HTTP_PUBLISH_URI: "http://{{ ansible_default_ipv4.address }}:80"
-        GRAYLOG_HTTP_BIND_ADDRESS: "0.0.0.0:8080"
-
-        # Gestion des secrets
-        GRAYLOG_PASSWORD_SECRET: "{{ graylog_salt.stdout }}"
-        GRAYLOG_ROOT_USERNAME: "{{ graylog_login_admin_local }}"
-        GRAYLOG_ROOT_PASSWORD_SHA2: "{{ graylog_root_password | hash('sha256') }}"
-
-        # Localisation
-        GRAYLOG_ROOT_TIMEZONE: "Europe/Paris"
-
-        # Java
-        GRAYLOG_SERVER_JAVA_OPTS: "-Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m -Xms{{ (ansible_memtotal_mb * 0.3) | int }}m"
-
-        # Datasources
-        GRAYLOG_MONGODB_URI: "mongodb://{{ mongodb_ipaddr }}/graylog"
-        GRAYLOG_ELASTICSEARCH_HOSTS: "http://{{ els_ipaddr }}:9200"
-        #- GRAYLOG_ELASTICSEARCH_DISCOVERY_ENABLED = "true"
-
 ###############################################################################
 # Graylog post-configuration
 #

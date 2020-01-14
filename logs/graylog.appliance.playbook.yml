@@ -145,7 +145,7 @@
       shell: >
           podman run \
               -d \
-              --mount=bind,/var/lib/elasticsearch:/usr/share/elasticsearch/data \
+              --mount type=bind,src=/var/lib/elasticsearch,target=/usr/share/elasticsearch/data \
               -e discovery.type="single-node" \
               -e cluster.name="logs" \
               -e node.name="{{ ansible_hostname }}" \
@@ -232,7 +232,7 @@
           podman run \
             -d \
             -u 1200 \
-            --mount=bind,/var/lib/mongodb,/data/db \
+            --mount type=bind,src=/var/lib/mongodb,target=/data/db \
             docker.io/mongo:3 \
             mongo
             
@@ -265,7 +265,7 @@
           -d \
           -u 1100
           --name graylog \
-          --mount=bind,/var/lib/graylog,/var/lib/graylog \
+          --mount type=bind,src=/var/lib/graylog,target=/var/lib/graylog \
           --publish 80:8080 \
           --publish 81:8081 \
           --publish 514:5140 \

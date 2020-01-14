@@ -28,10 +28,7 @@
 
     - name: Installing XFS tools
       when: ansible_os_family | lower == 'debian'
-      block:
-          apt: name={{ item }} state=present
-          with_items:
-            - xfsprogs
+      apt: name=xfsprogs state=present
 
     # Docker
     - when:

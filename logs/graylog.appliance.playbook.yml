@@ -26,22 +26,11 @@
         sysctl_set: yes
         state: present
 
-    - name: Installation de podman (debian)
+    - name: Installing XFS tools
       when: ansible_os_family | lower == 'debian'
       block:
-        - name: Installation des paquets pour PPA
           apt: name={{ item }} state=present
           with_items:
-            - software-properties-common
-            - uidmap
-
-        - name: Enable PPA atomic project
-          shell: add-apt-repository ppa:projectatomic/ppa
-
-        - name: Installation de podman
-          apt: name={{ item }} state=present
-          with_items:
-            - podman
             - xfsprogs
 
     # Docker
@@ -145,6 +134,7 @@
       shell: >
           podman run \
               -d \
+              --name elasticsearch \
               --mount type=bind,src=/var/lib/elasticsearch,target=/usr/share/elasticsearch/data \
               -e discovery.type="single-node" \
               -e cluster.name="logs" \
@@ -152,7 +142,6 @@
               -e network.bind_host="0.0.0.0" \
               -e ES_JAVA_OPTS="-Xms{{ (ansible_memtotal_mb * 0.3) | int }}m -Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m" \
               docker.io/elasticsearch:6.6.2 \
-              elasticsearch
 
 ###############################################################################
 # Configuration de Graylog
@@ -232,9 +221,9 @@
           podman run \
             -d \
             -u 1200 \
+            --name mongo \
             --mount type=bind,src=/var/lib/mongodb,target=/data/db \
             docker.io/mongo:3 \
-            mongo
             
     - name: Get Elasticsearch IP address
       register: els_result

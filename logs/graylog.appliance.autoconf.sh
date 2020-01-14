@@ -9,9 +9,9 @@ ansible-playbook -t os-ready $PLAYBOOK \
 	-e bootstrap_no_proxy="$NO_PROXY" \
 	|| exit 1
 
-ansible-playbook -t docker $PLAYBOOK \
-	-e docker_http_proxy="$HTTP_PROXY" \
-	-e docker_no_proxy="$NO_PROXY" \
+ansible-playbook -t containers $PLAYBOOK \
+	-e podman_http_proxy="$HTTP_PROXY" \
+	-e podman_no_proxy="$NO_PROXY" \
 	|| exit 1
 
 ansible-playbook -t elasticsearch $PLAYBOOK \

@@ -25,3 +25,7 @@
 - name: ansible-telegraf
   src: https://github.com/mgrzybek/ansible-telegraf
   version: master
+
+- name: ansible-podman
+  src: https://github.com/mgrzybek/ansible-podman
+  version: master

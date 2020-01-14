@@ -14,9 +14,9 @@
 ###############################################################################
 # Docker
 #
-- name: Configuration de docker
+- name: Configuration de containers
   hosts: localhost
-  tags: docker
+  tags: containers
 
   pre_tasks:
     - name: Tuning mémoire
@@ -26,67 +26,69 @@
         sysctl_set: yes
         state: present
 
-    - name: Installation de docker (debian)
+    - name: Installation de podman (debian)
       when: ansible_os_family | lower == 'debian'
       block:
-        - name: Installation de docker
+        - name: Installation des paquets pour PPA
           apt: name={{ item }} state=present
           with_items:
-            - docker.io
-            - python-docker
-            - xfsprogs
+            - software-properties-common
+            - uidmap
 
-    - name: Lancement de docker
-      service: name=docker state=started
+        - name: Enable PPA atomic project
+          shell: add-apt-repository ppa:projectatomic/ppa
+
+        - name: Installation de podman
+          apt: name={{ item }} state=present
+          with_items:
+            - podman
+            - xfsprogs
 
     # Docker
     - when:
-        - lookup('env', 'DOCKER_VOLUME') is defined
-        - lookup('env', 'DOCKER_VOLUME') | length > 0
+        - lookup('env', 'CONTAINERS_VOLUME') is defined
+        - lookup('env', 'CONTAINERS_VOLUME') | length > 0
       block:
         - name: Listing des VG
           command: vgs --options name
           register: vg_list
 
-        - when: vg_list.stdout.find('docker') < 0
+        - when: vg_list.stdout.find('containers') < 0
           block:
-            - name: Détection du volume docker
-              set_fact: docker_device_short_id="{{ lookup('env', 'DOCKER_VOLUME')[:20] }}"
+            - name: Détection du volume containers
+              set_fact: containers_device_short_id="{{ lookup('env', 'CONTAINERS_VOLUME')[:20] }}"
 
-            - name: Get docker device name from /dev/disk/by-id/
+            - name: Get containers device name from /dev/disk/by-id/
               register: cinder_volume
-              shell: find /dev/disk/by-id/ -name "*{{ docker_device_short_id }}*"
+              shell: find /dev/disk/by-id/ -name "*{{ containers_device_short_id }}*"
 
-            - name: Check docker device result
+            - name: Check containers device result
               when: cinder_volume.stdout_lines | length < 1
-              fail: msg="Cannot find any cinder device with ID {{ docker_device_short_id }}"
+              fail: msg="Cannot find any cinder device with ID {{ containers_device_short_id }}"
 
-            - name: Set full disk name (docker_device={{ cinder_volume.stdout }})
-              set_fact: docker_device="{{ cinder_volume.stdout }}"
+            - name: Set full disk name (containers_device={{ cinder_volume.stdout }})
+              set_fact: containers_device="{{ cinder_volume.stdout }}"
 
-            - name: Création du VG pour docker
-              lvg: vg=docker pvs="{{ docker_device }}"
+            - name: Création du VG pour containers
+              lvg: vg=containers pvs="{{ containers_device }}"
 
-        - name: Création du LV docker/data
-          lvol: vg=docker lv=data size=80%VG
+        - name: Création du LV containers/data
+          lvol: vg=containers lv=data size=80%VG
 
-        - name: Formattage de docker-data
-          filesystem: dev=/dev/mapper/docker-data fstype=xfs
+        - name: Formattage de containers-data
+          filesystem: dev=/dev/mapper/containers-data fstype=xfs
 
-        - name: Montage de docker-data
+        - name: Montage de containers-data
           mount:
-            path: /var/lib/docker
-            src: /dev/mapper/docker-data
+            path: /var/run/containers
+            src: /dev/mapper/containers-data
             state: mounted
             fstype: xfs
 
-    - name: New setup to detect docker artifacts
-      setup:
-
   roles:
 #    - role: ansible-dnsmasq
-    - role: ansible-docker
     - role: ansible-rclone
+    - role: ansible-podman
 
 ###############################################################################
 # Configuration d'elasticsearch
@@ -140,23 +142,17 @@
         mode: 0755
 
     - name: Lancement du conteneur
-      docker_container:
-          name: elasticsearch
-          image: "elasticsearch:6.6.2"
-          state: started
-          pull: true
-          published_ports: []
-          volumes:
-             - "/var/lib/elasticsearch:/usr/share/elasticsearch/data"
-          env:
-             discovery.type: "single-node"
-             # Configuration globale
-             cluster.name: "logs"
-             node.name: "{{ ansible_hostname }}"
-             # Points d'accès
-             network.bind_host: "0.0.0.0"
-             # Java
-             ES_JAVA_OPTS: "-Xms{{ (ansible_memtotal_mb * 0.3) | int }}m -Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m"
+      shell: >
+          podman run \
+              -d \
+              --mount=bind,/var/lib/elasticsearch:/usr/share/elasticsearch/data \
+              -e discovery.type="single-node" \
+              -e cluster.name="logs" \
+              -e node.name="{{ ansible_hostname }}" \
+              -e network.bind_host="0.0.0.0" \
+              -e ES_JAVA_OPTS="-Xms{{ (ansible_memtotal_mb * 0.3) | int }}m -Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m" \
+              docker.io/elasticsearch:6.6.2 \
+              elasticsearch
 
 ###############################################################################
 # Configuration de Graylog
@@ -217,66 +213,92 @@
 
     - name: Mise en place des permissions
       file:
-        path: /var/lib/graylog
+        path: "{{ item.path }}"
         state: directory
-        owner: 1100
-        mode: 0755
+        owner: "{{ item.owner }}"
+        mode: "{{ item.mode }}"
+      with_items:
+        - path: /var/lib/graylog
+          state: directory
+          owner: 1100
+          mode: 0755
+        - path: /var/lib/mongodb
+          state: directory
+          owner: 1200
+          mode: 0755
 
     - name: Lancement du conteneur mongodb
-      docker_container:
-          name: mongo
-          image: "mongo:3"
-          state: started
-          pull: true
-          published_ports: []
+      shell: >
+          podman run \
+            -d \
+            -u 1200 \
+            --mount=bind,/var/lib/mongodb,/data/db \
+            docker.io/mongo:3 \
+            mongo
+            
+    - name: Get Elasticsearch IP address
+      register: els_result
+      shell: >
+           podman inspect elasticsearch \
+           | jq -M '.[0].NetworkSettings' \
+           | awk -F'"' '{print $2}'
+
+    - name: Get MongoDB IP address
+      register: mongo_result
+      shell: >
+           podman inspect mongo \
+           | jq -M '.[0].NetworkSettings' \
+           | awk -F'"' '{print $2}'
+
+    - name: Set facts
+      set_fact:
+          mongodb_ipaddr: "{{ mongo_result.stdout }}"
+          els_ipaddr: "{{ els_result.stdout }}"
 
     - name: Génération d'un sel
       register: graylog_salt
       shell: head /dev/urandom | tr -dc A-Za-z0-9 | head -c 64
 
     - name: Lancement du conteneur graylog
-      docker_container:
-          name: graylog
-          image: "graylog/graylog:3.0"
-          state: started
-          pull: true
-          published_ports:
-             - "80:8080/tcp"
-             - "81:8081/tcp"
-             - "12201:12201/tcp"
-             - "12201:12201/udp"
-             - "514:5140/tcp"
-             - "514:5140/udp"
-          links:
-             - mongo
-             - elasticsearch
-          env:
-             # Configuration du mode maître
-             GRAYLOG_IS_MASTER: "true"
-             GRAYLOG_MESSAGE_JOURNAL_ENABLED: "true"
+      shell: >
+          podman run \
+          -d \
+          -u 1100
+          --name graylog \
+          --mount=bind,/var/lib/graylog,/var/lib/graylog \
+          --publish 80:8080 \
+          --publish 81:8081 \
+          --publish 514:5140 \
+          --publish 12201:12201 \
+          docker.io/graylog/graylog:3.0
+          
+      environment:
+        # Configuration du mode maître
+        GRAYLOG_IS_MASTER: "true"
+        GRAYLOG_MESSAGE_JOURNAL_ENABLED: "true"
 
-             # Points d'accès
-             # http://docs.graylog.org/en/3.0/pages/configuration/web_interface.html
-             # Mettre l'URI d'accès externe depuis les postes de travail
-             GRAYLOG_HTTP_EXTERNAL_URI: "{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') }}"
-             GRAYLOG_HTTP_PUBLISH_URI: "http://{{ ansible_default_ipv4.address }}:80"
-             GRAYLOG_HTTP_BIND_ADDRESS: "0.0.0.0:8080"
+        # Points d'accès
+        # http://docs.graylog.org/en/3.0/pages/configuration/web_interface.html
+        # Mettre l'URI d'accès externe depuis les postes de travail
+        GRAYLOG_HTTP_EXTERNAL_URI: "{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') }}"
+        GRAYLOG_HTTP_PUBLISH_URI: "http://{{ ansible_default_ipv4.address }}:80"
+        GRAYLOG_HTTP_BIND_ADDRESS: "0.0.0.0:8080"
 
-             # Gestion des secrets
-             GRAYLOG_PASSWORD_SECRET: "{{ graylog_salt.stdout }}"
-             GRAYLOG_ROOT_USERNAME: "{{ graylog_login_admin_local }}"
-             GRAYLOG_ROOT_PASSWORD_SHA2: "{{ graylog_root_password | hash('sha256') }}"
+        # Gestion des secrets
+        GRAYLOG_PASSWORD_SECRET: "{{ graylog_salt.stdout }}"
+        GRAYLOG_ROOT_USERNAME: "{{ graylog_login_admin_local }}"
+        GRAYLOG_ROOT_PASSWORD_SHA2: "{{ graylog_root_password | hash('sha256') }}"
 
-             # Localisation
-             GRAYLOG_ROOT_TIMEZONE: "Europe/Paris"
+        # Localisation
+        GRAYLOG_ROOT_TIMEZONE: "Europe/Paris"
 
-             # Java
-             GRAYLOG_SERVER_JAVA_OPTS: "-Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m -Xms{{ (ansible_memtotal_mb * 0.3) | int }}m"
+        # Java
+        GRAYLOG_SERVER_JAVA_OPTS: "-Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m -Xms{{ (ansible_memtotal_mb * 0.3) | int }}m"
 
-             # Datasources
-             #- GRAYLOG_MONGODB_URI                     = "{{ graylog_mongodb_uri }}"
-             #- GRAYLOG_ELASTICSEARCH_HOSTS             = "{{ graylog_elasticsearch_hosts | map('quote') | join(',') }}"
-             #- GRAYLOG_ELASTICSEARCH_DISCOVERY_ENABLED = "true"
+        # Datasources
+        GRAYLOG_MONGODB_URI: "mongodb://{{ mongodb_ipaddr }}/graylog"
+        GRAYLOG_ELASTICSEARCH_HOSTS: "http://{{ els_ipaddr }}:9200"
+        #- GRAYLOG_ELASTICSEARCH_DISCOVERY_ENABLED = "true"
 
 ###############################################################################
 # Graylog post-configuration

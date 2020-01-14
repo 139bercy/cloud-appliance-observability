@@ -205,16 +205,14 @@
         path: "{{ item.path }}"
         state: directory
         owner: "{{ item.owner }}"
-        mode: "{{ item.mode }}"
+        mode: 0755
       with_items:
         - path: /var/lib/graylog
           state: directory
           owner: 1100
-          mode: 0755
         - path: /var/lib/mongodb
           state: directory
           owner: 1200
-          mode: 0755
 
     - name: Lancement du conteneur mongodb
       shell: >

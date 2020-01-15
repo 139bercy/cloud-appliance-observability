@@ -125,10 +125,10 @@ resources:
                                 grep -q proxy= /etc/yum.conf || echo "proxy=$HTTP_PROXY" >> /etc/yum.conf
                             fi
 
-                            yum install --assumeyes ansible git
+                            yum install --assumeyes ansible git jq
                         else
                             apt update
-                            apt -y install ansible git
+                            apt -y install ansible git jq
                         fi
                         
                         # Configure ansible to work without an entire environment set

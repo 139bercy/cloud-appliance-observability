@@ -1,7 +1,7 @@
 ###############################################################################
 # OS-Ready
 #
-- name: Configuration des nodes
+- name: Nodes configuration
   hosts: localhost
   tags: os-ready
 
@@ -14,7 +14,7 @@
 ###############################################################################
 # Docker
 #
-- name: Configuration de docker
+- name: Docker configuration
   hosts: localhost
   tags: docker
 
@@ -26,17 +26,17 @@
         sysctl_set: yes
         state: present
 
-    - name: Installation de docker (debian)
+    - name: Docker (debian) installation
       when: ansible_os_family | lower == 'debian'
       block:
-        - name: Installation de docker
+        - name: Docker installation
           apt: name={{ item }} state=present
           with_items:
             - docker.io
             - python-docker
             - xfsprogs
 
-    - name: Lancement de docker
+    - name: Docker launch
       service: name=docker state=started
 
     # Docker
@@ -44,13 +44,13 @@
         - lookup('env', 'DOCKER_VOLUME') is defined
         - lookup('env', 'DOCKER_VOLUME') | length > 0
       block:
-        - name: Listing des VG
+        - name: VG listing
           command: vgs --options name
           register: vg_list
 
         - when: vg_list.stdout.find('docker') < 0
           block:
-            - name: Détection du volume docker
+            - name: Docker volume detection
               set_fact: docker_device_short_id="{{ lookup('env', 'DOCKER_VOLUME')[:20] }}"
 
             - name: Get docker device name from /dev/disk/by-id/
@@ -64,16 +64,16 @@
             - name: Set full disk name (docker_device={{ cinder_volume.stdout }})
               set_fact: docker_device="{{ cinder_volume.stdout }}"
 
-            - name: Création du VG pour docker
+            - name: VG for docker creation
               lvg: vg=docker pvs="{{ docker_device }}"
 
-        - name: Création du LV docker/data
+        - name: LV docker/data creation
           lvol: vg=docker lv=data size=80%VG
 
-        - name: Formattage de docker-data
+        - name: Docker-data formatting
           filesystem: dev=/dev/mapper/docker-data fstype=xfs
 
-        - name: Montage de docker-data
+        - name: Docker-data mounting
           mount:
             path: /var/lib/docker
             src: /dev/mapper/docker-data
@@ -89,20 +89,20 @@
     - role: ansible-rclone
 
 ###############################################################################
-# Configuration d'elasticsearch
+# Elasticsearch configuration
 #
-- name: Configuration d'elasticsearch
+- name: Elasticsearch configuration
   hosts: localhost
   tags: elasticsearch
 
   tasks:
-    - name: Listing des VG
+    - name: VG listing
       command: vgs --options name
       register: vg_list
 
     - when: vg_list.stdout.find('elasticsearch') < 0
       block:
-        - name: Détection du volume elasticsearch
+        - name: Elasticsearch volume detection
           set_fact: elasticsearch_device_short_id="{{ lookup('env', 'ELASTICSEARCH_VOLUME')[:20] }}"
 
         - name: Get elasticsearch device name from /dev/disk/by-id/
@@ -116,30 +116,30 @@
         - name: Set full disk name
           set_fact: elasticsearch_device="{{ cinder_volume.stdout }}"
 
-        - name: Création du VG elasticsearch
+        - name: VG elasticsearch creation
           lvg: vg=elasticsearch pvs="{{ elasticsearch_device }}"
 
-    - name: Création du LV
+    - name: LV creation
       lvol: vg=elasticsearch lv=data size=80%VG
 
-    - name: Formattage
+    - name: Formatting
       filesystem: dev=/dev/mapper/elasticsearch-data fstype=xfs
 
-    - name: Montage
+    - name: Mounting
       mount:
         path: /var/lib/elasticsearch
         src: /dev/mapper/elasticsearch-data
         state: mounted
         fstype: xfs
 
-    - name: Mise en place des permissions
+    - name: Setting up permissions
       file:
         path: /var/lib/elasticsearch
         state: directory
         owner: 1000
         mode: 0755
 
-    - name: Lancement du conteneur
+    - name: Container launcher
       docker_container:
           name: elasticsearch
           image: "elasticsearch:6.6.2"
@@ -159,14 +159,14 @@
              ES_JAVA_OPTS: "-Xms{{ (ansible_memtotal_mb * 0.3) | int }}m -Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m"
 
 ###############################################################################
-# Configuration de Graylog
+# Graylog configuration
 #
-- name: Configuration de graylog
+- name: Graylog configuration
   hosts: localhost
   tags: graylog
 
   tasks:
-    - name: Listing des VG
+    - name: VG listing
       command: vgs --options name
       register: vg_list
 
@@ -186,10 +186,10 @@
         - name: Set full disk name
           set_fact: graylog_device="{{ cinder_volume.stdout }}"
 
-        - name: Création du VG graylog
+        - name: VG graylog creation
           lvg: vg=graylog pvs="{{ graylog_device }}"
 
-    - name: Création des LV
+    - name: LV creation
       lvol: vg=graylog lv={{ item.lv }} size={{ item.size }}%VG
       with_items:
         - lv: data
@@ -197,13 +197,13 @@
         - lv: mongodb
           size: 10
 
-    - name: Formattage
+    - name: Formatting
       filesystem: dev=/dev/mapper/graylog-{{ item }} fstype=xfs
       with_items:
         - data
         - mongodb
 
-    - name: Montage des volumes
+    - name: Volumes mounting
       mount:
         path: "{{ item.path }}"
         src: "{{ item.src }}"
@@ -215,14 +215,14 @@
         - path: /var/lib/mongodb
           src: /dev/mapper/graylog-mongodb
 
-    - name: Mise en place des permissions
+    - name: Setting up permissions
       file:
         path: /var/lib/graylog
         state: directory
         owner: 1100
         mode: 0755
 
-    - name: Lancement du conteneur mongodb
+    - name: Mongodb container launcher
       docker_container:
           name: mongo
           image: "mongo:3"
@@ -230,11 +230,11 @@
           pull: true
           published_ports: []
 
-    - name: Génération d'un sel
+    - name: Salt generation
       register: graylog_salt
       shell: head /dev/urandom | tr -dc A-Za-z0-9 | head -c 64
 
-    - name: Lancement du conteneur graylog
+    - name: Graylog container launcher
       docker_container:
           name: graylog
           image: "graylog/graylog:3.0"
@@ -251,18 +251,18 @@
              - mongo
              - elasticsearch
           env:
-             # Configuration du mode maître
+             # Master mode configuration
              GRAYLOG_IS_MASTER: "true"
              GRAYLOG_MESSAGE_JOURNAL_ENABLED: "true"
 
-             # Points d'accès
+             # Access points
              # http://docs.graylog.org/en/3.0/pages/configuration/web_interface.html
-             # Mettre l'URI d'accès externe depuis les postes de travail
+             # Put the external access URI from the workstations
              GRAYLOG_HTTP_EXTERNAL_URI: "{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') }}"
              GRAYLOG_HTTP_PUBLISH_URI: "http://{{ ansible_default_ipv4.address }}:80"
              GRAYLOG_HTTP_BIND_ADDRESS: "0.0.0.0:8080"
 
-             # Gestion des secrets
+             # Secrets gestion
              GRAYLOG_PASSWORD_SECRET: "{{ graylog_salt.stdout }}"
              GRAYLOG_ROOT_USERNAME: "{{ graylog_login_admin_local }}"
              GRAYLOG_ROOT_PASSWORD_SHA2: "{{ graylog_root_password | hash('sha256') }}"
@@ -279,7 +279,7 @@
              #- GRAYLOG_ELASTICSEARCH_DISCOVERY_ENABLED = "true"
 
 ###############################################################################
-# Graylog post-configuration
+# Post-configuration graylog
 #
 - name: Make Graylog ready to use
   hosts: localhost
@@ -350,7 +350,7 @@
     
     - name: Pipelines configuration
       block:
-        - name: Récupération des règles configurées
+        - name: Retrieving configured rules
           register: graylog_running_rules
           retries: 10
           delay: 30

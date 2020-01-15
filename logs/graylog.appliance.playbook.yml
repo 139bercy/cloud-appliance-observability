@@ -219,7 +219,7 @@
             -u 1200 \
             --name mongo \
             --mount type=bind,src=/var/lib/mongodb,target=/data/db \
-            docker.io/mongo:3 \
+            docker.io/mongo:3
             
     - name: Get Elasticsearch IP address
       register: els_result

@@ -1,7 +1,7 @@
 ###############################################################################
 # OS-Ready
 #
-- name: Configuration des nodes
+- name: Nodes configuration
   hosts: localhost
   tags: os-ready
 
@@ -14,7 +14,7 @@
 ###############################################################################
 # Docker
 #
-- name: Configuration de containers
+- name: Containers runtime configuration
   hosts: localhost
   tags: containers
 
@@ -35,13 +35,13 @@
         - lookup('env', 'CONTAINERS_VOLUME') is defined
         - lookup('env', 'CONTAINERS_VOLUME') | length > 0
       block:
-        - name: Listing des VG
+        - name: VG listing
           command: vgs --options name
           register: vg_list
 
         - when: vg_list.stdout.find('containers') < 0
           block:
-            - name: Détection du volume containers
+            - name: Detect cinder volume used for containers storage
               set_fact: containers_device_short_id="{{ lookup('env', 'CONTAINERS_VOLUME')[:20] }}"
 
             - name: Get containers device name from /dev/disk/by-id/
@@ -55,16 +55,17 @@
             - name: Set full disk name (containers_device={{ cinder_volume.stdout }})
               set_fact: containers_device="{{ cinder_volume.stdout }}"
 
-            - name: Création du VG pour containers
+
+            - name: Create VG called "containers"
               lvg: vg=containers pvs="{{ containers_device }}"
 
-        - name: Création du LV containers/data
+        - name: Create LV containers/data
           lvol: vg=containers lv=data size=80%VG
 
-        - name: Formattage de containers-data
+        - name: Formatting containers-data LV
           filesystem: dev=/dev/mapper/containers-data fstype=xfs
 
-        - name: Montage de containers-data
+        - name: Mounting containers-data LV
           mount:
             path: /var/run/containers
             src: /dev/mapper/containers-data
@@ -77,20 +78,20 @@
     - role: ansible-podman
 
 ###############################################################################
-# Configuration d'elasticsearch
+# Elasticsearch configuration
 #
-- name: Configuration d'elasticsearch
+- name: Elasticsearch configuration
   hosts: localhost
   tags: elasticsearch
 
   tasks:
-    - name: Listing des VG
+    - name: VG listing
       command: vgs --options name
       register: vg_list
 
     - when: vg_list.stdout.find('elasticsearch') < 0
       block:
-        - name: Détection du volume elasticsearch
+        - name: Elasticsearch volume detection
           set_fact: elasticsearch_device_short_id="{{ lookup('env', 'ELASTICSEARCH_VOLUME')[:20] }}"
 
         - name: Get elasticsearch device name from /dev/disk/by-id/
@@ -104,30 +105,30 @@
         - name: Set full disk name
           set_fact: elasticsearch_device="{{ cinder_volume.stdout }}"
 
-        - name: Création du VG elasticsearch
+        - name: VG elasticsearch creation
           lvg: vg=elasticsearch pvs="{{ elasticsearch_device }}"
 
-    - name: Création du LV
+    - name: LV creation
       lvol: vg=elasticsearch lv=data size=80%VG
 
-    - name: Formattage
+    - name: Formatting
       filesystem: dev=/dev/mapper/elasticsearch-data fstype=xfs
 
-    - name: Montage
+    - name: Mounting
       mount:
         path: /var/lib/elasticsearch
         src: /dev/mapper/elasticsearch-data
         state: mounted
         fstype: xfs
 
-    - name: Mise en place des permissions
+    - name: Setting up permissions
       file:
         path: /var/lib/elasticsearch
         state: directory
         owner: 1000
         mode: 0755
 
-    - name: Lancement du conteneur
+    - name: Starting Elasticsearch container
       shell: >
           podman run \
               -d \
@@ -141,20 +142,20 @@
               docker.io/elasticsearch:6.6.2
 
 ###############################################################################
-# Configuration de Graylog
+# Graylog configuration
 #
-- name: Configuration de graylog
+- name: Graylog configuration
   hosts: localhost
   tags: graylog
 
   tasks:
-    - name: Listing des VG
+    - name: VG listing
       command: vgs --options name
       register: vg_list
 
     - when: vg_list.stdout.find('graylog') < 0
       block:
-        - name: Détection du volume graylog
+        - name: Graylog volume detection
           set_fact: graylog_device_short_id="{{ lookup('env', 'GRAYLOG_VOLUME')[:20] }}"
 
         - name: Get graylog device name from /dev/disk/by-id/
@@ -168,10 +169,10 @@
         - name: Set full disk name
           set_fact: graylog_device="{{ cinder_volume.stdout }}"
 
-        - name: Création du VG graylog
+        - name: VG graylog creation
           lvg: vg=graylog pvs="{{ graylog_device }}"
 
-    - name: Création des LV
+    - name: LV creation
       lvol: vg=graylog lv={{ item.lv }} size={{ item.size }}%VG
       with_items:
         - lv: data
@@ -179,13 +180,13 @@
         - lv: mongodb
           size: 10
 
-    - name: Formattage
+    - name: Formatting
       filesystem: dev=/dev/mapper/graylog-{{ item }} fstype=xfs
       with_items:
         - data
         - mongodb
 
-    - name: Montage des volumes
+    - name: Volumes mounting
       mount:
         path: "{{ item.path }}"
         src: "{{ item.src }}"
@@ -197,7 +198,7 @@
         - path: /var/lib/mongodb
           src: /dev/mapper/graylog-mongodb
 
-    - name: Mise en place des permissions
+    - name: Setting up permissions
       file:
         path: "{{ item.path }}"
         state: directory
@@ -211,7 +212,7 @@
           state: directory
           owner: 1200
 
-    - name: Lancement du conteneur mongodb
+    - name: Starting MongoDB container
       shell: >
           podman run \
             -d \
@@ -239,11 +240,11 @@
           mongodb_ipaddr: "{{ mongo_result.stdout }}"
           els_ipaddr: "{{ els_result.stdout }}"
 
-    - name: Génération d'un sel
+    - name: Salt generation
       register: graylog_salt
       shell: head /dev/urandom | tr -dc A-Za-z0-9 | head -c 64
 
-    - name: Lancement du conteneur graylog
+    - name: Starting Graylog container
       shell: >
           podman run \
           -d \
@@ -268,9 +269,9 @@
           -e GRAYLOG_MONGODB_URI="mongodb://{{ mongodb_ipaddr }}/graylog" \
           -e GRAYLOG_ELASTICSEARCH_HOSTS="http://{{ els_ipaddr }}:9200" \
           docker.io/graylog/graylog:3.0
-          
+
 ###############################################################################
-# Graylog post-configuration
+# Post-configuration graylog
 #
 - name: Make Graylog ready to use
   hosts: localhost
@@ -341,7 +342,7 @@
     
     - name: Pipelines configuration
       block:
-        - name: Récupération des règles configurées
+        - name: Retrieving configured rules
           register: graylog_running_rules
           retries: 10
           delay: 30

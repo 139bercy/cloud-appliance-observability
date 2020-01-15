@@ -138,7 +138,7 @@
               -e node.name="{{ ansible_hostname }}" \
               -e network.bind_host="0.0.0.0" \
               -e ES_JAVA_OPTS="-Xms{{ (ansible_memtotal_mb * 0.3) | int }}m -Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m" \
-              docker.io/elasticsearch:6.6.2 \
+              docker.io/elasticsearch:6.6.2
 
 ###############################################################################
 # Configuration de Graylog
@@ -224,14 +224,14 @@
       register: els_result
       shell: >
            podman inspect elasticsearch \
-           | jq -M '.[0].NetworkSettings' \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
            | awk -F'"' '{print $2}'
 
     - name: Get MongoDB IP address
       register: mongo_result
       shell: >
            podman inspect mongo \
-           | jq -M '.[0].NetworkSettings' \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
            | awk -F'"' '{print $2}'
 
     - name: Set facts

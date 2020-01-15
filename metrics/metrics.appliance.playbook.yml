@@ -1,0 +1,232 @@
+###############################################################################
+# OS-Ready
+#
+- name: Nodes configuration
+  hosts: localhost
+  tags: os-ready
+
+  roles:
+    - role: ansible-bootstrap-system
+#    - role: ansible-telegraf
+#    - role: ansible-consul
+#    - role: ansible-dnsmasq
+
+###############################################################################
+# Docker
+#
+- name: Containers runtime configuration
+  hosts: localhost
+  tags: containers
+
+  pre_tasks:
+    #- name: Tuning mémoire
+    #  sysctl:
+    #    name: vm.max_map_count
+    #    value: 262144
+    #    sysctl_set: yes
+    #    state: present
+
+    - name: Installing XFS tools
+      when: ansible_os_family | lower == 'debian'
+      apt: name=xfsprogs state=present
+
+    # Containers
+    - when:
+        - lookup('env', 'CONTAINERS_VOLUME') is defined
+        - lookup('env', 'CONTAINERS_VOLUME') | length > 0
+      block:
+        - name: VG listing
+          command: vgs --options name
+          register: vg_list
+
+        - when: vg_list.stdout.find('containers') < 0
+          block:
+            - name: Detect cinder volume used for containers storage
+              set_fact: containers_device_short_id="{{ lookup('env', 'CONTAINERS_VOLUME')[:20] }}"
+
+            - name: Get containers device name from /dev/disk/by-id/
+              register: cinder_volume
+              shell: find /dev/disk/by-id/ -name "*{{ containers_device_short_id }}*"
+
+            - name: Check containers device result
+              when: cinder_volume.stdout_lines | length < 1
+              fail: msg="Cannot find any cinder device with ID {{ containers_device_short_id }}"
+
+            - name: Set full disk name (containers_device={{ cinder_volume.stdout }})
+              set_fact: containers_device="{{ cinder_volume.stdout }}"
+
+
+            - name: Create VG called "containers"
+              lvg: vg=containers pvs="{{ containers_device }}"
+
+        - name: Create LV containers/data
+          lvol: vg=containers lv=data size=80%VG
+
+        - name: Formatting containers-data LV
+          filesystem: dev=/dev/mapper/containers-data fstype=xfs
+
+        - name: Mounting containers-data LV
+          mount:
+            path: /var/run/containers
+            src: /dev/mapper/containers-data
+            state: mounted
+            fstype: xfs
+
+  roles:
+#    - role: ansible-dnsmasq
+    - role: ansible-rclone
+    - role: ansible-podman
+
+###############################################################################
+# Grafana / InfluxDB / Traefik configuration
+#
+- name: Grafana, InfluxDB and Traefik configuration
+  hosts: localhost
+  tags: metrics
+
+  tasks:
+    - name: VG listing
+      command: vgs --options name
+      register: vg_list
+
+    - when: vg_list.stdout.find('metrics') < 0
+      block:
+        - name:  Metrics volume detection
+          set_fact: metrics_device_short_id="{{ lookup('env', 'METRICS_VOLUME')[:20] }}"
+
+        - name: Get metrics device name from /dev/disk/by-id/
+          register: cinder_volume
+          shell: find /dev/disk/by-id/ -name "*{{ metrics_device_short_id }}*"
+
+        - name: Check metrics device result
+          when: cinder_volume.stdout_lines | length < 1
+          fail: msg="Cannot find any cinder device with ID {{ metrics_device_short_id }}"
+
+        - name: Set full disk name
+          set_fact: metrics_device="{{ cinder_volume.stdout }}"
+
+        - name: VG metrics creation
+          lvg: vg=metrics pvs="{{ metrics_device }}"
+
+    - name: LV creation
+      lvol: vg=metrics lv={{ item.lv }} size={{ item.size }}%VG
+      with_items:
+        - lv: influxdb
+          size: "80%VG"
+        - lv: grafana
+          size: "1g"
+
+    - name: Formatting
+      filesystem: dev=/dev/mapper/metrics-{{ item }} fstype=xfs
+      with_items:
+        - influxdb
+        - grafana
+
+    - name: Volumes mounting
+      mount:
+        path: "{{ item.path }}"
+        src: "{{ item.src }}"
+        state: mounted
+        fstype: xfs
+      with_items:
+        - path: /var/lib/grafana
+          src: /dev/mapper/metrics-grafana
+        - path: /var/lib/influxdb
+          src: /dev/mapper/metrics-influxdb
+
+    - name: Setting up permissions
+      file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        mode: 0755
+      with_items:
+        - path: /var/lib/grafana
+          state: directory
+          owner: 1100
+        - path: /var/lib/grafana/provisioning
+          state: directory
+          owner: 1100
+        - path: /var/lib/influxdb
+          state: directory
+          owner: 1200
+        - path: /etc/traefik
+          state: directory
+          owner: 1300
+
+    - name: Starting InfluxDB container
+      shell: >
+          podman run \
+              --detach \
+              --user 1200 \
+              --name influxdb \
+              --mount type=bind,src=/var/lib/influxdb,target=/var/lib/influxdb \
+              quay.io/influxdb/influxdb:2.0.0-beta \
+              --reporting-disabled
+
+    - name: Get InfluxDB IP address
+      register: influxdb_result
+      shell: >
+           podman inspect influxdb \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
+           | awk -F'"' '{print $2}'
+
+    - name: Set facts (influxdb_ipaddr)
+      set_fact:
+          influxdb_ipaddr: "{{ influxdb_result.stdout }}"
+
+    - name: Starting Grafana container
+      shell: >
+          podman run \
+              --detach \
+              --user 1100
+              --name grafana \
+              --mount type=bind,src=/var/lib/grafana,target=/var/lib/grafana \
+              --env GF_SERVER_ROOT_URL="{{ lookup('env', 'GRAFANA_ENDPOINT_URL') }}" \
+              --env GF_ANALYTICS_REPORTING_ENABLED="false" \
+              --env GF_ANALYTICS_CHECK_FOR_UPDATES="false" \
+              --env GF_PATHS_PROVISIONING="/var/lib/grafana/provisioning/" \
+              --env GF_LOG_MODE="console" \
+              --env GF_LOG_LEVEL="debug" \
+              --env GF_SECURITY_ADMIN_USER="{{ lookup('env', 'GRAFANA_ADMIN_NAME') }}" \
+              --env GF_SECURITY_ADMIN_PASSWORD="{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}" \
+              docker.io/grafana/grafana
+
+    - name: Get Grafana IP address
+      register: grafana_result
+      shell: >
+           podman inspect influxdb \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
+           | awk -F'"' '{print $2}'
+
+    - name: Set facts (grafana_ipaddr)
+      set_fact:
+          grafana_ipaddr: "{{ grafana_result.stdout }}"
+
+    - name: Create Traefik file provider
+      copy:
+          content: "{{ traefik_conf | to_yaml }}"
+          dest: /etc/traefik/services.yml
+          mode: 0644
+
+    - name: Starting Traefik container
+      shell: >
+          podman run \
+              --detach \
+              --user 1300 \
+              --name influxdb \
+              --mount type=bind,src=/etc/traefik,/etc/traefik \
+              --publish 80:80 \
+              --publish 443:443 \
+              docker.io/library/traefik \
+              --accesslog=false \
+              --accesslog.format=json \
+              --log=true \
+              --log.format=json \
+              --metrics.influxdb=true \
+              --metrics.influxdb.address={{ influxdb_ipaddr }}:9999 \
+              --providers.file.filename=/etc/traefik/services.yml
+
+###############################################################################
+# Post-configuration grafana
+#

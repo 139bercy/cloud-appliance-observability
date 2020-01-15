@@ -1,0 +1,37 @@
+grafana_datasources:
+    apiVersion: 1
+    datasources:
+        - name: "{{ lookup('env', 'OS_PROJECT_NAME') }}"
+          type: influxdb
+          access: proxy
+          orgId: 1
+          url: http://{{ influxdb_ipaddr }}:9999
+          database: "default"
+          isDefault: true
+          version: 1
+          editable: false
+
+traefik_conf:
+    entryPoints:
+        web:
+            address: ":80"
+
+        websecure:
+            address: ":443"
+    http:
+        routers:
+            grafana:
+                service: grafana
+                rule: Path('/grafana')
+            influxdb:
+                service: influxdb
+                rule: Path('/influxdb')
+        services:
+            grafana:
+                loadBalancer:
+                    servers:
+                        - url: http://{{ grafana_ipaddr }}:3000/
+            influxdb:
+                loadBalancer:
+                    servers:
+                        - url: http://{{ influxdb_ipaddr }}:9999/

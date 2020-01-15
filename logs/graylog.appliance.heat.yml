@@ -101,7 +101,7 @@ resources:
                         $graylog_admin_password: { get_param: graylog_admin_password }
                         $graylog_endpoint_url: { get_param: graylog_endpoint_url }
 
-                        $cinder_docker_volume: { get_resource: appliance_docker_volume }
+                        $cinder_containers_volume: { get_resource: appliance_containers_volume }
                         $cinder_elasticsearch_volume: { get_resource: appliance_elasticsearch_volume }
                         $cinder_graylog_volume: { get_resource: appliance_graylog_volume }
 
@@ -125,10 +125,10 @@ resources:
                                 grep -q proxy= /etc/yum.conf || echo "proxy=$HTTP_PROXY" >> /etc/yum.conf
                             fi
 
-                            yum install --assumeyes ansible git
+                            yum install --assumeyes ansible git jq
                         else
                             apt update
-                            apt -y install ansible git
+                            apt -y install ansible git jq
                         fi
                         
                         # Configure ansible to work without an entire environment set
@@ -155,7 +155,7 @@ resources:
                         #export OS_IDENTITY_API_VERSION=3
 
                         # Set the volumes' IDs
-                        export DOCKER_VOLUME=$cinder_docker_volume
+                        export CONTAINERS_VOLUME=$cinder_containers_volume
                         export GRAYLOG_VOLUME=$cinder_graylog_volume
                         export ELASTICSEARCH_VOLUME=$cinder_elasticsearch_volume
                         
@@ -269,16 +269,16 @@ resources:
             volume_id: { get_resource: appliance_graylog_volume }
             instance_uuid: { get_resource: appliance }
 
-    appliance_docker_volume:
+    appliance_containers_volume:
         type: OS::Cinder::Volume
         properties:
-            name: docker-graylog-appliance
+            name: containers-graylog-appliance
             size: 3
 
-    appliance_docker_attachment:
+    appliance_containers_attachment:
         type: OS::Cinder::VolumeAttachment
         properties:
-            volume_id: { get_resource: appliance_docker_volume }
+            volume_id: { get_resource: appliance_containers_volume }
             instance_uuid: { get_resource: appliance }
 
     appliance_elasticsearch_volume:

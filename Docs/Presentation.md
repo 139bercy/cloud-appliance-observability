@@ -14,6 +14,7 @@ Le document va présenter le fonctionnement de l'appliance à travers plusieurs 
 ## Architecture technique de l'appliance
 
 Le schéma ci-dessous explique le fonctionnement général de l’appliance:  
+
 ![alt tag](./Schema-blocs-fonctionnels.svg)  
 
 La stack HEAT contient des machines de projet qui envoie des logs vers l’appliance.  
@@ -23,7 +24,9 @@ Graylog est un service publié aux utilisateurs contrairement aux services inter
   
 
 ## L'appliance dans le projet
+
 Le schéma précise le fonctionnement de l'appliance:  
+
 ![alt tag](./Appliance-zoom.svg)  
 
 Des données sont envoyés par l'API, l'interface Homme/Machine et différents types de messages vers l'appliance et plus précisement vers graylog pour traitement.  
@@ -35,6 +38,7 @@ Les conteneurs Graylog, MongoDB et Elasticsearch permettent le travail des logs 
 ## L'envoi de la donnée vers l'outils
 
 Le schéma ci-dessous représente la sauvegarde et la restauration des données vers l'application:  
+
 ![alt tag](./sauvegarde-restauration.svg)  
 
 Les échanges entre graylog et graylog-recovery ainsi qu'entres graylog-recovery et swift se font en webservices.  

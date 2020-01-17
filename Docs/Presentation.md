@@ -1,3 +1,14 @@
+# Présentation de l'appliance 
+
+L'appliance est un outillage de sauvegarde et de restauration de Graylog vers un service de stockage objet Swift en environnement Openstack.  
+Il permettra également de fournir un état de la sauvegarde.
+
+Le document va présenter le fonctionnement de l'appliance à travers plusieurs schémas:  
+- L'architecture technique de l'appliance;  
+- L'appliance dans le projet;  
+- L'envoi de la donnée vers l'outils;  
+- L'envoi de la donnée vers l'appliance;  
+
 
 
 # Architecture technique de l'appliance

@@ -11,10 +11,10 @@ Le document va présenter le fonctionnement de l'appliance à travers plusieurs 
 
 
 
-# Architecture technique de l'appliance
+## Architecture technique de l'appliance
 
 Le schéma ci-dessous explique le fonctionnement général de l’appliance:  
-[alt tag](./Schema-blocs-fonctionnels.svg)  
+![alt tag](./Schema-blocs-fonctionnels.svg)  
 
 La stack HEAT contient des machines de projet qui envoie des logs vers l’appliance.  
 
@@ -24,7 +24,7 @@ Graylog est un service publié aux utilisateurs contrairement aux services inter
 
 ## L'appliance dans le projet
 Le schéma précise le fonctionnement de l'appliance:  
-[alt tag](./Appliance-zoom.svg)  
+![alt tag](./Appliance-zoom.svg)  
 
 Des données sont envoyés par l'API, l'interface Homme/Machine et différents types de messages vers l'appliance et plus précisement vers graylog pour traitement.  
 Les conteneurs Graylog, MongoDB et Elasticsearch permettent le travail des logs afin d'envoyer l'information vers les volumes de Cinder:  
@@ -32,19 +32,19 @@ Les conteneurs Graylog, MongoDB et Elasticsearch permettent le travail des logs 
 - MongoDB stocke la configuration de graylog  
 - ELS stocke les messages  
 
-### L'envoi de la donnée vers l'outils
+## L'envoi de la donnée vers l'outils
 
 Le schéma ci-dessous représente la sauvegarde et la restauration des données vers l'application:  
-[alt tag](./sauvegarde-restauration.svg)  
+![alt tag](./sauvegarde-restauration.svg)  
 
 Les échanges entre graylog et graylog-recovery ainsi qu'entres graylog-recovery et swift se font en webservices.  
 Cron est un outils qui permet de faire des taches planifiés. Ici, il s’occupe de lancer graylog-recovery régulièrement  
 
 
-#### L'envoi de la données vers l'appliance
+## L'envoi de la données vers l'appliance
 
 Le schéma montre comment les informations sont envoyés de l’instance Applicative vers l’appliance graylog:  
-[alt tag](./instance-applicative.svg)
+![alt tag](./instance-applicative.svg)
 
 Soit l’application possède un support natif de l’envoi des logs (ex : RSYSLOG, Application JAVA/SPRINGBOOT, application PHP/DRUPAL),  
 L'envoi se fait directement vers l’appliance.  

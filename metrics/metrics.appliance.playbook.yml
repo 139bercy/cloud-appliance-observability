@@ -162,10 +162,11 @@
               --name influxdb \
               --mount type=bind,src=/var/lib/influxdb,target=/var/lib/influxdb \
               quay.io/influxdb/influxdb:2.0.0-beta \
+              influxd \
               --reporting-disabled \
-              --bolt-path /var/lib/influxdb/influxd.bolt \
-              --engine-path /var/lib/influxdb/engine \
-              --http-bind-address ":8086"
+              --bolt-path=/var/lib/influxdb/influxd.bolt \
+              --engine-path=/var/lib/influxdb/engine \
+              --http-bind-address=":8086"
 
     - name: Get InfluxDB IP address
       register: influxdb_result

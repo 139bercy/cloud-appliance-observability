@@ -218,11 +218,12 @@
           podman run \
               --detach \
               --user 1300 \
-              --name influxdb \
+              --name traefik \
               --mount type=bind,src=/etc/traefik,/etc/traefik \
               --publish 80:80 \
               --publish 443:443 \
               docker.io/library/traefik \
+              traefik \
               --accesslog=false \
               --accesslog.format=json \
               --log=true \

@@ -183,7 +183,7 @@
       shell: >
           podman run \
               --detach \
-              --user 1100
+              --user 1100 \
               --name grafana \
               --mount type=bind,src=/var/lib/grafana,target=/var/lib/grafana \
               --env GF_SERVER_ROOT_URL={{ lookup('env', 'METRICS_ENDPOINT_URL') }}/grafana \

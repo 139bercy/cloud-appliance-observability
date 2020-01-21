@@ -34,4 +34,4 @@ traefik_conf:
             influxdb:
                 loadBalancer:
                     servers:
-                        - url: http://{{ influxdb_ipaddr }}:9999/
+                        - url: http://{{ influxdb_ipaddr }}:8086/

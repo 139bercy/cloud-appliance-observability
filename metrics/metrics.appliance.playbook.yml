@@ -154,6 +154,7 @@
           state: directory
           owner: 1300
 
+    # TODO: https://v2.docs.influxdata.com/v2.0/security/secrets/use-vault/
     - name: Starting InfluxDB container
       shell: >
           podman run \
@@ -162,7 +163,10 @@
               --name influxdb \
               --mount type=bind,src=/var/lib/influxdb,target=/var/lib/influxdb \
               quay.io/influxdb/influxdb:2.0.0-beta \
-              --reporting-disabled
+              --reporting-disabled \
+              --bolt-path /var/lib/influxdb/influxd.bolt \
+              --engine-path /var/lib/influxdb/engine \
+              --http-bind-address ":8086"
 
     - name: Get InfluxDB IP address
       register: influxdb_result
@@ -182,7 +186,7 @@
               --user 1100
               --name grafana \
               --mount type=bind,src=/var/lib/grafana,target=/var/lib/grafana \
-              --env GF_SERVER_ROOT_URL="{{ lookup('env', 'GRAFANA_ENDPOINT_URL') }}" \
+              --env GF_SERVER_ROOT_URL="{{ lookup('env', 'METRICS_ENDPOINT_URL') }}/grafana" \
               --env GF_ANALYTICS_REPORTING_ENABLED="false" \
               --env GF_ANALYTICS_CHECK_FOR_UPDATES="false" \
               --env GF_PATHS_PROVISIONING="/var/lib/grafana/provisioning/" \

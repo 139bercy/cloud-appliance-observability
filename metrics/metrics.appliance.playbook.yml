@@ -186,14 +186,14 @@
               --user 1100
               --name grafana \
               --mount type=bind,src=/var/lib/grafana,target=/var/lib/grafana \
-              --env GF_SERVER_ROOT_URL="{{ lookup('env', 'METRICS_ENDPOINT_URL') }}/grafana" \
-              --env GF_ANALYTICS_REPORTING_ENABLED="false" \
-              --env GF_ANALYTICS_CHECK_FOR_UPDATES="false" \
-              --env GF_PATHS_PROVISIONING="/var/lib/grafana/provisioning/" \
-              --env GF_LOG_MODE="console" \
-              --env GF_LOG_LEVEL="debug" \
-              --env GF_SECURITY_ADMIN_USER="{{ lookup('env', 'GRAFANA_ADMIN_NAME') }}" \
-              --env GF_SECURITY_ADMIN_PASSWORD="{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}" \
+              --env GF_SERVER_ROOT_URL={{ lookup('env', 'METRICS_ENDPOINT_URL') }}/grafana \
+              --env GF_ANALYTICS_REPORTING_ENABLED=false \
+              --env GF_ANALYTICS_CHECK_FOR_UPDATES=false \
+              --env GF_PATHS_PROVISIONING=/var/lib/grafana/provisioning/ \
+              --env GF_LOG_MODE=console \
+              --env GF_LOG_LEVEL=debug \
+              --env GF_SECURITY_ADMIN_USER={{ lookup('env', 'GRAFANA_ADMIN_NAME') }} \
+              --env GF_SECURITY_ADMIN_PASSWORD={{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }} \
               docker.io/grafana/grafana
 
     - name: Get Grafana IP address

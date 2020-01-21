@@ -111,9 +111,79 @@ logs:
 		\
 		logs
 
-.PHONY: metrics # 
+.PHONY: metrics # Configure metrics service
 metrics:
-	exit 1
+	test -z ${METRICS_SIZE_GB} \
+		&& (echo METRICS_SIZE_GB is empty ; exit 1) \
+		|| echo
+
+	test -z ${OS_USERNAME} \
+		&& (echo OS_USERNAME is empty ; exit 1) \
+		|| echo
+	test -z ${OS_PASSWORD} \
+		&& (echo OS_PASSWORD is empty ; exit 1) \
+		|| echo
+	test -z ${OS_AUTH_URL} \
+		&& (echo OS_AUTH_URL is empty ; exit 1) \
+		|| echo
+
+	test -z ${METRICS_FLAVOR} \
+		&& (echo METRICS_FLAVOR is empty ; exit 1) \
+		|| echo
+	test -z ${METRICS_IMAGE_ID} \
+		&& (echo METRICS_IMAGE_ID is empty ; exit 1) \
+		|| echo
+	test -z ${METRICS_NET_ID} \
+		&& (echo METRICS_NET_ID is empty ; exit 1) \
+		|| echo
+	test -z ${METRICS_SECGROUP_ID} \
+		&& (echo METRICS_SECGROUP_ID is empty ; exit 1) \
+		|| echo
+
+	test -z ${GRAFANA_ADMIN} \
+		&& (echo GRAFANA_ADMIN is empty ; exit 1) \
+		|| echo
+	test -z ${GRAFANA_PASSWORD} \
+		&& (echo GRAFANA_PASSWORD is empty ; exit 1) \
+		|| echo
+	test -z ${INFLUXDB_ADMIN} \
+		&& (echo INFLUXDB_ADMIN is empty ; exit 1) \
+		|| echo
+	test -z ${INFLUXDB_PASSWORD} \
+		&& (echo INFLUXDB_PASSWORD is empty ; exit 1) \
+		|| echo
+
+	test -z ${METRICS_ENDPOINT} \
+		&& (echo METRICS_ENDPOINT is empty ; exit 1) \
+		|| echo
+
+	openstack stack create \
+		\
+		--parameter metrics_size_gb=${METRICS_SIZE_GB} \
+		\
+		--parameter flavor=${METRICS_FLAVOR} \
+		--parameter image_id=${METRICS_IMAGE_ID} \
+		--parameter node_net_id=${METRICS_NET_ID} \
+		--parameter default_secgroup_id=$(METRICS_SECGROUP_ID) \
+		\
+		--parameter grafana_admin_name=${GRAFANA_ADMIN} \
+		--parameter grafana_admin_password=${GRAFANA_PASSWORD} \
+		\
+		--parameter influxdb_admin_name=${INFLUXDB_ADMIN} \
+		--parameter influxdb_admin_password=${INFLUXDB_PASSWORD} \
+		--parameter metrics_endpoint_url=${METRICS_ENDPOINT} \
+		\
+		--parameter internet_http_proxy_url=${METRICS_HTTP_PROXY} \
+		--parameter internet_http_no_proxy=${METRICS_NO_PROXY} \
+		\
+		--parameter git_repo_checkout=${GIT_REPO_CHECKOUT} \
+		--parameter git_repo_url=${GIT_REPO_URL} \
+		\
+		--template ${PWD}/metrics/metrics.appliance.heat.yml \
+		--wait \
+		--timeout 60 \
+		\
+		metrics
 
 ###############################################################################
 #
@@ -127,7 +197,7 @@ clean-logs:
 		&& openstack stack delete --wait --yes logs \
 		|| echo
 
-.PHONY: clean-logs # Destroy the metrics appliance
+.PHONY: clean-metrics # Destroy the metrics appliance
 clean-metrics:
 	openstack stack list | fgrep -q metrics \
 		&& openstack stack delete --wait --yes metrics \
@@ -144,7 +214,7 @@ rebuild-logs:
 
 .PHONY: rebuild-metrics # Rebuild the metrics appliance
 rebuild-metrics:
-	exit 1
+	openstack server rebuild --wait metrics
 
 .PHONY: rebuild # Rebuild all the servers at once
 rebuild: rebuild-logs rebuild-metrics

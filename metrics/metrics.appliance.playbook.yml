@@ -55,7 +55,6 @@
             - name: Set full disk name (containers_device={{ cinder_volume.stdout }})
               set_fact: containers_device="{{ cinder_volume.stdout }}"
 
-
             - name: Create VG called "containers"
               lvg: vg=containers pvs="{{ containers_device }}"
 
@@ -109,7 +108,7 @@
           lvg: vg=metrics pvs="{{ metrics_device }}"
 
     - name: LV creation
-      lvol: vg=metrics lv={{ item.lv }} size={{ item.size }}%VG
+      lvol: vg=metrics lv={{ item.lv }} size={{ item.size }}
       with_items:
         - lv: influxdb
           size: "80%VG"

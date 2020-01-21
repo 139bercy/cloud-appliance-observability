@@ -55,7 +55,6 @@
             - name: Set full disk name (containers_device={{ cinder_volume.stdout }})
               set_fact: containers_device="{{ cinder_volume.stdout }}"
 
-
             - name: Create VG called "containers"
               lvg: vg=containers pvs="{{ containers_device }}"
 

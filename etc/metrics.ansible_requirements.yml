@@ -1,0 +1,7 @@
+---
+
+# Requirements used by ansible-galaxy tool
+#
+#- name: 
+#  src: 
+#  version: master

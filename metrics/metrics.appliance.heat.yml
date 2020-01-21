@@ -53,9 +53,9 @@ parameters:
         type: string
         description: Cloud flavor to use
 
-    influxdb_size_gb:
+    metrics_size_gb:
         type: number
-        description: InfluxDB data size (Gb)
+        description: InfluxDB and Grafana data size (Gb)
         default: 100
 
     grafana_admin_name:
@@ -65,6 +65,15 @@ parameters:
     grafana_admin_password:
         type: string
         description: Grafana admin password
+        hidden: true
+
+    influxdb_admin_name:
+        type: string
+        description: InfluxDB admin username
+
+    influxdb_admin_password:
+        type: string
+        description: InfluxDB admin password
         hidden: true
 
     metrics_endpoint_url:
@@ -92,13 +101,14 @@ resources:
                         #$os_username: { get_param: os_username }
                         #$os_auth_url: { get_param: os_auth_url }
 
-                        $graylog_admin_name: { get_param: graylog_admin_name }
-                        $graylog_admin_password: { get_param: graylog_admin_password }
-                        $graylog_endpoint_url: { get_param: graylog_endpoint_url }
+                        $grafana_admin_name: { get_param: grafana_admin_name }
+                        $grafana_admin_password: { get_param: grafana_admin_password }
+                        $influxdb_admin_name: { get_param: influxdb_admin_name }
+                        $influxdb_admin_password: { get_param: influxdb_admin_password }
+                        $metrics_endpoint_url: { get_param: metrics_endpoint_url }
 
                         $cinder_containers_volume: { get_resource: appliance_containers_volume }
-                        $cinder_elasticsearch_volume: { get_resource: appliance_elasticsearch_volume }
-                        $cinder_graylog_volume: { get_resource: appliance_graylog_volume }
+                        $cinder_metrics_volume: { get_resource: appliance_metrics_volume }
 
                     template: |
                         #!/bin/bash
@@ -156,6 +166,10 @@ resources:
                         # Set the Grafana credentials
                         export GRAFANA_ADMIN_NAME="$grafana_admin_name"
                         export GRAFANA_ADMIN_PASSWORD="$grafana_admin_password"
+                        # Set the InfluxDB credentials
+                        export INFLUXDB_ADMIN_NAME="$influxdb_admin_name"
+                        export INFLUXDB_ADMIN_PASSWORD="$influxdb_admin_password"
+                        # Set metrics endpoint
                         export METRICS_ENDPOINT_URL="$metrics_endpoint_url"
 
                         # Autoconf the appliance
@@ -223,16 +237,16 @@ resources:
             user_data_format: SOFTWARE_CONFIG
             user_data: { get_resource: node_boot_script }
 
-    appliance_influxdb_volume:
+    appliance_metrics_volume:
         type: OS::Cinder::Volume
         properties:
-            name: metrics-influxdb-appliance
-            size: { get_param: influxdb_size_gb }
+            name: metrics-metrics-appliance
+            size: { get_param: metrics_size_gb }
 
-    appliance_influxdb_attachment:
+    appliance_metrics_attachment:
         type: OS::Cinder::VolumeAttachment
         properties:
-            volume_id: { get_resource: appliance_influxdb_volume }
+            volume_id: { get_resource: appliance_metrics_volume }
             instance_uuid: { get_resource: appliance }
 
     appliance_containers_volume:

@@ -25,7 +25,7 @@ traefik_conf:
                 rule: "Path(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') | regex_replace('^/$', '') }}/grafana`)"
             influxdb:
                 service: influxdb
-		rule: "Path(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') | regex_replace('^/$', '') }}/influxdb`)"
+                rule: "Path(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') | regex_replace('^/$', '') }}/influxdb`)"
         services:
             grafana:
                 loadBalancer:

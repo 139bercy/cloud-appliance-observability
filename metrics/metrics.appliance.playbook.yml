@@ -186,7 +186,7 @@
               --user 1100 \
               --name grafana \
               --mount type=bind,src=/var/lib/grafana,target=/var/lib/grafana \
-              --env GF_SERVER_ROOT_URL={{ lookup('env', 'METRICS_ENDPOINT_URL') }}/grafana \
+              --env GF_SERVER_ROOT_URL={{ lookup('env', 'METRICS_ENDPOINT_URL') | regex_replace('/$', '') }}/grafana \
               --env GF_ANALYTICS_REPORTING_ENABLED=false \
               --env GF_ANALYTICS_CHECK_FOR_UPDATES=false \
               --env GF_PATHS_PROVISIONING=/var/lib/grafana/provisioning/ \

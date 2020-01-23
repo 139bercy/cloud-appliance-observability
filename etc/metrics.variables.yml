@@ -22,7 +22,7 @@ traefik_conf:
         routers:
             grafana:
                 service: grafana
-                rule: Path(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') | regex_replace('^/$', '') }}/grafana`)"
+                rule: "Path(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') | regex_replace('^/$', '') }}/grafana`)"
             influxdb:
                 service: influxdb
 		rule: "Path(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') | regex_replace('^/$', '') }}/influxdb`)"

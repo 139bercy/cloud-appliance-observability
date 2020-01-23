@@ -209,7 +209,7 @@
 
     - name: Create Traefik file provider
       copy:
-          content: "{{ traefik_conf | to_yaml }}"
+          content: "{{ traefik_conf | to_nice_yaml }}"
           dest: /etc/traefik/services.yml
           mode: 0644
 

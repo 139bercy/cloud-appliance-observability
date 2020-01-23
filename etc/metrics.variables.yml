@@ -5,7 +5,7 @@ grafana_datasources:
           type: influxdb
           access: proxy
           orgId: 1
-          url: http://{{ influxdb_ipaddr }}:9999
+          url: http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}
           database: "default"
           isDefault: true
           version: 1
@@ -22,10 +22,10 @@ traefik_conf:
         routers:
             grafana:
                 service: grafana
-                rule: Path('/grafana')
+                rule: Host('{{ lookup('env', 'METRICS_ENDPOINT') | urlsplit('hostname') }}') && Path('/grafana')
             influxdb:
                 service: influxdb
-                rule: Path('/influxdb')
+                rule: Host('{{ lookup('env', 'METRICS_ENDPOINT') | urlsplit('hostname') }}') && Path('/influxdb')
         services:
             grafana:
                 loadBalancer:
@@ -34,7 +34,7 @@ traefik_conf:
             influxdb:
                 loadBalancer:
                     servers:
-                        - url: http://{{ influxdb_ipaddr }}:8086/
+                        - url: http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}/
 
 influxdb_conf:
     bind:

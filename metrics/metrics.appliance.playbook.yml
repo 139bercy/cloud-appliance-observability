@@ -229,7 +229,7 @@
               --log=true \
               --log.format=json \
               --metrics.influxdb=true \
-              --metrics.influxdb.address={{ influxdb_ipaddr }}:{{ influxdb_conf.bind_port }} \
+              --metrics.influxdb.address={{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }} \
               --providers.file.filename=/etc/traefik/services.yml
 
 ###############################################################################

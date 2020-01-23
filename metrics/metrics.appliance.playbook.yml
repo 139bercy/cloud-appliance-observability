@@ -220,8 +220,8 @@
               --user 1300 \
               --name traefik \
               --mount type=bind,src=/etc/traefik,target=/etc/traefik \
-              --publish 80:80 \
-              --publish 443:443 \
+              --publish 80:{{ traefik_conf.entryPoints.web.address }} \
+              --publish 443:{{ traefik_conf.entryPoints.websecure.address }} \
               docker.io/library/traefik \
               traefik \
               --accesslog=false \

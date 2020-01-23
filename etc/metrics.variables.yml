@@ -14,10 +14,10 @@ grafana_datasources:
 traefik_conf:
     entryPoints:
         web:
-            address: ":80"
+            address: ":8080"
 
         websecure:
-            address: ":443"
+            address: ":8443"
     http:
         routers:
             grafana:

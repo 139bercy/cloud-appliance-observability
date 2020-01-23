@@ -166,7 +166,7 @@
               --reporting-disabled \
               --bolt-path=/var/lib/influxdb/influxd.bolt \
               --engine-path=/var/lib/influxdb/engine \
-              --http-bind-address="{{ influxdb_conf.bind.port }}"
+              --http-bind-address=":{{ influxdb_conf.bind.port }}"
 
     - name: Get InfluxDB IP address
       register: influxdb_result

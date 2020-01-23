@@ -35,3 +35,8 @@ traefik_conf:
                 loadBalancer:
                     servers:
                         - url: http://{{ influxdb_ipaddr }}:8086/
+
+influxdb_conf:
+    bind:
+        port: 8086
+

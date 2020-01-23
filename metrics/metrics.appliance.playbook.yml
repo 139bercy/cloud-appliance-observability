@@ -220,6 +220,10 @@
               --user 1300 \
               --name traefik \
               --mount type=bind,src=/etc/traefik,target=/etc/traefik \
+              --env HTTP_PROXY= \
+              --env HTTPS_PROXY= \
+              --env http_proxy= \
+              --env https_proxy= \
               --publish 80:{{ traefik_conf.entryPoints.web.address.split(':')[-1] }} \
               --publish 443:{{ traefik_conf.entryPoints.websecure.address.split(':')[-1] }} \
               docker.io/library/traefik \

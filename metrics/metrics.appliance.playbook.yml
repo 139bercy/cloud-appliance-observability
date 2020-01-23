@@ -224,6 +224,8 @@
               --publish 443:{{ traefik_conf.entryPoints.websecure.address.split(':')[-1] }} \
               docker.io/library/traefik \
               traefik \
+              --entrypoints.web.address={{ traefik_conf.entryPoints.web.address }} \
+              --entrypoints.websecure.address={{ traefik_conf.entryPoints.websecure.address }} \
               --accesslog=false \
               --accesslog.format=json \
               --log=true \

@@ -35,58 +35,58 @@ help:
 #
 .PHONY: logs # Configure graylog service
 logs:
-	test -z ${GRAYLOG_SIZE_GB} \
+	@test -z ${GRAYLOG_SIZE_GB} \
 		&& (echo GRAYLOG_SIZE_GB is empty ; exit 1) \
 		|| echo
-	test -z ${ELASTECSEARCH_SIZE_GB} \
+	@test -z ${ELASTECSEARCH_SIZE_GB} \
 		&& (echo ELASTECSEARCH_SIZE_GB is empty ; exit 1) \
 		|| echo
 
-	test -z ${OS_USERNAME} \
+	@test -z ${OS_USERNAME} \
 		&& (echo OS_USERNAME is empty ; exit 1) \
 		|| echo
-	test -z ${OS_PASSWORD} \
+	@test -z ${OS_PASSWORD} \
 		&& (echo OS_PASSWORD is empty ; exit 1) \
 		|| echo
-	test -z ${OS_AUTH_URL} \
+	@test -z ${OS_AUTH_URL} \
 		&& (echo OS_AUTH_URL is empty ; exit 1) \
 		|| echo
 
-	test -z ${GRAYLOG_FLAVOR} \
+	@test -z ${GRAYLOG_FLAVOR} \
 		&& (echo GRAYLOG_FLAVOR is empty ; exit 1) \
 		|| echo
-	test -z ${GRAYLOG_IMAGE_ID} \
+	@test -z ${GRAYLOG_IMAGE_ID} \
 		&& (echo GRAYLOG_IMAGE_ID is empty ; exit 1) \
 		|| echo
-	test -z ${GRAYLOG_NET_ID} \
+	@test -z ${GRAYLOG_NET_ID} \
 		&& (echo GRAYLOG_NET_ID is empty ; exit 1) \
 		|| echo
-	test -z ${GRAYLOG_SECGROUP_ID} \
+	@test -z ${GRAYLOG_SECGROUP_ID} \
 		&& (echo GRAYLOG_SECGROUP_ID is empty ; exit 1) \
 		|| echo
 
-	test -z ${GRAYLOG_ADMIN} \
+	@test -z ${GRAYLOG_ADMIN} \
 		&& (echo GRAYLOG_ADMIN is empty ; exit 1) \
 		|| echo
-	test -z ${GRAYLOG_PASSWORD} \
+	@test -z ${GRAYLOG_PASSWORD} \
 		&& (echo GRAYLOG_PASSWORD is empty ; exit 1) \
 		|| echo
-	test -z ${GRAYLOG_ENDPOINT} \
+	@test -z ${GRAYLOG_ENDPOINT} \
 		&& (echo GRAYLOG_ENDPOINT is empty ; exit 1) \
 		|| echo
-	echo ${GRAYLOG_ENDPOINT} | grep -q /$$ \
+	@echo ${GRAYLOG_ENDPOINT} | grep -q /$$ \
 		|| (echo GRAYLOG_ENDPOINT must end with a / ; exit 1)
-	echo ${GRAYLOG_ENDPOINT} | egrep -q "^(https|http)://" \
+	@echo ${GRAYLOG_ENDPOINT} | egrep -q "^(https|http)://" \
 		|| (echo GRAYLOG_ENDPOINT must begin with http:// or https:// ; exit 1)
 
-	test -z ${GRAYLOG_HTTP_PROXY} \
+	@test -z ${GRAYLOG_HTTP_PROXY} \
 		&& (echo GRAYLOG_HTTP_PROXY is empty ; exit 1) \
 		|| echo
-	test -z ${GRAYLOG_NO_PROXY} \
+	@test -z ${GRAYLOG_NO_PROXY} \
 		&& (echo GRAYLOG_NO_PROXY is empty ; exit 1) \
 		|| echo
 
-	openstack stack create \
+	@openstack stack create \
 		\
 		--parameter graylog_size_gb=${GRAYLOG_SIZE_GB} \
 		--parameter elasticsearch_size_gb=${ELASTECSEARCH_SIZE_GB} \
@@ -114,51 +114,51 @@ logs:
 
 .PHONY: metrics # Configure metrics service
 metrics:
-	test -z ${METRICS_SIZE_GB} \
+	@test -z ${METRICS_SIZE_GB} \
 		&& (echo METRICS_SIZE_GB is empty ; exit 1) \
 		|| echo
 
-	test -z ${OS_USERNAME} \
+	@test -z ${OS_USERNAME} \
 		&& (echo OS_USERNAME is empty ; exit 1) \
 		|| echo
-	test -z ${OS_PASSWORD} \
+	@test -z ${OS_PASSWORD} \
 		&& (echo OS_PASSWORD is empty ; exit 1) \
 		|| echo
-	test -z ${OS_AUTH_URL} \
+	@test -z ${OS_AUTH_URL} \
 		&& (echo OS_AUTH_URL is empty ; exit 1) \
 		|| echo
 
-	test -z ${METRICS_FLAVOR} \
+	@test -z ${METRICS_FLAVOR} \
 		&& (echo METRICS_FLAVOR is empty ; exit 1) \
 		|| echo
-	test -z ${METRICS_IMAGE_ID} \
+	@test -z ${METRICS_IMAGE_ID} \
 		&& (echo METRICS_IMAGE_ID is empty ; exit 1) \
 		|| echo
-	test -z ${METRICS_NET_ID} \
+	@test -z ${METRICS_NET_ID} \
 		&& (echo METRICS_NET_ID is empty ; exit 1) \
 		|| echo
-	test -z ${METRICS_SECGROUP_ID} \
+	@test -z ${METRICS_SECGROUP_ID} \
 		&& (echo METRICS_SECGROUP_ID is empty ; exit 1) \
 		|| echo
 
-	test -z ${GRAFANA_ADMIN} \
+	@test -z ${GRAFANA_ADMIN} \
 		&& (echo GRAFANA_ADMIN is empty ; exit 1) \
 		|| echo
-	test -z ${GRAFANA_PASSWORD} \
+	@test -z ${GRAFANA_PASSWORD} \
 		&& (echo GRAFANA_PASSWORD is empty ; exit 1) \
 		|| echo
-	test -z ${INFLUXDB_ADMIN} \
+	@test -z ${INFLUXDB_ADMIN} \
 		&& (echo INFLUXDB_ADMIN is empty ; exit 1) \
 		|| echo
-	test -z ${INFLUXDB_PASSWORD} \
+	@test -z ${INFLUXDB_PASSWORD} \
 		&& (echo INFLUXDB_PASSWORD is empty ; exit 1) \
 		|| echo
 
-	test -z ${METRICS_ENDPOINT} \
+	@test -z ${METRICS_ENDPOINT} \
 		&& (echo METRICS_ENDPOINT is empty ; exit 1) \
 		|| echo
 
-	openstack stack create \
+	@openstack stack create \
 		\
 		--parameter metrics_size_gb=${METRICS_SIZE_GB} \
 		\
@@ -194,13 +194,13 @@ metrics:
 # Clean
 .PHONY: clean-logs # Destroy the logs appliance
 clean-logs:
-	openstack stack list | fgrep -q logs \
+	@openstack stack list | fgrep -q logs \
 		&& openstack stack delete --wait --yes logs \
 		|| echo
 
 .PHONY: clean-metrics # Destroy the metrics appliance
 clean-metrics:
-	openstack stack list | fgrep -q metrics \
+	@openstack stack list | fgrep -q metrics \
 		&& openstack stack delete --wait --yes metrics \
 		|| echo
 
@@ -211,11 +211,11 @@ clean: clean-logs clean-metrics
 # Rebuild
 .PHONY: rebuild-logs # Rebuild the logs appliance
 rebuild-logs:
-	openstack server rebuild --wait graylog
+	@openstack server rebuild --wait graylog
 
 .PHONY: rebuild-metrics # Rebuild the metrics appliance
 rebuild-metrics:
-	openstack server rebuild --wait metrics
+	@openstack server rebuild --wait metrics
 
 .PHONY: rebuild # Rebuild all the servers at once
 rebuild: rebuild-logs rebuild-metrics

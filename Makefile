@@ -8,6 +8,7 @@ GIT_REPO_CHECKOUT=$(shell git rev-parse --abbrev-ref HEAD)
 
 .PHONY: syntax # Testing YAML syntax
 syntax:
+	@which ansible-lint
 	@find . -type f -name "*.playbook.yml" -exec ansible-lint {} \;
 
 .PHONY: test # Testing YAML syntax, env variables and openstack connectivity

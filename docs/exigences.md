@@ -24,7 +24,7 @@ Les appliances sont auto-configurées. Les migrations et mises à jour consisten
 à une reconstruction complète avec une restauration de la dernière sauvegarde.
 
 Afin d'éviter une migration technique majeure, il est préférable d'utiliser 
-la version `2.0-beta` d'`InfluxDB` directment. En effet, son cycle de vie est 
+la version `2.0-beta` d'`InfluxDB` directement. En effet, son cycle de vie est 
 beaucoup plus rapide que les projets internes.
 
 ## Contraintes

@@ -80,7 +80,7 @@ help:
 
 .PHONY: clean # Delete the temporary files
 clean:
-	@rm -f *.dvi *.tex *.log *.jpg *.jpg.* *.png
+	@rm -f *.dvi *.tex *.log *.jpg *.jpg.*
 	
 .PHONY: dist-clean # Delete the documents and temporary files
 dist-clean: clean
@@ -95,16 +95,17 @@ test:
 images: dgfip_logo.jpg placement.png briques.png
 
 dgfip_logo.jpg:
-	@test -f dgfip_logo.jpg \
-		|| wget --quiet --output-document=dgfip_logo.jpg \
+	@wget --quiet --output-document=dgfip_logo.jpg \
 			https://www.economie.gouv.fr/files/dgfip_logo.jpg
 
+.PHONY: placement.png
 placement.png:
 	@drawio \
 		--output placement.png \
 		--page-index=1 \
 		$(DRAWIO_OPTS)
 
+.PHONY: briques.png
 briques.png:
 	@drawio \
 		--output briques.png \

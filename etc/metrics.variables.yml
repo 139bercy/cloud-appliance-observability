@@ -22,15 +22,19 @@ traefik_conf:
         routers:
             grafana:
                 service: grafana
-                rule: "Path(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') | regex_replace('^/$', '') }}/grafana`)"
+                rule: "PathPrefix(`/grafana`)"
+                entryPoints:
+                    - web
             influxdb:
                 service: influxdb
-                rule: "Path(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') | regex_replace('^/$', '') }}/influxdb`)"
+                rule: "PathPrefix(`/`)"
+                entryPoints:
+                    - web
         services:
             grafana:
                 loadBalancer:
                     servers:
-                        - url: http://{{ grafana_ipaddr }}:3000/
+                        - url: http://{{ grafana_ipaddr }}:3000/grafana
             influxdb:
                 loadBalancer:
                     servers:

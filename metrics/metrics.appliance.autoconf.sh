@@ -17,6 +17,6 @@ ansible-playbook -t containers $PLAYBOOK \
 	-e podman_no_proxy="$NO_PROXY" \
 	|| exit 1
 
-ansible-playbook -t metrics $PLAYBOOK \
+ansible-playbook -t metrics,configuration $PLAYBOOK \
 	-e@$ETC_PATH/metrics.variables.yml \
 	|| exit 1

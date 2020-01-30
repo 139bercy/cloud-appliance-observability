@@ -260,7 +260,7 @@
       set_fact:
           influxdb_admin: "{{ lookup('env', 'INFLUXDB_ADMIN' }}"
           influxdb_password: "{{ lookup('env', 'INFLUXDB_ADMIN_PASSWORD' }}"
-          influxdb_org: "{{ lookup('env', 'INFLUXDB_ORG' }}"
+          influxdb_org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
           influxdb_retention: "{{ lookup('env', 'INFLUXDB_RETENTION_HOURS' }}h"
 
     - name: InfluxDB | Wait for InfluxDB to be UP

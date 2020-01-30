@@ -12,8 +12,8 @@ grafana_datasources:
           basicAuth: false
           isDefault: false
           jsonData:
-              bucket: "{{ influxdb_bucket }}"
-              organization: "{{ item }}"
+              bucket: "{{ item }}"
+              organization: "{{ influxdb_org }}"
               url: "http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}"
           secureJsonData:
               token: "{{ grafana_influxdb_token }}"

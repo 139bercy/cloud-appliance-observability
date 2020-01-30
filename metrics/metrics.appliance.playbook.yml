@@ -26,9 +26,12 @@
     #    sysctl_set: yes
     #    state: present
 
-    - name: Installing XFS tools
+    - name: Installing XFS and unzip tools
       when: ansible_os_family | lower == 'debian'
-      apt: name=xfsprogs state=present
+      apt: name={{ item }} state=present
+      with_items:
+          - xfsprogs
+          - unzip
 
     # Containers
     - when:

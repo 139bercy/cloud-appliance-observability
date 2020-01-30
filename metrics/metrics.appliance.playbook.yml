@@ -309,7 +309,7 @@
 
     - name: InfluxDB | Create buckets
       with_items: "{{ influxdb_conf.buckets }}"
-      when: buckets_result.stdout | find(item) < 0
+      when: buckets_result.stdout.find(item) < 0
       shell: >
           podman exec -ti influxdb \
               influx \

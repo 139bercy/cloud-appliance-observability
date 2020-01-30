@@ -279,7 +279,7 @@
 
     - name: InfluxDB | Bootstrap service
       register: setup_result
-      until: setup_result.rc == 0 or setup_result.stderr.find('already been setup') > -1
+      until: setup_result.rc == 0 or setup_result.stdout.find('already been setup') > -1
       shell: >
           podman exec -ti influxdb \
               influx \

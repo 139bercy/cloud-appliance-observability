@@ -17,9 +17,9 @@ grafana_datasources:
           secureJsonData:
               token: "{{ grafana_influxdb_token }}"
 
-grafana_plugins:
-    - name: flux
-      url: https://github.com/grafana/influxdb-flux-datasource/releases/download/v5.4.1/grafana-influxdb-flux-datasource-5.4.1.zip
+grafana_plugins: []
+#    - name: flux
+#      url: https://github.com/grafana/influxdb-flux-datasource/releases/download/v5.4.1/grafana-influxdb-flux-datasource-5.4.1.zip
 
 traefik_conf:
     entryPoints:

@@ -155,6 +155,9 @@
         - path: /var/lib/influxdb
           state: directory
           owner: 1200
+        - path: /var/lib/influxdb/.conf
+          state: directory
+          owner: 1200      
         - path: /etc/traefik
           state: directory
           owner: 1300
@@ -167,6 +170,7 @@
               --user 1200 \
               --name influxdb \
               --mount type=bind,src=/var/lib/influxdb,target=/var/lib/influxdb \
+              --mount type=bind,src=/var/lib/influxdb/.conf,target=/.influxdbv2 \
               quay.io/influxdb/influxdb:2.0.0-beta \
               influxd \
               --reporting-disabled \

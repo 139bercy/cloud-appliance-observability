@@ -248,6 +248,7 @@
               --log=true \
               --log.format=json \
               --metrics.influxdb=true \
+              --metrics.influxdb.protocol=http \
               --metrics.influxdb.address={{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }} \
               --providers.file.filename=/etc/traefik/services.yml
 
@@ -279,7 +280,10 @@
 
     - name: InfluxDB | Bootstrap service
       register: setup_result
-      until: setup_result.rc == 0 or setup_result.stdout.find('already been setup') > -1
+      retries: 0
+      failed_when:
+          - setup_result.rc == 1
+          - setup_result.stderr.find('already been setup') < 0
       shell: >
           podman exec -ti influxdb \
               influx \

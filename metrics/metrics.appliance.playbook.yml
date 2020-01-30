@@ -280,7 +280,6 @@
 
     - name: InfluxDB | Bootstrap service
       register: setup_result
-      retries: 0
       failed_when:
           - setup_result.rc == 1
           - setup_result.stderr.find('already been setup') < 0

@@ -276,7 +276,7 @@
 
     - name: InfluxDB | Bootstrap service
       register: setup_result
-      until: setup_result.rc == 0 or setup_result.stderr | find('already been setup') > -1
+      until: setup_result.rc == 0 or setup_result.stderr.find('already been setup') > -1
       shell: >
           podman exec -ti influxdb \
               influx \
@@ -318,6 +318,17 @@
                   auth create --org {{ influxdb_org }} --read-buckets \
               | awk '/active/ {print $2}'
 
+    - name: Grafana | Wait for Grafana to be UP
+      register: ping_result
+      retries: 10
+      delay: 5
+      uri:
+        url: "http://{{ grafana_ipaddr }}:3000/login"
+        method: GET
+        validate_certs: no
+        status_code:
+            - 200
+
     - name: Grafana | Get InfluxDB IP address
       register: influxdb_result
       shell: >
@@ -325,13 +336,30 @@
            | jq -M '.[0].NetworkSettings.IPAddress' \
            | awk -F'"' '{print $2}'
 
+    - name: Grafana | Get Grafana IP address
+      register: grafana_result
+      shell: >
+           podman inspect grafana \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
+           | awk -F'"' '{print $2}'
+
     - name: Grafana | Set facts
       set_fact:
           grafana_influxdb_token: "{{ result_grafana_token.stdout }}"
           influxdb_ipaddr: "{{ influxdb_result.stdout }}"
+          grafana_ipaddr: "{{ grafana_result.stdout }}"
+          grafana_admin: "{{ lookup('env', 'GRAFANA_ADMIN_NAME') }}"
+          grafana_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}"
 
     - name: Grafana | Create a datasource per bucket
       with_items: "{{ influxdb_conf.buckets }}"
       uri:
-      
-      
+        url: "http://{{ grafana_ipaddr }}:3000/api/datasources"
+        method: POST
+        user: "{{ grafana_admin }}"
+        password: "{{ grafana_password }}"
+        body_format: json
+        validate_certs: no
+        body: "{{ grafana_datasources.datasources[0] | to_nice_json }}"
+        status_code:
+            - 200

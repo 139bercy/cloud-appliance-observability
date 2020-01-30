@@ -258,10 +258,10 @@
   tasks:
     - name: InfluxDB | Set facts
       set_fact:
-          influxdb_admin: "{{ lookup('env', 'INFLUXDB_ADMIN' }}"
-          influxdb_password: "{{ lookup('env', 'INFLUXDB_ADMIN_PASSWORD' }}"
+          influxdb_admin: "{{ lookup('env', 'INFLUXDB_ADMIN') }}"
+          influxdb_password: "{{ lookup('env', 'INFLUXDB_ADMIN_PASSWORD') }}"
           influxdb_org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
-          influxdb_retention: "{{ lookup('env', 'INFLUXDB_RETENTION_HOURS' }}h"
+          influxdb_retention: "{{ lookup('env', 'INFLUXDB_RETENTION_HOURS') }}h"
 
     - name: InfluxDB | Wait for InfluxDB to be UP
       register: ping_result
@@ -329,3 +329,9 @@
       set_fact:
           grafana_influxdb_token: "{{ result_grafana_token.stdout }}"
           influxdb_ipaddr: "{{ influxdb_result.stdout }}"
+
+    - name: Grafana | Create a datasource per bucket
+      with_items: "{{ influxdb_conf.buckets }}"
+      uri:
+      
+      

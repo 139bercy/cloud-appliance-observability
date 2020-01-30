@@ -18,7 +18,7 @@ grafana_datasources:
           secureJsonData:
               token: "{{ grafana_influxdb_token }}"
 
-grafana_plugins: []
+grafana_plugins:
     - name: flux
       url: "{{ lookup('env' , 'REPO_PATH') }}/files/grafana-influxdb-flux-datasource-v5.4.1-0-gfd7f150.zip"
 

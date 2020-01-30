@@ -317,7 +317,7 @@
                   bucket create \
                   --org {{ influxdb_org }} \
                   --name {{ item }} \
-                  --retention {{ influxdb_retention }}
+                  --retention {{ influxdb_retention }}h
 
     - name: InfluxDB | Create token for Grafana
       register: result_grafana_token

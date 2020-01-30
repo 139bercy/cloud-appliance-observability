@@ -75,6 +75,9 @@ parameters:
         type: string
         description: InfluxDB admin password
         hidden: true
+        constraints:
+            - length: { min: 9 }
+              description: Password length must be between at least 10.
 
     metrics_endpoint_url:
        type: string

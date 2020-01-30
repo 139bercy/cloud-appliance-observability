@@ -332,6 +332,8 @@
       register: ping_result
       retries: 10
       delay: 5
+      environment:
+        no_proxy: "{{ grafana_ipaddr }}"
       uri:
         url: "http://{{ grafana_ipaddr }}:3000/login"
         method: GET
@@ -363,6 +365,8 @@
 
     - name: Grafana | Create a datasource per bucket
       with_items: "{{ influxdb_conf.buckets }}"
+      environment:
+        no_proxy: "{{ grafana_ipaddr }}"
       uri:
         url: "http://{{ grafana_ipaddr }}:3000/api/datasources"
         method: POST

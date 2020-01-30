@@ -1,15 +1,25 @@
 grafana_datasources:
     apiVersion: 1
     datasources:
-        - name: "{{ lookup('env', 'OS_PROJECT_NAME') }}"
-          type: influxdb
+        - name: "Flux (InfluxDB) [BETA]"
+          type: grafana-influxdb-flux-datasource
           access: proxy
           orgId: 1
           url: http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}
-          database: "default"
+          database: 
           isDefault: true
           version: 1
           editable: false
+          jsonData:
+              bucket: "{{ influxdb_bucket }}"
+              organization: "{{ influxdb_org }}"
+              url: "http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}"
+          secureJsonData:
+              token: "{{ grafana_influxdb_token }}"
+
+grafana_plugins:
+    - name: flux
+      url: https://github.com/grafana/influxdb-flux-datasource/releases/download/v5.4.1/grafana-influxdb-flux-datasource-5.4.1.zip
 
 traefik_conf:
     entryPoints:
@@ -43,4 +53,10 @@ traefik_conf:
 influxdb_conf:
     bind:
         port: 8086
-
+    buckets:
+        - haproxy
+        - traefik
+        - postgresql
+        - apache-php
+        - nginx
+        - mongodb

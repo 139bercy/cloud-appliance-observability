@@ -77,9 +77,9 @@
     - role: ansible-podman
 
 ###############################################################################
-# Grafana / InfluxDB / Traefik configuration
+# Grafana / InfluxDB / Traefik deployment
 #
-- name: Grafana, InfluxDB and Traefik configuration
+- name: Grafana, InfluxDB and Traefik deployment
   hosts: localhost
   tags: metrics
 
@@ -146,6 +146,9 @@
         - path: /var/lib/grafana/provisioning
           state: directory
           owner: 1100
+        - path: /var/lib/grafana/plugins
+          state: directory
+          owner: 1100
         - path: /var/lib/influxdb
           state: directory
           owner: 1200
@@ -178,6 +181,12 @@
     - name: Set facts (influxdb_ipaddr)
       set_fact:
           influxdb_ipaddr: "{{ influxdb_result.stdout }}"
+
+    - name: Grafana | Install custom plugins
+      with_items: "{{ grafana_plugins }}"
+      unarchive:
+          dest: /var/lib/grafana/plugins/
+          src: "{{ item.url }}"
 
     - name: Starting Grafana container
       shell: >
@@ -240,5 +249,83 @@
               --providers.file.filename=/etc/traefik/services.yml
 
 ###############################################################################
-# Post-configuration grafana
+# Grafana / InfluxDB configuration
 #
+- name: Grafana and InfluxDB configuration
+  hosts: localhost
+  tags: configuration
+
+  tasks:
+    - name: InfluxDB | Set facts
+      set_fact:
+          influxdb_admin: "{{ lookup('env', 'INFLUXDB_ADMIN' }}"
+          influxdb_password: "{{ lookup('env', 'INFLUXDB_PASSWORD' }}"
+          influxdb_org: "{{ lookup('env', 'INFLUXDB_ORG' }}"
+          influxdb_retention: "{{ lookup('env', 'INFLUXDB_RETENTION_HOURS' }}h"
+
+    - name: InfluxDB | Wait for InfluxDB to be UP
+      register: ping_result
+      until: ping_result.stdout == "OK"
+      retries: 10
+      delay: 5
+      shell: >
+          podman exec -ti influxdb \
+              influx \
+              --host=http://localhost:{{ influxdb_conf.bind.port }} \
+              ping
+
+    - name: InfluxDB | Bootstrap service
+      register: setup_result
+      until: setup_result.rc == 0 or setup_result.stderr | find('already been setup') > -1
+      shell: >
+          podman exec -ti influxdb \
+              influx \
+                  --host=http://localhost:{{ influxdb_conf.bind.port }} \
+                  setup -f \
+                      --bucket default \
+                      --org {{ influxdb_org }} \
+                      --password {{ influxdb_password }} \
+                      --retention {{ influxdb_retention }} \
+                      --username {{ influxdb_admin }}
+
+    - name: InfluxDB | Get buckets
+      register: buckets_result
+      shell: >
+          podman exec -ti influxdb \
+              influx \
+                  --host=http://localhost:{{ influxdb_conf.bind.port }} \
+                  bucket find \
+                  --org {{ influxdb_org }}
+
+    - name: InfluxDB | Create buckets
+      with_items: "{{ influxdb_conf.buckets }}"
+      when: buckets_result.stdout | find(item) < 0
+      shell: >
+          podman exec -ti influxdb \
+              influx \
+                  --host=http://localhost:{{ influxdb_conf.bind.port }} \
+                  bucket create \
+                  --org {{ influxdb_org }} \
+                  --name {{ item }} \
+                  --retention {{ influxdb_retention }}
+
+    - name: InfluxDB | Create token for Grafana
+      register: result_grafana_token
+      shell: >
+          podman exec -ti influxdb \
+              influx \
+                  --host=http://localhost:{{ influxdb_conf.bind.port }} \
+                  auth create --org {{ influxdb_org }} --read-buckets \
+              | awk '/active/ {print $2}'
+
+    - name: Grafana | Get InfluxDB IP address
+      register: influxdb_result
+      shell: >
+           podman inspect influxdb \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
+           | awk -F'"' '{print $2}'
+
+    - name: Grafana | Set facts
+      set_fact:
+          grafana_influxdb_token: "{{ result_grafana_token.stdout }}"
+          influxdb_ipaddr: "{{ influxdb_result.stdout }}"

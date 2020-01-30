@@ -19,9 +19,8 @@ grafana_datasources:
               token: "{{ grafana_influxdb_token }}"
 
 grafana_plugins: []
-# TODO: https://v2.docs.influxdata.com/v2.0/visualize-data/other-tools/grafana/
-#    - name: flux
-#      url: https://github.com/grafana/influxdb-flux-datasource/releases/download/v5.4.1/grafana-influxdb-flux-datasource-5.4.1.zip
+    - name: flux
+      url: "{{ lookup('env' , 'REPO_PATH') }}/files/grafana-influxdb-flux-datasource-v5.4.1-0-gfd7f150.zip"
 
 traefik_conf:
     entryPoints:

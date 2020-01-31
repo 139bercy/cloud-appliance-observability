@@ -272,7 +272,7 @@
           influxdb_password: "{{ lookup('env', 'INFLUXDB_ADMIN_PASSWORD') }}"
           influxdb_org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
           influxdb_retention: "{{ lookup('env', 'INFLUXDB_RETENTION_HOURS') }}"
-          metrics_container: "{{ loockeup('env', 'METRICS_CONTAINER') }}"
+          metrics_container: "{{ loockup('env', 'METRICS_CONTAINER') }}"
 
     - name: InfluxDB | Wait for InfluxDB to be UP
       register: ping_result

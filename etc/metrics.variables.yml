@@ -1,7 +1,7 @@
 grafana_datasources:
     apiVersion: 1
     datasources:
-        - name: "{{ item }}"
+        - name: "{{ influxdb_org }} - {{ item }}"
           type: grafana-influxdb-flux-datasource
           typeLogoUrl: public/plugins/grafana-influxdb-flux-datasource/img/influxdb_logo.svg
           access: proxy

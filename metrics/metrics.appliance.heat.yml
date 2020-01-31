@@ -9,24 +9,28 @@ parameters:
         type: string
         description: Operating system image to use
         default: ubuntu18.04_server
+        constraints:
+            - custom_constraint: glance.image
 
     node_net_id:
         type: string
         description: Network ID to use for the appliance
+        constraints:
+            - custom_constraint: neutron.network
 
-#    os_username:
-#        type: string
-#        description: Cloud username for some internal batches
-#
-#    os_password:
-#        type: string
-#        description: Cloud password for some internal batches
-#        hidden: true
-#
-#    os_auth_url:
-#        type: string
-#        description: Cloud auth URL
-#
+    os_username:
+        type: string
+        description: Cloud username for some internal batches
+
+    os_password:
+        type: string
+        description: Cloud password for some internal batches
+        hidden: true
+
+    os_auth_url:
+        type: string
+        description: Cloud auth URL
+
     git_repo_url:
         type: string
         description: cloud-appliance-observability repo
@@ -40,6 +44,8 @@ parameters:
     default_secgroup_id:
         type: string
         description: Default security group to use
+        constraints:
+            - custom_constraint: neutron.security_group
 
     internet_http_proxy_url:
         type: string
@@ -52,11 +58,16 @@ parameters:
     flavor:
         type: string
         description: Cloud flavor to use
+        constraints:
+            - custom_constraint: nova.flavor
 
     metrics_size_gb:
         type: number
         description: InfluxDB and Grafana data size (Gb)
         default: 100
+        constraints:
+            - range: { min: 1 }
+              description: Size must be set to at least 1Gb.
 
     grafana_admin_name:
         type: string
@@ -79,6 +90,22 @@ parameters:
             - length: { min: 9 }
               description: Password length must be between at least 10.
 
+    influxdb_organisation:
+        type: string
+        description: InfluxDB Org name
+        constraints:
+            - length: { min: 4 }
+              description: Organisation name length must be between at least 5.
+            - allowed_pattern: "[a-zA-Z0-9]+"
+              description: Organisation name must be alpha-numeric.
+
+    influxdb_retention_hours:
+        type: number
+        description: InfluxDB default retention (hours)
+        constraints:
+            - range: { min: 1 }
+              description: Retention must be positive
+
     metrics_endpoint_url:
        type: string
        description: Public hostname used to connect against the tools
@@ -100,15 +127,18 @@ resources:
                         $git_repo_checkout: { get_param: git_repo_checkout }
                         $git_repo_url: { get_param: git_repo_url }
 
-                        #$os_password: { get_param: os_password }
-                        #$os_username: { get_param: os_username }
-                        #$os_auth_url: { get_param: os_auth_url }
+                        $os_password: { get_param: os_password }
+                        $os_username: { get_param: os_username }
+                        $os_auth_url: { get_param: os_auth_url }
 
                         $grafana_admin_name: { get_param: grafana_admin_name }
                         $grafana_admin_password: { get_param: grafana_admin_password }
                         $influxdb_admin_name: { get_param: influxdb_admin_name }
                         $influxdb_admin_password: { get_param: influxdb_admin_password }
+                        $influxdb_organisation: { get_param: influxdb_organisation }
+                        $influxdb_retention_hours: { get_param: influxdb_retention_hours }
                         $metrics_endpoint_url: { get_param: metrics_endpoint_url }
+                        $metrics_container: { get_resource: metrics_swift }
 
                         $cinder_containers_volume: { get_resource: appliance_containers_volume }
                         $cinder_metrics_volume: { get_resource: appliance_metrics_volume }
@@ -153,14 +183,17 @@ resources:
                         export PLAYBOOK=$REPO_PATH/metrics/metrics.appliance.playbook.yml
 
                         ## Set the Openstack credentials
-                        #export OS_AUTH_URL="$os_auth_url"
-                        #export OS_PROJECT_ID=$(awk -F'"' '/project_id/ {print $4}' /run/cloud-init/instance-data.json)
-                        #export OS_USER_DOMAIN_NAME="Default"
-                        #export OS_USERNAME="$os_username"
-                        #export OS_PASSWORD="$os_password"
-                        #export OS_REGION_NAME="RegionOne"
-                        #export OS_INTERFACE=public
-                        #export OS_IDENTITY_API_VERSION=3
+                        export OS_AUTH_URL="$os_auth_url"
+                        export OS_PROJECT_ID=$(awk -F'"' '/project_id/ {print $4}' /run/cloud-init/instance-data.json)
+                        export OS_USER_DOMAIN_NAME="Default"
+                        export OS_USERNAME="$os_username"
+                        export OS_PASSWORD="$os_password"
+                        export OS_REGION_NAME="RegionOne"
+                        export OS_INTERFACE=public
+                        export OS_IDENTITY_API_VERSION=3
+                        
+                        # Swift container
+                        export METRICS_CONTAINER=$metrics_container
 
                         # Set the volumes' IDs
                         export CONTAINERS_VOLUME=$cinder_containers_volume
@@ -172,6 +205,8 @@ resources:
                         # Set the InfluxDB credentials
                         export INFLUXDB_ADMIN_NAME="$influxdb_admin_name"
                         export INFLUXDB_ADMIN_PASSWORD="$influxdb_admin_password"
+                        export INFLUXDB_ORG="$influxdb_organisation"
+                        export INFLUXDB_RETENTION_HOURS="$influxdb_retention_hours"
                         # Set metrics endpoint
                         export METRICS_ENDPOINT_URL="$metrics_endpoint_url"
 
@@ -222,8 +257,6 @@ resources:
                 { get_param: default_secgroup_id },
                 { get_resource: metrics_appliance_secgroup }
             ]
-#            fixed_ips:
-#                - subnet_id: { get_resource: node_subnet }
 
     appliance:
         type: OS::Nova::Server
@@ -263,6 +296,11 @@ resources:
         properties:
             volume_id: { get_resource: appliance_containers_volume }
             instance_uuid: { get_resource: appliance }
+
+    metrics_swift:
+        type: OS::Swift::Container
+        properties:
+            name: metrics
 
 #######################################################
 # Outputs

@@ -202,6 +202,8 @@
               --user 1100 \
               --name grafana \
               --mount type=bind,src=/var/lib/grafana,target=/var/lib/grafana \
+              --env NO_PROXY=$NO_PROXY,{{ influxdb_ipaddr }} \
+              --env no_proxy=$no_proxy,{{ influxdb_ipaddr }} \
               --env GF_SERVER_ROOT_URL={{ lookup('env', 'METRICS_ENDPOINT_URL') | regex_replace('/$', '') }}/grafana \
               --env GF_SERVER_SERVE_FROM_SUB_PATH=true \
               --env GF_ANALYTICS_REPORTING_ENABLED=false \

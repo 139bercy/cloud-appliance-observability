@@ -272,6 +272,7 @@
           influxdb_password: "{{ lookup('env', 'INFLUXDB_ADMIN_PASSWORD') }}"
           influxdb_org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
           influxdb_retention: "{{ lookup('env', 'INFLUXDB_RETENTION_HOURS') }}"
+          metrics_container: "{{ loockeup('env', 'METRICS_CONTAINER') }}
 
     - name: InfluxDB | Wait for InfluxDB to be UP
       register: ping_result
@@ -299,6 +300,12 @@
                       --password {{ influxdb_password }} \
                       --retention {{ influxdb_retention }} \
                       --username {{ influxdb_admin }}
+
+    - name: InfluxDB | Upload admin token to object storage
+      shell: >
+          swift upload --object-name admin_token \
+              {{ metrics_container }} \
+              /var/lib/influxdb/.conf/credentials
 
     - name: InfluxDB | Get buckets
       register: buckets_result

@@ -372,6 +372,7 @@
         method: POST
         user: "{{ grafana_admin }}"
         password: "{{ grafana_password }}"
+        force_basic_auth: yes
         body_format: json
         validate_certs: no
         body: "{{ grafana_datasources.datasources[0] | to_nice_json }}"

@@ -35,56 +35,42 @@ help:
 #
 .PHONY: logs # Configure graylog service
 logs:
-	@test -z ${GRAYLOG_SIZE_GB} \
-		&& (echo GRAYLOG_SIZE_GB is empty ; exit 1) \
-		|| echo
-	@test -z ${ELASTECSEARCH_SIZE_GB} \
-		&& (echo ELASTECSEARCH_SIZE_GB is empty ; exit 1) \
-		|| echo
+	@test ! -z ${GRAYLOG_SIZE_GB} \
+		|| (echo GRAYLOG_SIZE_GB is empty ; exit 1)
+	@test ! -z ${ELASTECSEARCH_SIZE_GB} \
+		|| (echo ELASTECSEARCH_SIZE_GB is empty ; exit 1)
 
-	@test -z ${OS_USERNAME} \
-		&& (echo OS_USERNAME is empty ; exit 1) \
-		|| echo
-	@test -z ${OS_PASSWORD} \
-		&& (echo OS_PASSWORD is empty ; exit 1) \
-		|| echo
-	@test -z ${OS_AUTH_URL} \
-		&& (echo OS_AUTH_URL is empty ; exit 1) \
-		|| echo
+	@test ! -z ${OS_USERNAME} \
+		|| (echo OS_USERNAME is empty ; exit 1)
+	@test ! -z ${OS_PASSWORD} \
+		|| (echo OS_PASSWORD is empty ; exit 1)
+	@test ! -z ${OS_AUTH_URL} \
+		|| (echo OS_AUTH_URL is empty ; exit 1)
 
-	@test -z ${GRAYLOG_FLAVOR} \
-		&& (echo GRAYLOG_FLAVOR is empty ; exit 1) \
-		|| echo
-	@test -z ${GRAYLOG_IMAGE_ID} \
-		&& (echo GRAYLOG_IMAGE_ID is empty ; exit 1) \
-		|| echo
-	@test -z ${GRAYLOG_NET_ID} \
-		&& (echo GRAYLOG_NET_ID is empty ; exit 1) \
-		|| echo
-	@test -z ${GRAYLOG_SECGROUP_ID} \
-		&& (echo GRAYLOG_SECGROUP_ID is empty ; exit 1) \
-		|| echo
+	@test ! -z ${GRAYLOG_FLAVOR} \
+		|| (echo GRAYLOG_FLAVOR is empty ; exit 1)
+	@test ! -z ${GRAYLOG_IMAGE_ID} \
+		|| (echo GRAYLOG_IMAGE_ID is empty ; exit 1)
+	@test ! -z ${GRAYLOG_NET_ID} \
+		|| (echo GRAYLOG_NET_ID is empty ; exit 1)
+	@test ! -z ${GRAYLOG_SECGROUP_ID} \
+		|| (echo GRAYLOG_SECGROUP_ID is empty ; exit 1)
 
-	@test -z ${GRAYLOG_ADMIN} \
-		&& (echo GRAYLOG_ADMIN is empty ; exit 1) \
-		|| echo
-	@test -z ${GRAYLOG_PASSWORD} \
-		&& (echo GRAYLOG_PASSWORD is empty ; exit 1) \
-		|| echo
-	@test -z ${GRAYLOG_ENDPOINT} \
-		&& (echo GRAYLOG_ENDPOINT is empty ; exit 1) \
-		|| echo
+	@test ! -z ${GRAYLOG_ADMIN} \
+		|| (echo GRAYLOG_ADMIN is empty ; exit 1)
+	@test ! -z ${GRAYLOG_PASSWORD} \
+		|| (echo GRAYLOG_PASSWORD is empty ; exit 1)
+	@test ! -z ${GRAYLOG_ENDPOINT} \
+		|| (echo GRAYLOG_ENDPOINT is empty ; exit 1)
 	@echo ${GRAYLOG_ENDPOINT} | grep -q /$$ \
 		|| (echo GRAYLOG_ENDPOINT must end with a / ; exit 1)
 	@echo ${GRAYLOG_ENDPOINT} | egrep -q "^(https|http)://" \
 		|| (echo GRAYLOG_ENDPOINT must begin with http:// or https:// ; exit 1)
 
-	@test -z ${GRAYLOG_HTTP_PROXY} \
-		&& (echo GRAYLOG_HTTP_PROXY is empty ; exit 1) \
-		|| echo
-	@test -z ${GRAYLOG_NO_PROXY} \
-		&& (echo GRAYLOG_NO_PROXY is empty ; exit 1) \
-		|| echo
+	@test ! -z ${GRAYLOG_HTTP_PROXY} \
+		|| (echo GRAYLOG_HTTP_PROXY is empty ; exit 1)
+	@test ! -z ${GRAYLOG_NO_PROXY} \
+		|| (echo GRAYLOG_NO_PROXY is empty ; exit 1)
 
 	@openstack stack create \
 		\
@@ -114,49 +100,38 @@ logs:
 
 .PHONY: metrics # Configure metrics service
 metrics:
-	@test -z ${METRICS_SIZE_GB} \
-		&& (echo METRICS_SIZE_GB is empty ; exit 1) \
-		|| echo
+	@test ! -z ${METRICS_SIZE_GB} \
+		|| (echo METRICS_SIZE_GB is empty ; exit 1)
 
-	@test -z ${OS_USERNAME} \
-		&& (echo OS_USERNAME is empty ; exit 1) \
-		|| echo
-	@test -z ${OS_PASSWORD} \
-		&& (echo OS_PASSWORD is empty ; exit 1) \
-		|| echo
-	@test -z ${OS_AUTH_URL} \
-		&& (echo OS_AUTH_URL is empty ; exit 1) \
-		|| echo
+	@test ! -z ${OS_USERNAME} \
+		|| (echo OS_USERNAME is empty ; exit 1)
+	@test ! -z ${OS_PASSWORD} \
+		|| (echo OS_PASSWORD is empty ; exit 1)
+	@test ! -z ${OS_AUTH_URL} \
+		|| (echo OS_AUTH_URL is empty ; exit 1)
 
-	@test -z ${METRICS_FLAVOR} \
-		&& (echo METRICS_FLAVOR is empty ; exit 1) \
-		|| echo
-	@test -z ${METRICS_IMAGE_ID} \
-		&& (echo METRICS_IMAGE_ID is empty ; exit 1) \
-		|| echo
-	@test -z ${METRICS_NET_ID} \
-		&& (echo METRICS_NET_ID is empty ; exit 1) \
-		|| echo
-	@test -z ${METRICS_SECGROUP_ID} \
-		&& (echo METRICS_SECGROUP_ID is empty ; exit 1) \
-		|| echo
+	@test ! -z ${METRICS_FLAVOR} \
+		|| (echo METRICS_FLAVOR is empty ; exit 1)
+	@test ! -z ${METRICS_IMAGE_ID} \
+		|| (echo METRICS_IMAGE_ID is empty ; exit 1) 
+	@test ! -z ${METRICS_NET_ID} \
+		|| (echo METRICS_NET_ID is empty ; exit 1) 
+	@test ! -z ${METRICS_SECGROUP_ID} \
+		|| (echo METRICS_SECGROUP_ID is empty ; exit 1) 
 
-	@test -z ${GRAFANA_ADMIN} \
-		&& (echo GRAFANA_ADMIN is empty ; exit 1) \
-		|| echo
-	@test -z ${GRAFANA_PASSWORD} \
-		&& (echo GRAFANA_PASSWORD is empty ; exit 1) \
-		|| echo
-	@test -z ${INFLUXDB_ADMIN} \
-		&& (echo INFLUXDB_ADMIN is empty ; exit 1) \
-		|| echo
-	@test -z ${INFLUXDB_PASSWORD} \
-		&& (echo INFLUXDB_PASSWORD is empty ; exit 1) \
-		|| echo
+	@test ! -z ${GRAFANA_ADMIN} \
+		|| (echo GRAFANA_ADMIN is empty ; exit 1) 
+	@test ! -z ${GRAFANA_PASSWORD} \
+		|| (echo GRAFANA_PASSWORD is empty ; exit 1) 
+	@test ! -z ${INFLUXDB_ADMIN} \
+		|| (echo INFLUXDB_ADMIN is empty ; exit 1) 
+	@test ! -z ${INFLUXDB_PASSWORD} \
+		|| (echo INFLUXDB_PASSWORD is empty ; exit 1)
+	@test ! -z ${INFLUXDB_ORG} \
+		|| (echo INFLUXDB_ORG is empty ; exit 1)
 
-	@test -z ${METRICS_ENDPOINT} \
-		&& (echo METRICS_ENDPOINT is empty ; exit 1) \
-		|| echo
+	@test ! -z ${METRICS_ENDPOINT} \
+		|| (echo METRICS_ENDPOINT is empty ; exit 1) 
 
 	@openstack stack create \
 		\
@@ -166,12 +141,17 @@ metrics:
 		--parameter image_id=${METRICS_IMAGE_ID} \
 		--parameter node_net_id=${METRICS_NET_ID} \
 		--parameter default_secgroup_id=$(METRICS_SECGROUP_ID) \
+		--parameter os_username=$(METRICS_OS_USERNAME) \
+		--parameter os_password=$(METRICS_OS_PASSWORD) \
+		--parameter os_auth_url=$(METRICS_OS_AUTH_URL) \
 		\
 		--parameter grafana_admin_name=${GRAFANA_ADMIN} \
 		--parameter grafana_admin_password=${GRAFANA_PASSWORD} \
 		\
 		--parameter influxdb_admin_name=${INFLUXDB_ADMIN} \
 		--parameter influxdb_admin_password=${INFLUXDB_PASSWORD} \
+		--parameter influxdb_organisation=${INFLUXDB_ORG} \
+		--parameter influxdb_retention_hours=${INFLUXDB_RETENTION_HOURS} \
 		--parameter metrics_endpoint_url=${METRICS_ENDPOINT} \
 		\
 		--parameter internet_http_proxy_url=${METRICS_HTTP_PROXY} \

@@ -61,3 +61,4 @@ influxdb_conf:
         - apache-php
         - nginx
         - mongodb
+        - appliance-metrics

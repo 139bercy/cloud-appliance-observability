@@ -52,13 +52,38 @@ traefik_conf:
                         - url: http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}/
 
 influxdb_conf:
+    tokens_output_file: /root/.influxdb_tokens.csv
+    endpoint: "http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}"
+    token:
     bind:
         port: 8086
-    buckets:
-        - haproxy
-        - traefik
-        - postgresql
-        - apache-php
-        - nginx
-        - mongodb
-        - appliance-metrics
+
+influxdb_buckets:
+    - name: haproxy
+      org: "{{ influxdb_org }}"
+      retention_hours: "{{ influxdb_retention }}"
+      create_write_token: true
+    - name: traefik
+      org: "{{ influxdb_org }}"
+      retention_hours: "{{ influxdb_retention }}"
+      create_write_token: true
+    - name: postgresql
+      org: "{{ influxdb_org }}"
+      retention_hours: "{{ influxdb_retention }}"
+      create_write_token: true
+    - name: apache-php
+      org: "{{ influxdb_org }}"
+      retention_hours: "{{ influxdb_retention }}"
+      create_write_token: true
+    - name: nginx
+      org: "{{ influxdb_org }}"
+      retention_hours: "{{ influxdb_retention }}"
+      create_write_token: true
+    - name: mongodb
+      org: "{{ influxdb_org }}"
+      retention_hours: "{{ influxdb_retention }}"
+      create_write_token: true
+    - name: appliance-metrics
+      org: "{{ influxdb_org }}"
+      retention_hours: "{{ influxdb_retention }}"
+      create_write_token: true

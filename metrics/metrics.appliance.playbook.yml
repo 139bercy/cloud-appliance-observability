@@ -307,26 +307,18 @@
               {{ metrics_container }} \
               /var/lib/influxdb/.conf/credentials
 
-    - name: InfluxDB | Get buckets
-      register: buckets_result
-      shell: >
-          podman exec -ti influxdb \
-              influx \
-                  --host=http://localhost:{{ influxdb_conf.bind.port }} \
-                  bucket find \
-                  --org {{ influxdb_org }}
+    - name: InfluxDB | Create buckets and tokens
+      include_role: ansible-influxdb-bucket
 
-    - name: InfluxDB | Create buckets
-      with_items: "{{ influxdb_conf.buckets }}"
-      when: buckets_result.stdout.find(item) < 0
+    - name: InfluxDB | Send tokens to Swift
       shell: >
-          podman exec -ti influxdb \
-              influx \
-                  --host=http://localhost:{{ influxdb_conf.bind.port }} \
-                  bucket create \
-                  --org {{ influxdb_org }} \
-                  --name {{ item }} \
-                  --retention {{ influxdb_retention }}h
+          for l in $(cat {{ influxdb_conf.tokens_output_file }}) ; do \
+              name=$(echo $l | awk -F, '{print $1"."$2"."$3}') ; \
+              value=$(echo $l | awk -F, '{print $4}') ; \
+              echo $value | swift upload --object-name $name \
+                  {{ metrics_container }} \
+                  - ; \
+          done
 
     - name: InfluxDB | Create token for Grafana
       register: result_grafana_token

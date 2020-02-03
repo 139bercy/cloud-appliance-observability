@@ -110,6 +110,10 @@ parameters:
        type: string
        description: Public hostname used to connect against the tools
 
+    metrics_container:
+       type: string
+       description: Swift container to use for backups
+
 resources:
 
 #######################################################
@@ -138,7 +142,8 @@ resources:
                         $influxdb_organisation: { get_param: influxdb_organisation }
                         $influxdb_retention_hours: { get_param: influxdb_retention_hours }
                         $metrics_endpoint_url: { get_param: metrics_endpoint_url }
-                        $metrics_container: { get_resource: metrics_swift }
+                        #$metrics_container: { get_resource: metrics_swift }
+                        $metrics_container: { get_param: metrics_container }
 
                         $cinder_containers_volume: { get_resource: appliance_containers_volume }
                         $cinder_metrics_volume: { get_resource: appliance_metrics_volume }
@@ -166,7 +171,7 @@ resources:
                             yum install --assumeyes ansible git jq
                         else
                             apt update
-                            apt -y install ansible git jq
+                            apt -y install ansible git jq python3-swiftclient
                         fi
                         
                         # Configure ansible to work without an entire environment set
@@ -297,10 +302,10 @@ resources:
             volume_id: { get_resource: appliance_containers_volume }
             instance_uuid: { get_resource: appliance }
 
-    metrics_swift:
-        type: OS::Swift::Container
-        properties:
-            name: metrics
+#    metrics_swift:
+#        type: OS::Swift::Container
+#        properties:
+#            name: metrics
 
 #######################################################
 # Outputs

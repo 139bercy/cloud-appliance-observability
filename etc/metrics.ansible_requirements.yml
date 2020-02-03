@@ -1,7 +1,7 @@
 ---
 
 # Requirements used by ansible-galaxy tool
-#
-#- name: 
-#  src: 
-#  version: master
+
+- name: ansible-influxdb-bucket
+  src: https://github.com/mgrzybek/ansible-influxdb-bucket
+  version: master

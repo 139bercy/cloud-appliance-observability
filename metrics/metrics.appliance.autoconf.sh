@@ -9,7 +9,7 @@ export NO_PROXY=$NO_PROXY
 export http_proxy=$http_proxy
 export no_proxy=$no_proxy
 
-export PLAYBOOK=$PLAYBOOK
+export PLAYBOOK="$PLAYBOOK -v"
 
 export CONTAINERS_VOLUME=$CONTAINERS_VOLUME
 export METRICS_VOLUME=$METRICS_VOLUME
@@ -36,7 +36,9 @@ export OS_REGION_NAME=$OS_REGION_NAME
 export OS_USERNAME=$OS_USERNAME
 export OS_USER_DOMAIN_NAME=$OS_USER_DOMAIN_NAME
 
-. /root/appliance/metrics/metrics.appliance.autoconf.sh
+sed -i 's/exit 1/false/' $REPO_PATH/metrics/metrics.appliance.autoconf.sh
+
+. $REPO_PATH/metrics/metrics.appliance.autoconf.sh
 EOF
 
 ansible-galaxy install -r $ETC_PATH/appliance.ansible_requirements.yml

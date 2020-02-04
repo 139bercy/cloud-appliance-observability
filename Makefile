@@ -153,6 +153,7 @@ metrics:
 		--parameter influxdb_organisation=${INFLUXDB_ORG} \
 		--parameter influxdb_retention_hours=${INFLUXDB_RETENTION_HOURS} \
 		--parameter metrics_endpoint_url=${METRICS_ENDPOINT} \
+		--parameter metrics_container=${METRICS_CONTAINER} \
 		\
 		--parameter internet_http_proxy_url=${METRICS_HTTP_PROXY} \
 		--parameter internet_http_no_proxy=${METRICS_NO_PROXY} \

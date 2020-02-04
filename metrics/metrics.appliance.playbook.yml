@@ -345,6 +345,20 @@
                   auth create --org {{ influxdb_org }} --read-buckets \
               | awk '/active/ {print $2}'
 
+    - name: Grafana | Get Grafana IP address
+      register: grafana_result
+      shell: >
+           podman inspect grafana \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
+           | awk -F'"' '{print $2}'
+
+    - name: Grafana | Set facts
+      set_fact:
+          grafana_influxdb_token: "{{ result_grafana_token.stdout }}"
+          grafana_ipaddr: "{{ grafana_result.stdout }}"
+          grafana_admin: "{{ lookup('env', 'GRAFANA_ADMIN_NAME') }}"
+          grafana_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}"
+
     - name: Grafana | Wait for Grafana to be UP
       register: ping_result
       retries: 10
@@ -358,27 +372,7 @@
         status_code:
             - 200
 
-    - name: Grafana | Get InfluxDB IP address
-      register: influxdb_result
-      shell: >
-           podman inspect influxdb \
-           | jq -M '.[0].NetworkSettings.IPAddress' \
-           | awk -F'"' '{print $2}'
 
-    - name: Grafana | Get Grafana IP address
-      register: grafana_result
-      shell: >
-           podman inspect grafana \
-           | jq -M '.[0].NetworkSettings.IPAddress' \
-           | awk -F'"' '{print $2}'
-
-    - name: Grafana | Set facts
-      set_fact:
-          grafana_influxdb_token: "{{ result_grafana_token.stdout }}"
-          influxdb_ipaddr: "{{ influxdb_result.stdout }}"
-          grafana_ipaddr: "{{ grafana_result.stdout }}"
-          grafana_admin: "{{ lookup('env', 'GRAFANA_ADMIN_NAME') }}"
-          grafana_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}"
 
     - name: Grafana | Create a datasource per bucket
       with_items: "{{ influxdb_conf.buckets }}"

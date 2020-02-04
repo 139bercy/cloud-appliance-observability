@@ -1,6 +1,6 @@
 #! /usr/bin/env/bash
 
-cat > /root/appliance/metrcis/metrics.appliance.reconf.sh <<EOF
+cat > /root/appliance/metrics/metrics.appliance.reconf.sh <<EOF
 export ETC_PATH=$ETC_PATH
 export REPO_PATH=$REPO_PATH
 

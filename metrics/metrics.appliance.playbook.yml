@@ -297,7 +297,7 @@
       register: setup_result
       failed_when:
           - setup_result.rc == 1
-          - setup_result.stderr.find('already been setup') < 0
+          - setup_result.stdout.find('already been setup') < 0
       shell: >
           podman exec -ti influxdb \
               influx \

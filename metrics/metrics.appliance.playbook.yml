@@ -318,7 +318,7 @@
     - name: InfluxDB | Get admin token from file and update facts
       set_fact:
           influxdb_api:
-              token: "{{ lookup('file', influxdb_api.tokens_output_file) }}"
+              token: "{{ lookup('file', '/var/lib/influxdb/.conf/credentials') }}"
               tokens_output_file: /root/.influxdb_tokens.csv
               endpoint: "http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}"
 

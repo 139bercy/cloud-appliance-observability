@@ -328,7 +328,7 @@
 
     - name: InfluxDB | Send tokens to Swift
       shell: >
-          for l in $(cat {{ influxdb_conf.tokens_output_file }}) ; do \
+          for l in $(cat {{ influxdb_api.tokens_output_file }}) ; do \
               name=$(echo $l | awk -F, '{print $1"."$2"."$3}') ; \
               value=$(echo $l | awk -F, '{print $4}') ; \
               echo $value | swift upload --object-name $name \

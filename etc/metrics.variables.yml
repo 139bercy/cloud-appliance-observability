@@ -1,7 +1,7 @@
 grafana_datasources:
     apiVersion: 1
     datasources:
-        - name: "{{ influxdb_org }} - {{ item }}"
+        - name: "{{ influxdb_org }} - {{ item.name }}"
           type: grafana-influxdb-flux-datasource
           typeLogoUrl: public/plugins/grafana-influxdb-flux-datasource/img/influxdb_logo.svg
           access: proxy
@@ -12,7 +12,7 @@ grafana_datasources:
           basicAuth: false
           isDefault: false
           jsonData:
-              bucket: "{{ item }}"
+              bucket: "{{ item.name }}"
               organization: "{{ influxdb_org }}"
               url: "http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}"
           secureJsonData:

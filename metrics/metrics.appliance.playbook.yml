@@ -372,10 +372,8 @@
         status_code:
             - 200
 
-
-
     - name: Grafana | Create a datasource per bucket
-      with_items: "{{ influxdb_conf.buckets }}"
+      with_items: "{{ influxdb_buckets }}"
       environment:
         no_proxy: "{{ grafana_ipaddr }}"
       uri:

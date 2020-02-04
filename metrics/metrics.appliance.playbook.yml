@@ -308,7 +308,8 @@
               /var/lib/influxdb/.conf/credentials
 
     - name: InfluxDB | Create buckets and tokens
-      include_role: ansible-influxdb-bucket
+      include_role:
+          name: ansible-influxdb-bucket
 
     - name: InfluxDB | Send tokens to Swift
       shell: >

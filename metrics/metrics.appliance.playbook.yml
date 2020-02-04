@@ -266,8 +266,16 @@
   tags: configuration
 
   tasks:
+    - name: InfluxDB | Get InfluxDB IP address
+      register: influxdb_result
+      shell: >
+           podman inspect influxdb \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
+           | awk -F'"' '{print $2}'
+
     - name: InfluxDB | Set facts
       set_fact:
+          influxdb_ipaddr: "{{ influxdb_result.stdout }}"
           influxdb_admin: "{{ lookup('env', 'INFLUXDB_ADMIN_NAME') }}"
           influxdb_password: "{{ lookup('env', 'INFLUXDB_ADMIN_PASSWORD') }}"
           influxdb_org: "{{ lookup('env', 'INFLUXDB_ORG') }}"

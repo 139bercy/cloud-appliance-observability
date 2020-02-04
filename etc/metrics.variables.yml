@@ -56,8 +56,8 @@ influxdb_conf:
         port: 8086
 
 influxdb_api:
-    token:
-    tokens_output_file: /var/lib/influxdb/.conf/credentials
+    token: "{{ influxdb_admin_token }}"
+    tokens_output_file: /root/.influxdb_tokens.csv
     endpoint: "http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}"
 
 influxdb_buckets:

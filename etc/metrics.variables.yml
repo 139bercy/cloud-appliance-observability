@@ -52,11 +52,13 @@ traefik_conf:
                         - url: http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}/
 
 influxdb_conf:
-    tokens_output_file: /root/.influxdb_tokens.csv
-    endpoint: "http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}"
-    token:
     bind:
         port: 8086
+
+influxdb_api:
+    token:
+    tokens_output_file: /root/.influxdb_tokens.csv
+    endpoint: "http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}"
 
 influxdb_buckets:
     - name: haproxy

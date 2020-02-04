@@ -307,6 +307,13 @@
               {{ metrics_container }} \
               /var/lib/influxdb/.conf/credentials
 
+    - name: InfluxDB | Get admin token from file and update facts
+      set_fact:
+          influxdb_api:
+              token: "{{ lookup('file', influxdb_api.tokens_output_file) }}"
+              tokens_output_file: /root/.influxdb_tokens.csv
+              endpoint: "http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}"
+
     - name: InfluxDB | Create buckets and tokens
       include_role:
           name: ansible-influxdb-bucket

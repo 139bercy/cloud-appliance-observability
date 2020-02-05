@@ -40,10 +40,13 @@ logs:
 	@test ! -z ${ELASTECSEARCH_SIZE_GB} \
 		|| (echo ELASTECSEARCH_SIZE_GB is empty ; exit 1)
 
+	# TODO: check GRAYLOG_OS_USERNAME instead of OS_USERNAME when swift is used
 	@test ! -z ${OS_USERNAME} \
 		|| (echo OS_USERNAME is empty ; exit 1)
+	# TODO: check GRAYLOG_OS_PASSWORD instead of OS_PASSWORD when swift is used
 	@test ! -z ${OS_PASSWORD} \
 		|| (echo OS_PASSWORD is empty ; exit 1)
+	# TODO: check GRAYLOG_OS_AUTH_URL instead of OS_AUTH_URL when swift is used
 	@test ! -z ${OS_AUTH_URL} \
 		|| (echo OS_AUTH_URL is empty ; exit 1)
 
@@ -103,12 +106,12 @@ metrics:
 	@test ! -z ${METRICS_SIZE_GB} \
 		|| (echo METRICS_SIZE_GB is empty ; exit 1)
 
-	@test ! -z ${OS_USERNAME} \
-		|| (echo OS_USERNAME is empty ; exit 1)
-	@test ! -z ${OS_PASSWORD} \
-		|| (echo OS_PASSWORD is empty ; exit 1)
-	@test ! -z ${OS_AUTH_URL} \
-		|| (echo OS_AUTH_URL is empty ; exit 1)
+	@test ! -z ${METRICS_OS_USERNAME} \
+		|| (echo METRICS_OS_USERNAME is empty ; exit 1)
+	@test ! -z ${METRICS_OS_PASSWORD} \
+		|| (echo METRICS_OS_PASSWORD is empty ; exit 1)
+	@test ! -z ${METRICS_OS_AUTH_URL} \
+		|| (echo METRICS_OS_AUTH_URL is empty ; exit 1)
 
 	@test ! -z ${METRICS_FLAVOR} \
 		|| (echo METRICS_FLAVOR is empty ; exit 1)

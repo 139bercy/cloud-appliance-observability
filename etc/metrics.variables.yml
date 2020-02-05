@@ -89,3 +89,54 @@ influxdb_buckets:
       org: "{{ influxdb_org }}"
       retention_hours: "{{ influxdb_retention }}"
       create_write_token: true
+
+telegraf_influxdbv2_listener_config:
+    urls: [ "{{ influxdb_api.endpoint }}" ]
+    token: "{{ influx_token }}" 
+    bucket: "appliance-metrics"
+    bucket_tag: ""
+    exclude_bucket_tag: false
+    insecure_skip_verify: false
+telegraf_main_config:
+    global_tags:
+    add_node_type: false
+    agent:
+        interval: "{{ telegraf_metrics_agent_interval_seconds }}"
+        round_interval: false
+        metric_batch_size: 1024
+        metric_buffer_limit: 10240
+        collection_jitter: 8s
+        flush_jitter: 8s
+        precision: ""
+        debug: false
+        quiet: false
+        logfile: ""
+        omit_hostname: false
+
+consul_retry_join: "{{ lookup('env', 'CONSUL_SERVERS') | split(',') }}"
+consul_dns_domain: "{{ lookup('env', 'CONSUL_DNS_DOMAIN') }}"
+consul_datacenter: "{{ lookup('env', 'CONSUL_DATACENTER') }}"
+
+influxdb_consul_service:
+    - service:
+      name: "influxdb"
+      tags:
+          - "metrics"
+          - "appliance"
+      port: 80
+      enable_tag_override: false
+      checks:
+          - http: "http://0.0.0.0:80"
+            interval: "60s"
+
+grafana_consul_service:
+    - service:
+      name: "grafana"
+      tags:
+          - "metrics"
+          - "appliance"
+      port: 80
+      enable_tag_override: false
+      checks:
+          - http: "http://0.0.0.0:80/grafana/login"
+            interval: "60s"

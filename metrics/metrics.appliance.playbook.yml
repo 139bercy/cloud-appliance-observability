@@ -5,11 +5,32 @@
   hosts: localhost
   tags: os-ready
 
+  handlers:
+    - name: reload consul
+      command: /usr/local/bin/consul reload
+
   roles:
     - role: ansible-bootstrap-system
-#    - role: ansible-telegraf
-#    - role: ansible-consul
 #    - role: ansible-dnsmasq
+
+  post_tasks:
+    - name: Install consul agent
+      when:
+          - lookup('env', 'CONSUL_SERVERS') is defined
+          - lookup('env', 'CONSUL_SERVERS') | split(',') | length > 0
+      include_role:
+          name: ansible-consul
+
+    - name: Set consul services
+      notify: reload consul
+      copy:
+          content: "{{ item.service }}"
+          dest: "/etc/consul.d/{{ item.name }}"
+      with_items:
+          - name: influxdb
+            content: "{{ influxdb_consul_service | to_nice_json }}"
+          - name: grafana
+            content: "{{ grafana_consul_service | to_nice_json }}"
 
 ###############################################################################
 # Docker
@@ -387,3 +408,33 @@
         body: "{{ grafana_datasources.datasources[0] | to_nice_json }}"
         status_code:
             - 200
+
+###############################################################################
+# Telegraf configuration
+#
+- name: Telegraf configuration
+  hosts: localhost
+  tags: telegraf
+
+  tasks:
+    - name: Telegraf | Get telegraf token
+      register: awk_result
+      shell: >
+          awk -F, {{ influxdb_api.tokens_output_file }} \
+              '/{{ influxdb_org }},appliance-metrics,write/ {print $NF}'
+
+    - name: Telegraf | Get InfluxDB IP address
+      register: influxdb_result
+      shell: >
+           podman inspect influxdb \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
+           | awk -F'"' '{print $2}'
+
+    - name: Telegraf | Set facts
+      set_fact:
+          influxdb_ipaddr: "{{ influxdb_result.stdout }}"
+          influx_token: "{{ awk_result.stdout }}"
+
+    - name: Install telegraf client
+      include_role:
+          name: ansible-telegraf

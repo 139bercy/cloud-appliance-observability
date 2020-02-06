@@ -12,6 +12,8 @@ Protocole | Format
 ----------|-----------------------------------------------------------------------------------
 HTTP      | [InfluxDB Write API](https://v2.docs.influxdata.com/v2.0/api/#operation/PostWrite)
 
+RENAUD: format Openmetrics !!
+
 ### Exemples de configuration des clients
 
 Des bibliothèques sont disponibles pour beaucoup de langages.
@@ -20,9 +22,8 @@ Langage | Documentation
 --------|-------------------------------------------------------------------------------
 Java    | [Support d'InfluxDB dans Spring](https://docs.spring.io/spring-boot/docs/2.0.0.RC1/api/org/springframework/boot/autoconfigure/influx/InfluxDbAutoConfiguration.html) et [SDK officiel par Influxdata](https://github.com/influxdata/influxdb-client-java)
 PHP     | [SDK officiel par Influxdata](https://github.com/influxdata/influxdb-php)
-Go      | [SDK officiel par Influxdata](https://github.com/influxdata/influxdb-client-go)
 
-Le collecteur à privilégier est `Telegraf` pour les machines.
+Le collecteur à utiliser est `Telegraf` pour les machines.
 
 Source        | Lien
 --------------|---------------------------------------
@@ -44,6 +45,8 @@ Protocole | Format
 ----------|-------------------------------------------------------------------------------------------------
 HTTP      | [GELF](http://docs.graylog.org/en/3.2/pages/gelf.html#sending-gelf-messages-via-http-using-curl)
 
+Le format GELF a l'avantage d'être du JSON avec des champs obligatoires.
+
 ### Exemples de configuration des clients
 
 Des bibliothèques sont disponibles pour beaucoup de langages.
@@ -52,7 +55,6 @@ Langage | bibliothèque
 --------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Java    | [Log4j HTTP Appender](https://logging.apache.org/log4j/2.x/manual/appenders.html#HttpAppender) avec [Log4j GELF Layout](https://logging.apache.org/log4j/2.x/manual/layouts.html#GELFLayout)
 PHP     | [gelf-php](https://github.com/bzikarsky/gelf-php) et [HttpTransport](https://github.com/bzikarsky/gelf-php/blob/master/src/Gelf/Transport/HttpTransport.php) disponibles pour [Drupal](https://www.drupal.org/project/gelf)
-Go      | [Bibliothèque GELF over HTTP](https://github.com/robertkowalski/graylog-golang)
 
 Les gestionaires de messages des systèmes d'exploitation sont également 
 capables d'envoyer leurs données. Le service `syslog-ng` est recommandé.

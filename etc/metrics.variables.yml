@@ -91,6 +91,7 @@ influxdb_buckets:
       create_write_token: true
 
 telegraf_use_docker: false
+
 telegraf_output_influxdbv2_config:
     urls: [ "{{ influxdb_api.endpoint }}" ]
     token: "{{ influx_token }}"
@@ -99,11 +100,20 @@ telegraf_output_influxdbv2_config:
     org: "{{ influxdb_org }}"
     exclude_bucket_tag: false
     insecure_skip_verify: false
+
 telegraf_custom_inputs:
     - name: grafana
       plugin: prometheus
       options:
           - urls = ["http://{{ grafana_ipaddr }}:3000/metrics"]
+
+telegraf_influxdb_listener_config:
+    service_address: ":8086"
+    read_timeout: 10s
+    write_timeout: 10s
+    max_body_size: 0
+    max_line_size: 0
+
 telegraf_main_config:
     global_tags:
     add_node_type: false

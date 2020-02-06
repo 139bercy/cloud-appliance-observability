@@ -284,7 +284,7 @@
               --log.format=json \
               --metrics.influxdb=true \
               --metrics.influxdb.protocol=http \
-              --metrics.influxdb.address={{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }} \
+              --metrics.influxdb.address={{ ansible_cni_podman0.ipv4.address }}:{{ telegraf_influxdb_listener_config.service_address | regex_replace('^\.*?:','') }} \
               --providers.file.filename=/etc/traefik/services.yml
 
 ###############################################################################

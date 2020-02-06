@@ -3,7 +3,7 @@
 # Configuration
 #
 
-GIT_REPO_URL=https://github.com/139bercy/cloud-appliance-observability
+GIT_REPO_URL=$(shell git remote get-url origin)
 GIT_REPO_CHECKOUT=$(shell git rev-parse --abbrev-ref HEAD)
 
 .PHONY: syntax # Testing YAML syntax
@@ -137,11 +137,11 @@ metrics:
 		|| (echo METRICS_ENDPOINT is empty ; exit 1) 
 
 	@test ! -z ${METRICS_CONSUL_SERVERS} \
-		|| ( echo METRICS_CONSUL_SERVERS is impty ; exit 1)
+		|| ( echo METRICS_CONSUL_SERVERS is empty ; exit 1)
 	@test ! -z ${METRICS_CONSUL_DNS_DOMAIN} \
-		|| ( echo METRICS_CONSUL_DNS_DOMAIN is impty ; exit 1)
+		|| ( echo METRICS_CONSUL_DNS_DOMAIN is empty ; exit 1)
 	@test ! -z ${METRICS_CONSUL_DATACENTER} \
-		|| ( echo METRICS_CONSUL_DATACENTER is impty ; exit 1)
+		|| ( echo METRICS_CONSUL_DATACENTER is empty ; exit 1)
 		
 	@openstack stack create \
 		\

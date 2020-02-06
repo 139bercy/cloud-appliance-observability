@@ -439,10 +439,18 @@
            | jq -M '.[0].NetworkSettings.IPAddress' \
            | awk -F'"' '{print $2}'
 
+    - name: Grafana | Get Grafana IP address
+      register: grafana_result
+      shell: >
+           podman inspect grafana \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
+           | awk -F'"' '{print $2}'
+
     - name: Telegraf | Set facts
       set_fact:
           influxdb_ipaddr: "{{ influxdb_result.stdout }}"
           influx_token: "{{ awk_result.stdout }}"
+          grafana_ipaddr: "{{ grafana_result.stdout }}"
 
     - name: Install telegraf client
       include_role:

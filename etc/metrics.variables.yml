@@ -99,6 +99,11 @@ telegraf_output_influxdbv2_config:
     org: "{{ influxdb_org }}"
     exclude_bucket_tag: false
     insecure_skip_verify: false
+telegraf_custom_inputs:
+    - name: grafana
+      plugin: prometheus
+      options:
+          - urls = ["http://{{ grafana_ipaddr }}:3000/metrics"]
 telegraf_main_config:
     global_tags:
     add_node_type: false

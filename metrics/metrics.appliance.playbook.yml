@@ -16,21 +16,23 @@
   post_tasks:
     - name: Install consul agent
       when:
-          - lookup('env', 'CONSUL_SERVERS') is defined
+          - lookup('env', 'CONSUL_USAGE') | lower == 'true'
           - lookup('env', 'CONSUL_SERVERS') | split(',') | length > 0
-      include_role:
-          name: ansible-consul
+      block:
+        - name: Start consul role
+          include_role:
+              name: ansible-consul
 
-    - name: Set consul services
-      notify: reload consul
-      copy:
-          content: "{{ item.service }}"
-          dest: "/etc/consul.d/{{ item.name }}"
-      with_items:
-          - name: influxdb
-            content: "{{ influxdb_consul_service | to_nice_json }}"
-          - name: grafana
-            content: "{{ grafana_consul_service | to_nice_json }}"
+        - name: Set consul services
+          notify: reload consul
+          copy:
+              content: "{{ item.service }}"
+              dest: "/etc/consul.d/{{ item.name }}"
+          with_items:
+              - name: influxdb
+                content: "{{ influxdb_consul_service | to_nice_json }}"
+              - name: grafana
+                content: "{{ grafana_consul_service | to_nice_json }}"
 
 ###############################################################################
 # Docker

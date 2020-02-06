@@ -114,8 +114,12 @@ parameters:
        type: string
        description: Swift container to use for backups
 
+    consul_usage:
+       type: boolean
+       description: Do we use consul?
+
     consul_servers:
-       type: string
+       type: comma_delimited_list
        description: Comma-separated list of Hashicorp Consul servers used by the appliance's Consul agent
 
     consul_dns_domain:
@@ -160,6 +164,7 @@ resources:
                         $cinder_containers_volume: { get_resource: appliance_containers_volume }
                         $cinder_metrics_volume: { get_resource: appliance_metrics_volume }
 
+                        $consul_usage: { get_param: consul_usage }
                         $consul_servers: { get_param: consul_servers }
                         $consul_dns_domain: { get_param: consul_dns_domain }
                         $consul_datacenter: { get_param: consul_datacenter }
@@ -231,6 +236,7 @@ resources:
                         export METRICS_ENDPOINT_URL="$metrics_endpoint_url"
                         
                         # Set Consul variables
+                        export CONSUL_USAGE="$consul_usage"
                         export CONSUL_SERVERS="$consul_servers"
                         export CONSUL_DNS_DOMAIN="$consul_dns_domain"
                         export CONSUL_DATACENTER="$consul_datacenter"

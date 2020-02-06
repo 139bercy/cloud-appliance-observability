@@ -136,12 +136,17 @@ metrics:
 	@test ! -z ${METRICS_ENDPOINT} \
 		|| (echo METRICS_ENDPOINT is empty ; exit 1) 
 
-	@test ! -z ${METRICS_CONSUL_SERVERS} \
-		|| ( echo METRICS_CONSUL_SERVERS is empty ; exit 1)
-	@test ! -z ${METRICS_CONSUL_DNS_DOMAIN} \
-		|| ( echo METRICS_CONSUL_DNS_DOMAIN is empty ; exit 1)
-	@test ! -z ${METRICS_CONSUL_DATACENTER} \
-		|| ( echo METRICS_CONSUL_DATACENTER is empty ; exit 1)
+	@echo ${METRICS_CONSUL_USAGE} | egrep -q "^(true|false)$$" \
+		|| ( echo METRICS_CONSUL_USAGE must be set to true or false ; exit 1)
+	@(test -z ${METRICS_CONSUL_SERVERS} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
+		&& ( echo METRICS_CONSUL_SERVERS is empty ; exit 1) \
+		|| true
+	@(test -z ${METRICS_CONSUL_DNS_DOMAIN} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
+		&& ( echo METRICS_CONSUL_DNS_DOMAIN is empty ; exit 1) \
+		|| true
+	@(test -z ${METRICS_CONSUL_DATACENTER} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
+		&& ( echo METRICS_CONSUL_DATACENTER is empty ; exit 1) \
+		|| true
 		
 	@openstack stack create \
 		\
@@ -171,9 +176,10 @@ metrics:
 		--parameter git_repo_checkout=${GIT_REPO_CHECKOUT} \
 		--parameter git_repo_url=${GIT_REPO_URL} \
 		\
+		--parameter consul_usage=${METRICS_CONSUL_USAGE} \
 		--parameter consul_servers=${METRICS_CONSUL_SERVERS} \
-		--parameter consul_servers=${METRICS_CONSUL_DNS_DOMAIN} \
-		--parameter consul_servers=${METRICS_CONSUL_DATACENTER} \
+		--parameter consul_dns_domain=${METRICS_CONSUL_DNS_DOMAIN} \
+		--parameter consul_datacenter=${METRICS_CONSUL_DATACENTER} \
 		\
 		--template ${PWD}/metrics/metrics.appliance.heat.yml \
 		--wait \

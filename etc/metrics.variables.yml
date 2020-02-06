@@ -96,6 +96,7 @@ telegraf_output_influxdbv2_config:
     token: "{{ influx_token }}"
     bucket: "appliance-metrics"
     bucket_tag: ""
+    org: "{{ influxdb_org }}"
     exclude_bucket_tag: false
     insecure_skip_verify: false
 telegraf_main_config:

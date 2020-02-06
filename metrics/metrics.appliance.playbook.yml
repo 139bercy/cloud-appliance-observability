@@ -188,7 +188,9 @@
     # TODO: https://v2.docs.influxdata.com/v2.0/security/secrets/use-vault/
     - name: Starting InfluxDB container
       shell: >
+          podman ps --all | grep -q influxdb && podman rm -f influxdb ; \
           podman run \
+              --rm \
               --detach \
               --user 1200 \
               --name influxdb \
@@ -220,7 +222,9 @@
 
     - name: Starting Grafana container
       shell: >
+          podman ps --all | grep -q grafana && podman rm -f grafana ; \
           podman run \
+              --rm \
               --detach \
               --user 1100 \
               --name grafana \
@@ -257,7 +261,9 @@
 
     - name: Starting Traefik container
       shell: >
+          podman ps --all | grep -q traefik && podman rm -f traefik ; \
           podman run \
+              --rm \
               --detach \
               --user 1300 \
               --name traefik \

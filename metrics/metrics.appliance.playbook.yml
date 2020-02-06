@@ -422,8 +422,9 @@
     - name: Telegraf | Get telegraf token
       register: awk_result
       shell: >
-          awk -F, {{ influxdb_api.tokens_output_file }} \
-              '/{{ influxdb_org }},appliance-metrics,write/ {print $NF}'
+          awk -F, \
+              '/{{ influxdb_org }},appliance-metrics,write/ {print $NF}' \
+              {{ influxdb_api.tokens_output_file }}
 
     - name: Telegraf | Get InfluxDB IP address
       register: influxdb_result

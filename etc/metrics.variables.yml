@@ -91,7 +91,7 @@ influxdb_buckets:
       create_write_token: true
 
 telegraf_use_docker: false
-telegraf_influxdbv2_listener_config:
+telegraf_output_influxdbv2_config:
     urls: [ "{{ influxdb_api.endpoint }}" ]
     token: "{{ influx_token }}"
     bucket: "appliance-metrics"

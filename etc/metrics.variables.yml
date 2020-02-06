@@ -92,7 +92,7 @@ influxdb_buckets:
 
 telegraf_influxdbv2_listener_config:
     urls: [ "{{ influxdb_api.endpoint }}" ]
-    token: "{{ influx_token }}" 
+    token: "{{ influx_token }}"
     bucket: "appliance-metrics"
     bucket_tag: ""
     exclude_bucket_tag: false
@@ -112,6 +112,12 @@ telegraf_main_config:
         quiet: false
         logfile: ""
         omit_hostname: false
+
+bootstrap_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+bootstrap_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
+
+podman_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+podman_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 
 consul_retry_join: "{{ lookup('env', 'CONSUL_SERVERS') | split(',') }}"
 consul_dns_domain: "{{ lookup('env', 'CONSUL_DNS_DOMAIN') }}"

@@ -90,6 +90,7 @@ influxdb_buckets:
       retention_hours: "{{ influxdb_retention }}"
       create_write_token: true
 
+telegraf_use_docker: false
 telegraf_influxdbv2_listener_config:
     urls: [ "{{ influxdb_api.endpoint }}" ]
     token: "{{ influx_token }}"

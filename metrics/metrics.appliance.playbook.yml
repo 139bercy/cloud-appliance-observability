@@ -358,6 +358,10 @@
       include_role:
           name: ansible-influxdb-bucket
 
+    - name: InfluxDB | Create scrapers
+      include_role:
+          name: ansible-influxdb-scraper
+
     - name: InfluxDB | Send tokens to Swift
       shell: >
           for l in $(cat {{ influxdb_api.tokens_output_file }}) ; do \

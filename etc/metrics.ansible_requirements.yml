@@ -5,3 +5,7 @@
 - name: ansible-influxdb-bucket
   src: https://github.com/mgrzybek/ansible-influxdb-bucket
   version: master
+
+- name: ansible-influxdb-scraper
+  src: https://github.com/mgrzybek/ansible-influxdb-scraper
+  version: master

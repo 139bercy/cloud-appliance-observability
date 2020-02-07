@@ -90,6 +90,13 @@ influxdb_buckets:
       retention_hours: "{{ influxdb_retention }}"
       create_write_token: true
 
+influxdb_scrapers:
+    - name: influxdb
+      org: dgfip
+      bucket: appliance-metrics
+      type: prometheus
+      url: http://127.0.0.1:{{ influxdb_conf.bind.port }}/metrics
+
 telegraf_use_docker: false
 
 telegraf_output_influxdbv2_config:

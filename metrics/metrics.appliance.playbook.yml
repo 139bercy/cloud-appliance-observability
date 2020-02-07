@@ -259,6 +259,9 @@
           dest: /etc/traefik/services.yml
           mode: 0644
 
+    - name: Reload ansible facts to get podman network interface
+      setup:
+
     - name: Starting Traefik container
       shell: >
           podman ps --all | grep -q traefik && podman rm -f traefik ; \

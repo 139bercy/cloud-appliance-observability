@@ -17,7 +17,7 @@
     - name: Install consul agent
       when:
           - lookup('env', 'CONSUL_USAGE') | lower == 'true'
-          - lookup('env', 'CONSUL_SERVERS') | split(',') | length > 0
+          - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
       block:
         - name: Start consul role
           include_role:

@@ -89,6 +89,22 @@ influxdb_buckets:
       org: "{{ influxdb_org }}"
       retention_hours: "{{ influxdb_retention }}"
       create_write_token: true
+    - name: memcache
+      org: "{{ influxdb_org }}"
+      retention_hours: "{{ influxdb_retention }}"
+      create_write_token: true
+    - name: varnish
+      org: "{{ influxdb_org }}"
+      retention_hours: "{{ influxdb_retention }}"
+      create_write_token: true
+    - name: jmeter
+      org: "{{ influxdb_org }}"
+      retention_hours: "{{ influxdb_retention }}"
+      create_write_token: true
+    - name: matomo
+      org: "{{ influxdb_org }}"
+      retention_hours: "{{ influxdb_retention }}"
+      create_write_token: true
 
 influxdb_scrapers:
     - name: influxdb

@@ -26,7 +26,7 @@
         - name: Set consul services
           notify: reload consul
           copy:
-              content: "{{ item.service }}"
+              content: "{{ item.content }}"
               dest: "/etc/consul.d/{{ item.name }}"
           with_items:
               - name: influxdb

@@ -147,7 +147,13 @@ metrics:
 	@(test -z ${METRICS_CONSUL_DATACENTER} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
 		&& ( echo METRICS_CONSUL_DATACENTER is empty ; exit 1) \
 		|| true
-		
+	@(test -z ${METRICS_CONSUL_ENCRYPT} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
+		&& ( echo METRICS_CONSUL_ENCRYPT is empty ; exit 1) \
+		|| true
+	@(test -z ${METRICS_CONSUL_DNS_SERVER} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
+		&& ( echo METRICS_CONSUL_DNS_SERVER is empty ; exit 1) \
+		|| true
+			
 	@openstack stack create \
 		\
 		--parameter metrics_size_gb=${METRICS_SIZE_GB} \
@@ -180,6 +186,8 @@ metrics:
 		--parameter consul_servers=${METRICS_CONSUL_SERVERS} \
 		--parameter consul_dns_domain=${METRICS_CONSUL_DNS_DOMAIN} \
 		--parameter consul_datacenter=${METRICS_CONSUL_DATACENTER} \
+		--parameter consul_encrypt=${METRICS_CONSUL_ENCRYPT} \
+		--parameter consul_dns_server=${METRICS_CONSUL_DNS_SERVER} \
 		\
 		--template ${PWD}/metrics/metrics.appliance.heat.yml \
 		--wait \

@@ -11,7 +11,6 @@
 
   roles:
     - role: ansible-bootstrap-system
-#    - role: ansible-dnsmasq
 
   post_tasks:
     - name: Install consul agent
@@ -19,6 +18,11 @@
           - lookup('env', 'CONSUL_USAGE') | lower == 'true'
           - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
       block:
+        - name: Install dnsmasq service
+          when: lookup('env', 'CONSUL_DNS_SERVER') | length > 0
+          include_role:
+              name: ansible-dnsmasq
+
         - name: Start consul role
           include_role:
               name: ansible-consul

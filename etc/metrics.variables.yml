@@ -165,6 +165,16 @@ consul_datacenter: "{{ lookup('env', 'CONSUL_DATACENTER') }}"
 consul_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 consul_consul_encrypt: "{{ lookup('env', 'CONSUL_ENCRYPT') }}"
 
+dnsmasq_main_conf:
+    servers: 
+        - "{{ lookup('env', 'CONSUL_DNS_SERVER') }}"
+
+dnsmasq_forwarding_zones:
+    - name: "{{ consul_dns_domain }}"
+      forwarder:
+          hostname: 127.0.0.1
+          port: 8600
+
 influxdb_consul_service:
     - service:
       name: "influxdb"

@@ -134,8 +134,12 @@ parameters:
        type: string
        description: Consul shared secret for cluster communication
        hidden: true
-        constraints:
+       constraints:
             - length: { min: 44, max: 44 }
+
+    consul_dns_server:
+       type: string
+       description: IP address to use for non-consul-managed domains
 
 resources:
 
@@ -176,6 +180,7 @@ resources:
                         $consul_dns_domain: { get_param: consul_dns_domain }
                         $consul_datacenter: { get_param: consul_datacenter }
                         $consul_encrypt: { get_param: consul_encrypt }
+                        $consul_dns_server: { git_param: consul_dns_server }
                     template: |
                         #!/bin/bash
                         set -x
@@ -249,6 +254,7 @@ resources:
                         export CONSUL_DNS_DOMAIN="$consul_dns_domain"
                         export CONSUL_DATACENTER="$consul_datacenter"
                         export CONSUL_ENCRYPT="$consul_encrypt"
+                        export CONSUL_DNS_SERVER="$consul_dns_server"
 
                         # Autoconf the appliance
                         git clone -b $git_repo_checkout $git_repo_url $REPO_PATH || exit 1

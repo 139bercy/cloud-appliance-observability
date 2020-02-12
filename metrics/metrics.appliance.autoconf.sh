@@ -36,6 +36,11 @@ export OS_REGION_NAME=$OS_REGION_NAME
 export OS_USERNAME=$OS_USERNAME
 export OS_USER_DOMAIN_NAME=$OS_USER_DOMAIN_NAME
 
+export CONSUL_USAGE=$CONSUL_USAGE
+export CONSUL_SERVERS=$CONSUL_SERVERS
+export CONSUL_DNS_DOMAIN=$CONSUL_DNS_DOMAIN
+export CONSUL_DATACENTER=$CONSUL_DATACENTER
+
 sed -i 's/exit 1/false/' $REPO_PATH/metrics/metrics.appliance.autoconf.sh
 
 . $REPO_PATH/metrics/metrics.appliance.autoconf.sh

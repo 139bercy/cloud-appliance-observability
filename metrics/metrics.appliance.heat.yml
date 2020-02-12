@@ -180,7 +180,7 @@ resources:
                         $consul_dns_domain: { get_param: consul_dns_domain }
                         $consul_datacenter: { get_param: consul_datacenter }
                         $consul_encrypt: { get_param: consul_encrypt }
-                        $consul_dns_server: { git_param: consul_dns_server }
+                        $consul_dns_server: { get_param: consul_dns_server }
                     template: |
                         #!/bin/bash
                         set -x

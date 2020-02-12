@@ -130,6 +130,13 @@ parameters:
        type: string
        description: Datacenter name used by Consul agent
 
+    consul_encrypt:
+       type: string
+       description: Consul shared secret for cluster communication
+       hidden: true
+        constraints:
+            - length: { min: 44, max: 44 }
+
 resources:
 
 #######################################################
@@ -168,6 +175,7 @@ resources:
                         $consul_servers: { get_param: consul_servers }
                         $consul_dns_domain: { get_param: consul_dns_domain }
                         $consul_datacenter: { get_param: consul_datacenter }
+                        $consul_encrypt: { get_param: consul_encrypt }
                     template: |
                         #!/bin/bash
                         set -x
@@ -240,6 +248,7 @@ resources:
                         export CONSUL_SERVERS="$consul_servers"
                         export CONSUL_DNS_DOMAIN="$consul_dns_domain"
                         export CONSUL_DATACENTER="$consul_datacenter"
+                        export CONSUL_ENCRYPT="$consul_encrypt"
 
                         # Autoconf the appliance
                         git clone -b $git_repo_checkout $git_repo_url $REPO_PATH || exit 1

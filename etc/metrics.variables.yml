@@ -163,6 +163,7 @@ consul_retry_join: "{{ lookup('env', 'CONSUL_SERVERS') | from_yaml }}"
 consul_dns_domain: "{{ lookup('env', 'CONSUL_DNS_DOMAIN') }}"
 consul_datacenter: "{{ lookup('env', 'CONSUL_DATACENTER') }}"
 consul_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+consul_consul_encrypt: "{{ lookup('env', 'CONSUL_ENCRYPT') }}"
 
 influxdb_consul_service:
     - service:

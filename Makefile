@@ -75,6 +75,24 @@ logs:
 	@test ! -z ${GRAYLOG_NO_PROXY} \
 		|| (echo GRAYLOG_NO_PROXY is empty ; exit 1)
 
+	@echo ${GRAYLOG_CONSUL_USAGE} | egrep -q "^(true|false)$$" \
+		|| ( echo GRAYLOG_CONSUL_USAGE must be set to true or false ; exit 1)
+	@(test -z ${GRAYLOG_CONSUL_SERVERS} && echo ${GRAYLOG_CONSUL_USAGE} | fgrep true ) \
+		&& ( echo GRAYLOG_CONSUL_SERVERS is empty ; exit 1) \
+		|| true
+	@(test -z ${GRAYLOG_CONSUL_DNS_DOMAIN} && echo ${GRAYLOG_CONSUL_USAGE} | fgrep true ) \
+		&& ( echo GRAYLOG_CONSUL_DNS_DOMAIN is empty ; exit 1) \
+		|| true
+	@(test -z ${GRAYLOG_CONSUL_DATACENTER} && echo ${GRAYLOG_CONSUL_USAGE} | fgrep true ) \
+		&& ( echo GRAYLOG_CONSUL_DATACENTER is empty ; exit 1) \
+		|| true
+	@(test -z ${GRAYLOG_CONSUL_ENCRYPT} && echo ${GRAYLOG_CONSUL_USAGE} | fgrep true ) \
+		&& ( echo GRAYLOG_CONSUL_ENCRYPT is empty ; exit 1) \
+		|| true
+	@(test -z ${GRAYLOG_CONSUL_DNS_SERVER} && echo ${GRAYLOG_CONSUL_USAGE} | fgrep true ) \
+		&& ( echo GRAYLOG_CONSUL_DNS_SERVER is empty ; exit 1) \
+		|| true
+
 	@openstack stack create \
 		\
 		--parameter graylog_size_gb=${GRAYLOG_SIZE_GB} \
@@ -98,6 +116,13 @@ logs:
 		--template ${PWD}/logs/graylog.appliance.heat.yml \
 		--wait \
 		--timeout 60 \
+		\
+		--parameter consul_usage=${GRAYLOG_CONSUL_USAGE} \
+		--parameter consul_servers=${GRAYLOG_CONSUL_SERVERS} \
+		--parameter consul_dns_domain=${GRAYLOG_CONSUL_DNS_DOMAIN} \
+		--parameter consul_datacenter=${GRAYLOG_CONSUL_DATACENTER} \
+		--parameter consul_encrypt=${GRAYLOG_CONSUL_ENCRYPT} \
+		--parameter consul_dns_server=${GRAYLOG_CONSUL_DNS_SERVER} \
 		\
 		logs
 

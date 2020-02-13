@@ -76,6 +76,33 @@ parameters:
        type: string
        description: Public hostname used to connect against Graylog
 
+    consul_usage:
+       type: boolean
+       description: Do we use consul?
+
+    consul_servers:
+       type: comma_delimited_list
+       description: Comma-separated list of Hashicorp Consul servers used by the appliance's Consul agent
+
+    consul_dns_domain:
+       type: string
+       description: DNS domain used by Consul agent
+
+    consul_datacenter:
+       type: string
+       description: Datacenter name used by Consul agent
+
+    consul_encrypt:
+       type: string
+       description: Consul shared secret for cluster communication
+       hidden: true
+       constraints:
+            - length: { min: 44, max: 44 }
+
+    consul_dns_server:
+       type: string
+       description: IP address to use for non-consul-managed domains
+
 resources:
 
 #######################################################
@@ -105,6 +132,12 @@ resources:
                         $cinder_elasticsearch_volume: { get_resource: appliance_elasticsearch_volume }
                         $cinder_graylog_volume: { get_resource: appliance_graylog_volume }
 
+                        $consul_usage: { get_param: consul_usage }
+                        $consul_servers: { get_param: consul_servers }
+                        $consul_dns_domain: { get_param: consul_dns_domain }
+                        $consul_datacenter: { get_param: consul_datacenter }
+                        $consul_encrypt: { get_param: consul_encrypt }
+                        $consul_dns_server: { get_param: consul_dns_server }
                     template: |
                         #!/bin/bash
                         set -x
@@ -163,6 +196,14 @@ resources:
                         export GRAYLOG_ADMIN_NAME="$graylog_admin_name"
                         export GRAYLOG_ADMIN_PASSWORD="$graylog_admin_password"
                         export GRAYLOG_ENDPOINT_URL="$graylog_endpoint_url"
+
+                        # Set Consul variables
+                        export CONSUL_USAGE="$consul_usage"
+                        export CONSUL_SERVERS="$consul_servers"
+                        export CONSUL_DNS_DOMAIN="$consul_dns_domain"
+                        export CONSUL_DATACENTER="$consul_datacenter"
+                        export CONSUL_ENCRYPT="$consul_encrypt"
+                        export CONSUL_DNS_SERVER="$consul_dns_server"
 
                         # Autoconf the appliance
                         git clone -b $git_repo_checkout $git_repo_url $REPO_PATH || exit 1

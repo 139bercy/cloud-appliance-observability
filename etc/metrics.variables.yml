@@ -166,7 +166,7 @@ consul_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 consul_consul_encrypt: "{{ lookup('env', 'CONSUL_ENCRYPT') }}"
 
 dnsmasq_main_conf:
-    servers: 
+    servers:
         - "{{ lookup('env', 'CONSUL_DNS_SERVER') }}"
 
 dnsmasq_forwarding_zones:
@@ -197,4 +197,4 @@ grafana_consul_service:
         enable_tag_override: false
         checks:
             - http: "http://0.0.0.0:80/grafana/login"
-            interval: "60s"
+              interval: "60s"

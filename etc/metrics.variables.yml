@@ -177,24 +177,24 @@ dnsmasq_forwarding_zones:
 
 influxdb_consul_service:
     - service:
-      name: "influxdb"
-      tags:
-          - "metrics"
-          - "appliance"
-      port: 80
-      enable_tag_override: false
-      checks:
-          - http: "http://0.0.0.0:80"
-            interval: "60s"
+        name: "influxdb"
+        tags:
+            - "metrics"
+            - "appliance"
+        port: 80
+        enable_tag_override: false
+        checks:
+            - http: "http://0.0.0.0:80"
+              interval: "60s"
 
 grafana_consul_service:
     - service:
-      name: "grafana"
-      tags:
-          - "metrics"
-          - "appliance"
-      port: 80
-      enable_tag_override: false
-      checks:
-          - http: "http://0.0.0.0:80/grafana/login"
+        name: "grafana"
+        tags:
+            - "metrics"
+            - "appliance"
+        port: 80
+        enable_tag_override: false
+        checks:
+            - http: "http://0.0.0.0:80/grafana/login"
             interval: "60s"

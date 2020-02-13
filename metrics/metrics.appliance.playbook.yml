@@ -31,7 +31,7 @@
           notify: reload consul
           copy:
               content: "{{ item.content }}"
-              dest: "/etc/consul.d/{{ item.name }}"
+              dest: "/etc/consul.d/{{ item.name }}.json"
           with_items:
               - name: influxdb
                 content: "{{ influxdb_consul_service | to_nice_json }}"

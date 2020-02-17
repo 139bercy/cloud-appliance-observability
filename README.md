@@ -10,19 +10,40 @@ You must source your Openstack credentials first. Then, some variables need to
 be set.
 
 ```bash
-export GRAYLOG_SIZE_GB=
-export ELASTECSEARCH_SIZE_GB=
+export GIT_REPO_URL=https://github.com/139bercy/cloud-appliance-observability
+
+# Log management
+export GRAYLOG_ENDPOINT=
 export GRAYLOG_FLAVOR=
 export GRAYLOG_IMAGE_ID=
 export GRAYLOG_NET_ID=
 export GRAYLOG_SECGROUP_ID=
-export GRAYLOG_ADMIN=
-export GRAYLOG_PASSWORD=
-export GRAYLOG_ENDPOINT=
+
+export GRAYLOG_SIZE_GB=
+export ELASTECSEARCH_SIZE_GB=
+
 export GRAYLOG_HTTP_PROXY=
 export GRAYLOG_NO_PROXY=
-export GIT_REPO_CHECKOUT=
-export GIT_REPO_URL=
+
+export GRAYLOG_ADMIN=
+export GRAYLOG_PASSWORD=
+
+# Metrics management
+export METRICS_ENDPOINT=
+export METRICS_FLAVOR=
+export METRICS_IMAGE_ID=
+export METRICS_NET_ID=
+export METRICS_SECGROUP_ID=
+export METRICS_SIZE_GB=
+
+export METRICS_HTTP_PROXY=
+export METRICS_NO_PROXY=
+
+export GRAFANA_ADMIN=
+export GRAFANA_PASSWORD=
+
+export INFLUXDB_ADMIN=
+export INFLUXDB_PASSWORD=
 ```
 
 Control the deployments

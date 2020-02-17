@@ -1,6 +1,6 @@
 #! /usr/bin/env/bash
 
-cat > /root/appliance/logs/graylog.appliance.reconf.sh <<EOF
+cat > /root/appliance/metrics/metrics.appliance.reconf.sh <<EOF
 export ETC_PATH=$ETC_PATH
 export REPO_PATH=$REPO_PATH
 
@@ -12,11 +12,18 @@ export no_proxy=$no_proxy
 export PLAYBOOK="$PLAYBOOK -v"
 
 export CONTAINERS_VOLUME=$CONTAINERS_VOLUME
-export ELASTICSEARCH_VOLUME=$ELASTICSEARCH_VOLUME
-export GRAYLOG_ADMIN_NAME="$GRAYLOG_ADMIN_NAME"
-export GRAYLOG_ADMIN_PASSWORD="$GRAYLOG_ADMIN_PASSWORD"
-export GRAYLOG_ENDPOINT_URL="$GRAYLOG_ENDPOINT_URL"
-export GRAYLOG_VOLUME=$GRAYLOG_VOLUME
+export METRICS_VOLUME=$METRICS_VOLUME
+
+export METRICS_ENDPOINT_URL=$METRICS_ENDPOINT_URL
+export METRICS_CONTAINER=$METRICS_CONTAINER
+
+export GRAFANA_ADMIN_NAME=$GRAFANA_ADMIN_NAME
+export GRAFANA_ADMIN_PASSWORD=$GRAFANA_ADMIN_PASSWORD
+
+export INFLUXDB_ADMIN_NAME=$INFLUXDB_ADMIN_NAME
+export INFLUXDB_ADMIN_PASSWORD=$INFLUXDB_ADMIN_PASSWORD
+export INFLUXDB_ORG=$INFLUXDB_ORG
+export INFLUXDB_RETENTION_HOURS=$INFLUXDB_RETENTION_HOURS
 
 export OS_AUTH_URL=$OS_AUTH_URL
 export OS_IDENTITY_API_VERSION=$OS_IDENTITY_API_VERSION
@@ -35,26 +42,22 @@ export CONSUL_DNS_DOMAIN=$CONSUL_DNS_DOMAIN
 export CONSUL_DATACENTER=$CONSUL_DATACENTER
 export CONSUL_ENCRYPT=$CONSUL_ENCRYPT
 
-sed -i 's/exit 1/false/' $REPO_PATH/logs/graylog.appliance.autoconf.sh
+sed -i 's/exit 1/false/' $REPO_PATH/metrics/metrics.appliance.autoconf.sh
 
-. $REPO_PATH/logs/graylog.appliance.autoconf.sh
+. $REPO_PATH/metrics/metrics.appliance.autoconf.sh
 EOF
 
 ansible-galaxy install -r $ETC_PATH/appliance.ansible_requirements.yml
-ansible-galaxy install -r $ETC_PATH/graylog.ansible_requirements.yml
+ansible-galaxy install -r $ETC_PATH/metrics.ansible_requirements.yml
 
 ansible-playbook -t os-ready $PLAYBOOK \
+	-e@$ETC_PATH/metrics.variables.yml \
 	-e dnsmasq_listening_interfaces="{{['lo']|from_yaml}}" \
-	-e @$ETC_PATH/graylog.variables.yml \
 	|| exit 1
 
 ansible-playbook -t containers $PLAYBOOK \
-	-e @$ETC_PATH/graylog.variables.yml \
 	|| exit 1
 
-ansible-playbook -t elasticsearch $PLAYBOOK \
-	|| exit 1
-
-ansible-playbook -t graylog $PLAYBOOK \
-	-e @$ETC_PATH/graylog.variables.yml \
+ansible-playbook -t metrics,configuration,telegraf $PLAYBOOK \
+	-e@$ETC_PATH/metrics.variables.yml \
 	|| exit 1

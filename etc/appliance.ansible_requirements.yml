@@ -14,10 +14,6 @@
   src: https://github.com/mgrzybek/ansible-dnsmasq
   version: master
 
-- name: ansible-docker
-  src: https://github.com/mgrzybek/ansible-docker
-  version: master
-
 - name: ansible-rclone
   src: https://github.com/mgrzybek/ansible-rclone
   version: master

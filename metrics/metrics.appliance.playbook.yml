@@ -1,0 +1,467 @@
+###############################################################################
+# OS-Ready
+#
+- name: Nodes configuration
+  hosts: localhost
+  tags: os-ready
+
+  handlers:
+    - name: reload consul
+      command: /usr/local/bin/consul reload
+
+  roles:
+    - role: ansible-bootstrap-system
+
+  post_tasks:
+    - name: Install consul agent
+      when:
+          - lookup('env', 'CONSUL_USAGE') | lower == 'true'
+          - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
+      block:
+        - name: Install dnsmasq service
+          when: lookup('env', 'CONSUL_DNS_SERVER') | length > 0
+          include_role:
+              name: ansible-dnsmasq
+
+        - name: Start consul role
+          include_role:
+              name: ansible-consul
+
+        - name: Set consul services
+          notify: reload consul
+          copy:
+              content: "{{ item.content }}"
+              dest: "/etc/consul.d/{{ item.name }}.json"
+          with_items:
+              - name: influxdb
+                content: "{{ influxdb_consul_service[0] | to_nice_json }}"
+              - name: grafana
+                content: "{{ grafana_consul_service[0] | to_nice_json }}"
+
+###############################################################################
+# Containers
+#
+- name: Containers runtime configuration
+  hosts: localhost
+  tags: containers
+
+  pre_tasks:
+    #- name: Tuning mémoire
+    #  sysctl:
+    #    name: vm.max_map_count
+    #    value: 262144
+    #    sysctl_set: yes
+    #    state: present
+
+    - name: Installing XFS and unzip tools
+      when: ansible_os_family | lower == 'debian'
+      apt: name={{ item }} state=present
+      with_items:
+          - xfsprogs
+          - unzip
+
+    # Containers
+    - when:
+        - lookup('env', 'CONTAINERS_VOLUME') is defined
+        - lookup('env', 'CONTAINERS_VOLUME') | length > 0
+      block:
+        - name: VG listing
+          command: vgs --options name
+          register: vg_list
+
+        - when: vg_list.stdout.find('containers') < 0
+          block:
+            - name: Detect cinder volume used for containers storage
+              set_fact: containers_device_short_id="{{ lookup('env', 'CONTAINERS_VOLUME')[:20] }}"
+
+            - name: Get containers device name from /dev/disk/by-id/
+              register: cinder_volume
+              shell: find /dev/disk/by-id/ -name "*{{ containers_device_short_id }}*"
+
+            - name: Check containers device result
+              when: cinder_volume.stdout_lines | length < 1
+              fail: msg="Cannot find any cinder device with ID {{ containers_device_short_id }}"
+
+            - name: Set full disk name (containers_device={{ cinder_volume.stdout }})
+              set_fact: containers_device="{{ cinder_volume.stdout }}"
+
+            - name: Create VG called "containers"
+              lvg: vg=containers pvs="{{ containers_device }}"
+
+        - name: Create LV containers/data
+          lvol: vg=containers lv=data size=80%VG
+
+        - name: Formatting containers-data LV
+          filesystem: dev=/dev/mapper/containers-data fstype=xfs
+
+        - name: Mounting containers-data LV
+          mount:
+            path: /var/run/containers
+            src: /dev/mapper/containers-data
+            state: mounted
+            fstype: xfs
+
+  roles:
+    - role: ansible-rclone
+    - role: ansible-podman
+
+###############################################################################
+# Grafana / InfluxDB / Traefik deployment
+#
+- name: Grafana, InfluxDB and Traefik deployment
+  hosts: localhost
+  tags: metrics
+
+  tasks:
+    - name: VG listing
+      command: vgs --options name
+      register: vg_list
+
+    - when: vg_list.stdout.find('metrics') < 0
+      block:
+        - name:  Metrics volume detection
+          set_fact: metrics_device_short_id="{{ lookup('env', 'METRICS_VOLUME')[:20] }}"
+
+        - name: Get metrics device name from /dev/disk/by-id/
+          register: cinder_volume
+          shell: find /dev/disk/by-id/ -name "*{{ metrics_device_short_id }}*"
+
+        - name: Check metrics device result
+          when: cinder_volume.stdout_lines | length < 1
+          fail: msg="Cannot find any cinder device with ID {{ metrics_device_short_id }}"
+
+        - name: Set full disk name
+          set_fact: metrics_device="{{ cinder_volume.stdout }}"
+
+        - name: VG metrics creation
+          lvg: vg=metrics pvs="{{ metrics_device }}"
+
+    - name: LV creation
+      lvol: vg=metrics lv={{ item.lv }} size={{ item.size }}
+      with_items:
+        - lv: influxdb
+          size: "80%VG"
+        - lv: grafana
+          size: "1g"
+
+    - name: Formatting
+      filesystem: dev=/dev/mapper/metrics-{{ item }} fstype=xfs
+      with_items:
+        - influxdb
+        - grafana
+
+    - name: Volumes mounting
+      mount:
+        path: "{{ item.path }}"
+        src: "{{ item.src }}"
+        state: mounted
+        fstype: xfs
+      with_items:
+        - path: /var/lib/grafana
+          src: /dev/mapper/metrics-grafana
+        - path: /var/lib/influxdb
+          src: /dev/mapper/metrics-influxdb
+
+    - name: Setting up permissions
+      file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        mode: 0755
+      with_items:
+        - path: /var/lib/grafana
+          state: directory
+          owner: 1100
+        - path: /var/lib/grafana/provisioning
+          state: directory
+          owner: 1100
+        - path: /var/lib/grafana/plugins
+          state: directory
+          owner: 1100
+        - path: /var/lib/influxdb
+          state: directory
+          owner: 1200
+        - path: /var/lib/influxdb/.conf
+          state: directory
+          owner: 1200      
+        - path: /etc/traefik
+          state: directory
+          owner: 1300
+
+    # TODO: https://v2.docs.influxdata.com/v2.0/security/secrets/use-vault/
+    - name: Starting InfluxDB container
+      shell: >
+          podman ps --all | grep -q influxdb && podman rm -f influxdb ; \
+          podman run \
+              --rm \
+              --detach \
+              --user 1200 \
+              --name influxdb \
+              --mount type=bind,src=/var/lib/influxdb,target=/var/lib/influxdb \
+              --mount type=bind,src=/var/lib/influxdb/.conf,target=/.influxdbv2 \
+              quay.io/influxdb/influxdb:2.0.0-beta \
+              influxd \
+              --reporting-disabled \
+              --bolt-path=/var/lib/influxdb/influxd.bolt \
+              --engine-path=/var/lib/influxdb/engine \
+              --http-bind-address=":{{ influxdb_conf.bind.port }}"
+
+    - name: Get InfluxDB IP address
+      register: influxdb_result
+      shell: >
+           podman inspect influxdb \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
+           | awk -F'"' '{print $2}'
+
+    - name: Set facts (influxdb_ipaddr)
+      set_fact:
+          influxdb_ipaddr: "{{ influxdb_result.stdout }}"
+
+    - name: Grafana | Install custom plugins
+      with_items: "{{ grafana_plugins }}"
+      unarchive:
+          dest: /var/lib/grafana/plugins/
+          src: "{{ item.url }}"
+
+    - name: Starting Grafana container
+      shell: >
+          podman ps --all | grep -q grafana && podman rm -f grafana ; \
+          podman run \
+              --rm \
+              --detach \
+              --user 1100 \
+              --name grafana \
+              --mount type=bind,src=/var/lib/grafana,target=/var/lib/grafana \
+              --env NO_PROXY=$NO_PROXY,{{ influxdb_ipaddr }} \
+              --env no_proxy=$no_proxy,{{ influxdb_ipaddr }} \
+              --env GF_SERVER_ROOT_URL={{ lookup('env', 'METRICS_ENDPOINT_URL') | regex_replace('/$', '') }}/grafana \
+              --env GF_SERVER_SERVE_FROM_SUB_PATH=true \
+              --env GF_ANALYTICS_REPORTING_ENABLED=false \
+              --env GF_ANALYTICS_CHECK_FOR_UPDATES=false \
+              --env GF_PATHS_PROVISIONING=/var/lib/grafana/provisioning/ \
+              --env GF_LOG_MODE=console \
+              --env GF_LOG_LEVEL=debug \
+              --env GF_SECURITY_ADMIN_USER={{ lookup('env', 'GRAFANA_ADMIN_NAME') }} \
+              --env GF_SECURITY_ADMIN_PASSWORD={{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }} \
+              docker.io/grafana/grafana
+
+    - name: Get Grafana IP address
+      register: grafana_result
+      shell: >
+           podman inspect grafana \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
+           | awk -F'"' '{print $2}'
+
+    - name: Set facts (grafana_ipaddr)
+      set_fact:
+          grafana_ipaddr: "{{ grafana_result.stdout }}"
+
+    - name: Create Traefik file provider
+      copy:
+          content: "{{ traefik_conf | to_nice_yaml }}"
+          dest: /etc/traefik/services.yml
+          mode: 0644
+
+    - name: Reload ansible facts to get podman network interface
+      setup:
+
+    - name: Starting Traefik container
+      shell: >
+          podman ps --all | grep -q traefik && podman rm -f traefik ; \
+          podman run \
+              --rm \
+              --detach \
+              --user 1300 \
+              --name traefik \
+              --mount type=bind,src=/etc/traefik,target=/etc/traefik \
+              --env HTTP_PROXY= \
+              --env HTTPS_PROXY= \
+              --env http_proxy= \
+              --env https_proxy= \
+              --publish 80:{{ traefik_conf.entryPoints.web.address.split(':')[-1] }} \
+              --publish 443:{{ traefik_conf.entryPoints.websecure.address.split(':')[-1] }} \
+              docker.io/library/traefik \
+              traefik \
+              --entrypoints.web.address={{ traefik_conf.entryPoints.web.address }} \
+              --entrypoints.websecure.address={{ traefik_conf.entryPoints.websecure.address }} \
+              --accesslog=false \
+              --accesslog.format=json \
+              --log=true \
+              --log.format=json \
+              --metrics.influxdb=true \
+              --metrics.influxdb.protocol=http \
+              --metrics.influxdb.address={{ ansible_cni_podman0.ipv4.address }}:{{ telegraf_influxdb_listener_config.service_address | regex_replace('^\.*?:','') }} \
+              --providers.file.filename=/etc/traefik/services.yml
+
+###############################################################################
+# Grafana / InfluxDB configuration
+#
+- name: Grafana and InfluxDB configuration
+  hosts: localhost
+  tags: configuration
+
+  tasks:
+    - name: InfluxDB | Get InfluxDB IP address
+      register: influxdb_result
+      shell: >
+           podman inspect influxdb \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
+           | awk -F'"' '{print $2}'
+
+    - name: InfluxDB | Set facts
+      set_fact:
+          influxdb_ipaddr: "{{ influxdb_result.stdout }}"
+          influxdb_admin: "{{ lookup('env', 'INFLUXDB_ADMIN_NAME') }}"
+          influxdb_password: "{{ lookup('env', 'INFLUXDB_ADMIN_PASSWORD') }}"
+          influxdb_org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
+          influxdb_retention: "{{ lookup('env', 'INFLUXDB_RETENTION_HOURS') }}"
+          metrics_container: "{{ lookup('env', 'METRICS_CONTAINER') }}"
+
+    - name: InfluxDB | Wait for InfluxDB to be UP
+      register: ping_result
+      until: ping_result.stdout == "OK"
+      retries: 10
+      delay: 5
+      shell: >
+          podman exec -ti influxdb \
+              influx \
+              --host=http://localhost:{{ influxdb_conf.bind.port }} \
+              ping
+
+    - name: InfluxDB | Bootstrap service
+      register: setup_result
+      failed_when:
+          - setup_result.rc == 1
+          - setup_result.stdout.find('already been setup') < 0
+      shell: >
+          podman exec -ti influxdb \
+              influx \
+                  --host=http://localhost:{{ influxdb_conf.bind.port }} \
+                  setup -f \
+                      --bucket default \
+                      --org {{ influxdb_org }} \
+                      --password {{ influxdb_password }} \
+                      --retention {{ influxdb_retention }} \
+                      --username {{ influxdb_admin }}
+
+    - name: InfluxDB | Upload admin token to object storage
+      shell: >
+          swift upload --object-name admin_token \
+              {{ metrics_container }} \
+              /var/lib/influxdb/.conf/credentials
+
+    - name: InfluxDB | Get influxdb_admin_token from file
+      register: token_result
+      shell: cat /var/lib/influxdb/.conf/credentials
+
+    - name: InfluxDB | Update influxdb_admin_token fact
+      set_fact: influxdb_admin_token="{{ token_result.stdout }}"
+
+    - name: InfluxDB | Create buckets and tokens
+      include_role:
+          name: ansible-influxdb-bucket
+
+    - name: InfluxDB | Create scrapers
+      include_role:
+          name: ansible-influxdb-scraper
+
+    - name: InfluxDB | Send tokens to Swift
+      shell: >
+          for l in $(cat {{ influxdb_api.tokens_output_file }}) ; do \
+              name=$(echo $l | awk -F, '{print $1"."$2"."$3}') ; \
+              value=$(echo $l | awk -F, '{print $4}') ; \
+              echo $value | swift upload --object-name $name \
+                  {{ metrics_container }} \
+                  - ; \
+          done
+
+    - name: InfluxDB | Create token for Grafana
+      register: result_grafana_token
+      shell: >
+          podman exec -ti influxdb \
+              influx \
+                  --host=http://localhost:{{ influxdb_conf.bind.port }} \
+                  auth create --org {{ influxdb_org }} --read-buckets \
+              | awk '/active/ {print $2}'
+
+    - name: Grafana | Get Grafana IP address
+      register: grafana_result
+      shell: >
+           podman inspect grafana \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
+           | awk -F'"' '{print $2}'
+
+    - name: Grafana | Set facts
+      set_fact:
+          grafana_influxdb_token: "{{ result_grafana_token.stdout }}"
+          grafana_ipaddr: "{{ grafana_result.stdout }}"
+          grafana_admin: "{{ lookup('env', 'GRAFANA_ADMIN_NAME') }}"
+          grafana_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}"
+
+    - name: Grafana | Wait for Grafana to be UP
+      register: ping_result
+      retries: 10
+      delay: 5
+      environment:
+        no_proxy: "{{ grafana_ipaddr }}"
+      uri:
+        url: "http://{{ grafana_ipaddr }}:3000/login"
+        method: GET
+        validate_certs: no
+        status_code:
+            - 200
+
+    - name: Grafana | Create a datasource per bucket
+      with_items: "{{ influxdb_buckets }}"
+      environment:
+        no_proxy: "{{ grafana_ipaddr }}"
+      uri:
+        url: "http://{{ grafana_ipaddr }}:3000/api/datasources"
+        method: POST
+        user: "{{ grafana_admin }}"
+        password: "{{ grafana_password }}"
+        force_basic_auth: yes
+        body_format: json
+        validate_certs: no
+        body: "{{ grafana_datasources.datasources[0] | to_nice_json }}"
+        status_code:
+            - 200
+
+###############################################################################
+# Telegraf configuration
+#
+- name: Telegraf configuration
+  hosts: localhost
+  tags: telegraf
+
+  tasks:
+    - name: Telegraf | Get telegraf token
+      register: awk_result
+      shell: >
+          awk -F, \
+              '/{{ influxdb_org }},appliance-metrics,write/ {print $NF}' \
+              {{ influxdb_api.tokens_output_file }}
+
+    - name: Telegraf | Get InfluxDB IP address
+      register: influxdb_result
+      shell: >
+           podman inspect influxdb \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
+           | awk -F'"' '{print $2}'
+
+    - name: Grafana | Get Grafana IP address
+      register: grafana_result
+      shell: >
+           podman inspect grafana \
+           | jq -M '.[0].NetworkSettings.IPAddress' \
+           | awk -F'"' '{print $2}'
+
+    - name: Telegraf | Set facts
+      set_fact:
+          influxdb_ipaddr: "{{ influxdb_result.stdout }}"
+          influx_token: "{{ awk_result.stdout }}"
+          grafana_ipaddr: "{{ grafana_result.stdout }}"
+
+    - name: Install telegraf client
+      include_role:
+          name: ansible-telegraf

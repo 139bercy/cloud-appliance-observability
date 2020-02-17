@@ -1,3 +1,79 @@
+###############################################################################
+# Bootstrap
+#
+bootstrap_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+bootstrap_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
+
+###############################################################################
+# Podman
+#
+podman_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+podman_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
+
+###############################################################################
+# Consul
+#
+consul_retry_join: "{{ lookup('env', 'CONSUL_SERVERS') | from_yaml }}"
+consul_dns_domain: "{{ lookup('env', 'CONSUL_DNS_DOMAIN') }}"
+consul_datacenter: "{{ lookup('env', 'CONSUL_DATACENTER') }}"
+consul_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+consul_consul_encrypt: "{{ lookup('env', 'CONSUL_ENCRYPT') }}"
+
+###############################################################################
+# Dnsmasq
+#
+dnsmasq_main_conf:
+    servers:
+        - "{{ lookup('env', 'CONSUL_DNS_SERVER') }}"
+
+dnsmasq_forwarding_zones:
+    - name: "{{ consul_dns_domain }}"
+      forwarder:
+          hostname: 127.0.0.1
+          port: 8600
+
+###############################################################################
+# Telegraf
+#
+telegraf_use_docker: false
+
+telegraf_output_influxdbv2_config:
+    urls: [ "http://influxdb.service.{{ consul_datacenter }}.{{ consul_dns_domain }}" ]
+    token: "{{ influx_token }}"
+    bucket: "appliance-logs"
+    bucket_tag: ""
+    org: "{{ influxdb_org }}"
+    exclude_bucket_tag: false
+    insecure_skip_verify: false
+
+#telegraf_custom_inputs:
+#    - name: graylog
+#      plugin:
+#      options:
+#          - urls = ["{{ graylog_api }}/system/metrics"]
+
+telegraf_main_config:
+    global_tags:
+    add_node_type: false
+    agent:
+        interval: "{{ telegraf_metrics_agent_interval_seconds }}"
+        round_interval: false
+        metric_batch_size: 1024
+        metric_buffer_limit: 10240
+        collection_jitter: 8s
+        flush_jitter: 8s
+        precision: ""
+        debug: false
+        quiet: false
+        logfile: ""
+        omit_hostname: false
+
+###############################################################################
+# Graylog
+#
+graylog_login_admin_local: "{{ lookup('env', 'GRAYLOG_ADMIN_NAME') }}"
+graylog_root_password: "{{ lookup('env', 'GRAYLOG_ADMIN_PASSWORD') }}"
+
 graylog_api: http://0.0.0.0:80/api
 
 graylog_default_index_set:
@@ -148,3 +224,15 @@ graylog_inputs:
             tls_client_auth: "disabled"
             override_source: null
             allow_override_date: true
+
+graylog_consul_service:
+    - service:
+        name: "logs"
+        tags:
+            - "logs"
+            - "appliance"
+        port: 80
+        enable_tag_override: false
+        checks:
+            - http: "http://0.0.0.0:80"
+              interval: "60s"

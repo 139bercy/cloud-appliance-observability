@@ -5,11 +5,36 @@
   hosts: localhost
   tags: os-ready
 
+  handlers:
+    - name: reload consul
+      command: /usr/local/bin/consul reload
+
   roles:
     - role: ansible-bootstrap-system
-#    - role: ansible-telegraf
-#    - role: ansible-consul
-#    - role: ansible-dnsmasq
+
+  post_tasks:
+    - name: Install consul agent
+      when:
+          - lookup('env', 'CONSUL_USAGE') | lower == 'true'
+          - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
+      block:
+        - name: Install dnsmasq service
+          when: lookup('env', 'CONSUL_DNS_SERVER') | length > 0
+          include_role:
+              name: ansible-dnsmasq
+
+        - name: Start consul role
+          include_role:
+              name: ansible-consul
+
+        - name: Set consul services
+          notify: reload consul
+          copy:
+              content: "{{ item.content }}"
+              dest: "/etc/consul.d/{{ item.name }}.json"
+          with_items:
+              - name: graylog
+                content: "{{ graylog_consul_service[0] | to_nice_json }}"
 
 ###############################################################################
 # Docker
@@ -30,7 +55,7 @@
       when: ansible_os_family | lower == 'debian'
       apt: name=xfsprogs state=present
 
-    # Docker
+    # Containers
     - when:
         - lookup('env', 'CONTAINERS_VOLUME') is defined
         - lookup('env', 'CONTAINERS_VOLUME') | length > 0
@@ -55,7 +80,6 @@
             - name: Set full disk name (containers_device={{ cinder_volume.stdout }})
               set_fact: containers_device="{{ cinder_volume.stdout }}"
 
-
             - name: Create VG called "containers"
               lvg: vg=containers pvs="{{ containers_device }}"
 
@@ -73,7 +97,6 @@
             fstype: xfs
 
   roles:
-#    - role: ansible-dnsmasq
     - role: ansible-rclone
     - role: ansible-podman
 
@@ -130,8 +153,10 @@
 
     - name: Starting Elasticsearch container
       shell: >
+          podman ps --all | grep -q elasticsearch && podman rm -f elasticsearch ; \
           podman run \
-              -d \
+              --rm \
+              --detach \
               --name elasticsearch \
               --mount type=bind,src=/var/lib/elasticsearch,target=/usr/share/elasticsearch/data \
               -e discovery.type="single-node" \
@@ -214,12 +239,14 @@
 
     - name: Starting MongoDB container
       shell: >
+          podman ps --all | grep -q mongo && podman rm -f mongo ; \
           podman run \
-            -d \
-            -u 1200 \
+            --rm \
+            --detach \
+            --user 1200 \
             --name mongo \
             --mount type=bind,src=/var/lib/mongodb,target=/data/db \
-            docker.io/mongo:3 \
+            docker.io/mongo:3
             
     - name: Get Elasticsearch IP address
       register: els_result
@@ -246,9 +273,11 @@
 
     - name: Starting Graylog container
       shell: >
+          podman ps --all | grep -q graylog && podman rm -f graylog ;  \
           podman run \
-          -d \
-          -u 1100
+          --rm \
+          --detach \
+          --user 1100
           --name graylog \
           --mount type=bind,src=/var/lib/graylog,target=/var/lib/graylog \
           --publish 80:8080 \

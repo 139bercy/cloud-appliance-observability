@@ -1,6 +1,6 @@
 heat_template_version: 2017-09-01
 
-description: Graylog deployment
+description: Grafana / InfluxDB deployment
 
 #######################################################
 # Parameters
@@ -9,24 +9,28 @@ parameters:
         type: string
         description: Operating system image to use
         default: ubuntu18.04_server
+        constraints:
+            - custom_constraint: glance.image
 
     node_net_id:
         type: string
         description: Network ID to use for the appliance
+        constraints:
+            - custom_constraint: neutron.network
 
-#    os_username:
-#        type: string
-#        description: Cloud username for some internal batches
-#
-#    os_password:
-#        type: string
-#        description: Cloud password for some internal batches
-#        hidden: true
-#
-#    os_auth_url:
-#        type: string
-#        description: Cloud auth URL
-#
+    os_username:
+        type: string
+        description: Cloud username for some internal batches
+
+    os_password:
+        type: string
+        description: Cloud password for some internal batches
+        hidden: true
+
+    os_auth_url:
+        type: string
+        description: Cloud auth URL
+
     git_repo_url:
         type: string
         description: cloud-appliance-observability repo
@@ -40,6 +44,8 @@ parameters:
     default_secgroup_id:
         type: string
         description: Default security group to use
+        constraints:
+            - custom_constraint: neutron.security_group
 
     internet_http_proxy_url:
         type: string
@@ -52,29 +58,61 @@ parameters:
     flavor:
         type: string
         description: Cloud flavor to use
+        constraints:
+            - custom_constraint: nova.flavor
 
-    elasticsearch_size_gb:
+    metrics_size_gb:
         type: number
-        description: Elasticsearch data size (Gb)
+        description: InfluxDB and Grafana data size (Gb)
         default: 100
+        constraints:
+            - range: { min: 1 }
+              description: Size must be set to at least 1Gb.
 
-    graylog_size_gb:
-        type: number
-        description: Graylog data size (Gb)
-        default: 10
-
-    graylog_admin_name:
+    grafana_admin_name:
         type: string
-        description: Graylog admin username
+        description: Grafana admin username
 
-    graylog_admin_password:
+    grafana_admin_password:
         type: string
-        description: Graylog admin password
+        description: Grafana admin password
         hidden: true
 
-    graylog_endpoint_url:
+    influxdb_admin_name:
+        type: string
+        description: InfluxDB admin username
+
+    influxdb_admin_password:
+        type: string
+        description: InfluxDB admin password
+        hidden: true
+        constraints:
+            - length: { min: 9 }
+              description: Password length must be between at least 10.
+
+    influxdb_organisation:
+        type: string
+        description: InfluxDB Org name
+        constraints:
+            - length: { min: 4 }
+              description: Organisation name length must be between at least 5.
+            - allowed_pattern: "[a-zA-Z0-9]+"
+              description: Organisation name must be alpha-numeric.
+
+    influxdb_retention_hours:
+        type: number
+        description: InfluxDB default retention (hours)
+        constraints:
+            - range: { min: 1 }
+              description: Retention must be positive
+
+    metrics_endpoint_url:
        type: string
-       description: Public hostname used to connect against Graylog
+       description: Public hostname used to connect against the tools
+
+    metrics_container:
+       type: string
+       description: Swift container to use for backups
 
     consul_usage:
        type: boolean
@@ -120,17 +158,22 @@ resources:
                         $git_repo_checkout: { get_param: git_repo_checkout }
                         $git_repo_url: { get_param: git_repo_url }
 
-                        #$os_password: { get_param: os_password }
-                        #$os_username: { get_param: os_username }
-                        #$os_auth_url: { get_param: os_auth_url }
+                        $os_password: { get_param: os_password }
+                        $os_username: { get_param: os_username }
+                        $os_auth_url: { get_param: os_auth_url }
 
-                        $graylog_admin_name: { get_param: graylog_admin_name }
-                        $graylog_admin_password: { get_param: graylog_admin_password }
-                        $graylog_endpoint_url: { get_param: graylog_endpoint_url }
+                        $grafana_admin_name: { get_param: grafana_admin_name }
+                        $grafana_admin_password: { get_param: grafana_admin_password }
+                        $influxdb_admin_name: { get_param: influxdb_admin_name }
+                        $influxdb_admin_password: { get_param: influxdb_admin_password }
+                        $influxdb_organisation: { get_param: influxdb_organisation }
+                        $influxdb_retention_hours: { get_param: influxdb_retention_hours }
+                        $metrics_endpoint_url: { get_param: metrics_endpoint_url }
+                        #$metrics_container: { get_resource: metrics_swift }
+                        $metrics_container: { get_param: metrics_container }
 
                         $cinder_containers_volume: { get_resource: appliance_containers_volume }
-                        $cinder_elasticsearch_volume: { get_resource: appliance_elasticsearch_volume }
-                        $cinder_graylog_volume: { get_resource: appliance_graylog_volume }
+                        $cinder_metrics_volume: { get_resource: appliance_metrics_volume }
 
                         $consul_usage: { get_param: consul_usage }
                         $consul_servers: { get_param: consul_servers }
@@ -161,7 +204,7 @@ resources:
                             yum install --assumeyes ansible git jq
                         else
                             apt update
-                            apt -y install ansible git jq
+                            apt -y install ansible git jq python3-swiftclient
                         fi
                         
                         # Configure ansible to work without an entire environment set
@@ -175,28 +218,36 @@ resources:
                         # Clone the bootstrap git repository
                         export REPO_PATH=/root/appliance
                         export ETC_PATH=$REPO_PATH/etc
-                        export PLAYBOOK=$REPO_PATH/logs/graylog.appliance.playbook.yml
+                        export PLAYBOOK=$REPO_PATH/metrics/metrics.appliance.playbook.yml
 
                         ## Set the Openstack credentials
-                        #export OS_AUTH_URL="$os_auth_url"
-                        #export OS_PROJECT_ID=$(awk -F'"' '/project_id/ {print $4}' /run/cloud-init/instance-data.json)
-                        #export OS_USER_DOMAIN_NAME="Default"
-                        #export OS_USERNAME="$os_username"
-                        #export OS_PASSWORD="$os_password"
-                        #export OS_REGION_NAME="RegionOne"
-                        #export OS_INTERFACE=public
-                        #export OS_IDENTITY_API_VERSION=3
+                        export OS_AUTH_URL="$os_auth_url"
+                        export OS_PROJECT_ID=$(awk -F'"' '/project_id/ {print $4}' /run/cloud-init/instance-data.json)
+                        export OS_USER_DOMAIN_NAME="Default"
+                        export OS_USERNAME="$os_username"
+                        export OS_PASSWORD="$os_password"
+                        export OS_REGION_NAME="RegionOne"
+                        export OS_INTERFACE=public
+                        export OS_IDENTITY_API_VERSION=3
+                        
+                        # Swift container
+                        export METRICS_CONTAINER=$metrics_container
 
                         # Set the volumes' IDs
                         export CONTAINERS_VOLUME=$cinder_containers_volume
-                        export GRAYLOG_VOLUME=$cinder_graylog_volume
-                        export ELASTICSEARCH_VOLUME=$cinder_elasticsearch_volume
+                        export METRICS_VOLUME=$cinder_metrics_volume
                         
-                        # Set the Graylog credentials
-                        export GRAYLOG_ADMIN_NAME="$graylog_admin_name"
-                        export GRAYLOG_ADMIN_PASSWORD="$graylog_admin_password"
-                        export GRAYLOG_ENDPOINT_URL="$graylog_endpoint_url"
-
+                        # Set the Grafana credentials
+                        export GRAFANA_ADMIN_NAME="$grafana_admin_name"
+                        export GRAFANA_ADMIN_PASSWORD="$grafana_admin_password"
+                        # Set the InfluxDB credentials
+                        export INFLUXDB_ADMIN_NAME="$influxdb_admin_name"
+                        export INFLUXDB_ADMIN_PASSWORD="$influxdb_admin_password"
+                        export INFLUXDB_ORG="$influxdb_organisation"
+                        export INFLUXDB_RETENTION_HOURS="$influxdb_retention_hours"
+                        # Set metrics endpoint
+                        export METRICS_ENDPOINT_URL="$metrics_endpoint_url"
+                        
                         # Set Consul variables
                         export CONSUL_USAGE="$consul_usage"
                         export CONSUL_SERVERS="$consul_servers"
@@ -207,7 +258,7 @@ resources:
 
                         # Autoconf the appliance
                         git clone -b $git_repo_checkout $git_repo_url $REPO_PATH || exit 1
-                        . $REPO_PATH/logs/graylog.appliance.autoconf.sh
+                        . $REPO_PATH/metrics/metrics.appliance.autoconf.sh
 
                         # Stop secure shell
                         systemctl stop ssh
@@ -216,11 +267,11 @@ resources:
 #######################################################
 # Security group
 
-    graylog_appliance_secgroup:
+    metrics_appliance_secgroup:
         type: OS::Neutron::SecurityGroup
         properties:
-            description: Security group with Graylog-specific ports
-            name: graylog-appliance
+            description: Security group with webservices ports
+            name: metrics-appliance
             rules: [
                 {
                     protocol: tcp,
@@ -231,39 +282,11 @@ resources:
                 },
                 {
                     protocol: tcp,
-                    port_range_min: 81,
-                    port_range_max: 81,
+                    port_range_min: 443,
+                    port_range_max: 443,
                     remote_ip_prefix: 0.0.0.0/0,
                     direction: ingress
                 },
-                {
-                    protocol: tcp,
-                    port_range_min: 514,
-                    port_range_max: 514,
-                    remote_ip_prefix: 0.0.0.0/0,
-                    direction: ingress
-                },
-                {
-                    protocol: udp,
-                    port_range_min: 514,
-                    port_range_max: 514,
-                    remote_ip_prefix: 0.0.0.0/0,
-                    direction: ingress
-                },
-                {
-                    protocol: tcp,
-                    port_range_min: 12201,
-                    port_range_max: 12201,
-                    remote_ip_prefix: 0.0.0.0/0,
-                    direction: ingress
-                },
-                {
-                    protocol: udp,
-                    port_range_min: 12201,
-                    port_range_max: 12201,
-                    remote_ip_prefix: 0.0.0.0/0,
-                    direction: ingress
-                }
             ]
 
 #######################################################
@@ -278,15 +301,13 @@ resources:
             ]
             security_groups: [
                 { get_param: default_secgroup_id },
-                { get_resource: graylog_appliance_secgroup }
+                { get_resource: metrics_appliance_secgroup }
             ]
-#            fixed_ips:
-#                - subnet_id: { get_resource: node_subnet }
 
     appliance:
         type: OS::Nova::Server
         properties:
-            name: graylog
+            name: metrics
             image: { get_param: image_id }
             flavor: { get_param: flavor }
             networks:
@@ -298,22 +319,22 @@ resources:
             user_data_format: SOFTWARE_CONFIG
             user_data: { get_resource: node_boot_script }
 
-    appliance_graylog_volume:
+    appliance_metrics_volume:
         type: OS::Cinder::Volume
         properties:
-            name: graylog-graylog-appliance
-            size: { get_param: graylog_size_gb }
+            name: metrics-metrics-appliance
+            size: { get_param: metrics_size_gb }
 
-    appliance_graylog_attachment:
+    appliance_metrics_attachment:
         type: OS::Cinder::VolumeAttachment
         properties:
-            volume_id: { get_resource: appliance_graylog_volume }
+            volume_id: { get_resource: appliance_metrics_volume }
             instance_uuid: { get_resource: appliance }
 
     appliance_containers_volume:
         type: OS::Cinder::Volume
         properties:
-            name: containers-graylog-appliance
+            name: containers-metrics-appliance
             size: 3
 
     appliance_containers_attachment:
@@ -322,17 +343,10 @@ resources:
             volume_id: { get_resource: appliance_containers_volume }
             instance_uuid: { get_resource: appliance }
 
-    appliance_elasticsearch_volume:
-        type: OS::Cinder::Volume
-        properties:
-            name: elasticsearch-graylog-appliance
-            size: { get_param: elasticsearch_size_gb }
-
-    appliance_elasticsearch_attachment:
-        type: OS::Cinder::VolumeAttachment
-        properties:
-            volume_id: { get_resource: appliance_elasticsearch_volume }
-            instance_uuid: { get_resource: appliance }
+#    metrics_swift:
+#        type: OS::Swift::Container
+#        properties:
+#            name: metrics
 
 #######################################################
 # Outputs

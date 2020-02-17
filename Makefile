@@ -113,16 +113,16 @@ logs:
 		--parameter git_repo_checkout=${GIT_REPO_CHECKOUT} \
 		--parameter git_repo_url=${GIT_REPO_URL} \
 		\
-		--template ${PWD}/logs/graylog.appliance.heat.yml \
-		--wait \
-		--timeout 60 \
-		\
 		--parameter consul_usage=${GRAYLOG_CONSUL_USAGE} \
-		--parameter consul_servers=${GRAYLOG_CONSUL_SERVERS} \
+		--parameter consul_servers="${GRAYLOG_CONSUL_SERVERS}" \
 		--parameter consul_dns_domain=${GRAYLOG_CONSUL_DNS_DOMAIN} \
 		--parameter consul_datacenter=${GRAYLOG_CONSUL_DATACENTER} \
 		--parameter consul_encrypt=${GRAYLOG_CONSUL_ENCRYPT} \
 		--parameter consul_dns_server=${GRAYLOG_CONSUL_DNS_SERVER} \
+		\
+		--template ${PWD}/logs/graylog.appliance.heat.yml \
+		--wait \
+		--timeout 60 \
 		\
 		logs
 
@@ -208,7 +208,7 @@ metrics:
 		--parameter git_repo_url=${GIT_REPO_URL} \
 		\
 		--parameter consul_usage=${METRICS_CONSUL_USAGE} \
-		--parameter consul_servers=${METRICS_CONSUL_SERVERS} \
+		--parameter consul_servers="${METRICS_CONSUL_SERVERS}" \
 		--parameter consul_dns_domain=${METRICS_CONSUL_DNS_DOMAIN} \
 		--parameter consul_datacenter=${METRICS_CONSUL_DATACENTER} \
 		--parameter consul_encrypt=${METRICS_CONSUL_ENCRYPT} \

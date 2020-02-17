@@ -39,7 +39,7 @@
                 content: "{{ grafana_consul_service[0] | to_nice_json }}"
 
 ###############################################################################
-# Docker
+# Containers
 #
 - name: Containers runtime configuration
   hosts: localhost
@@ -102,7 +102,6 @@
             fstype: xfs
 
   roles:
-#    - role: ansible-dnsmasq
     - role: ansible-rclone
     - role: ansible-podman
 

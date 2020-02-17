@@ -1,2 +1,7 @@
 *.retry
 .*.swp
+*.dvi
+*.tex
+*.log
+*.jpg
+*.jpg.*

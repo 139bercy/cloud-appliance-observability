@@ -12,7 +12,13 @@ parameters:
         constraints:
             - custom_constraint: glance.image
 
-    node_net_id:
+    front_net_id:
+        type: string
+        description: Network ID to use for the appliance
+        constraints:
+            - custom_constraint: neutron.network
+
+    back_net_id:
         type: string
         description: Network ID to use for the appliance
         constraints:
@@ -54,6 +60,15 @@ parameters:
     internet_http_no_proxy:
         type: string
         description: Proxy skiplist
+
+    ntp_server:
+        type: string
+        description: Remote NTP to use for sync
+
+    static_hosts:
+        type: string
+        description: JSON array of host:ip tuples
+        default:
 
     flavor:
         type: string
@@ -118,10 +133,6 @@ parameters:
        type: boolean
        description: Do we use consul?
 
-    consul_servers:
-       type: comma_delimited_list
-       description: Comma-separated list of Hashicorp Consul servers used by the appliance's Consul agent
-
     consul_dns_domain:
        type: string
        description: DNS domain used by Consul agent
@@ -176,11 +187,13 @@ resources:
                         $cinder_metrics_volume: { get_resource: appliance_metrics_volume }
 
                         $consul_usage: { get_param: consul_usage }
-                        $consul_servers: { get_param: consul_servers }
                         $consul_dns_domain: { get_param: consul_dns_domain }
                         $consul_datacenter: { get_param: consul_datacenter }
                         $consul_encrypt: { get_param: consul_encrypt }
                         $consul_dns_server: { get_param: consul_dns_server }
+
+                        $appliance_back_port : { get_resource: appliance_back_port }
+                        $ntp_server: { get_param: ntp_server }
                     template: |
                         #!/bin/bash
                         set -x
@@ -250,11 +263,19 @@ resources:
                         
                         # Set Consul variables
                         export CONSUL_USAGE="$consul_usage"
-                        export CONSUL_SERVERS="$consul_servers"
                         export CONSUL_DNS_DOMAIN="$consul_dns_domain"
                         export CONSUL_DATACENTER="$consul_datacenter"
                         export CONSUL_ENCRYPT="$consul_encrypt"
                         export CONSUL_DNS_SERVER="$consul_dns_server"
+
+                        # Test proxy and Openstack endpoint
+                        curl -v $HTTP_PROXY
+                        openstack server list
+                        openstack port show $appliance_back_port -c fixed_ips
+                        export BACK_IP=$(openstack port show $appliance_back_port -c fixed_ips | perl -ne '/ip_address=.([\d|\.]+)., / && print $1')
+
+                        # Set NTP variables
+                        export NTP_SERVER=$ntp_server
 
                         # Autoconf the appliance
                         git clone -b $git_repo_checkout $git_repo_url $REPO_PATH || exit 1
@@ -295,10 +316,15 @@ resources:
     appliance_front_port:
         type: OS::Neutron::Port
         properties:
-            network_id: { get_param: node_net_id }
+            network_id: { get_param: front_net_id }
             security_groups: [
                 { get_param: default_secgroup_id }
             ]
+
+    appliance_back_port:
+        type: OS::Neutron::Port
+        properties:
+            network_id: { get_param: back_net_id }
             security_groups: [
                 { get_param: default_secgroup_id },
                 { get_resource: metrics_appliance_secgroup }
@@ -312,6 +338,7 @@ resources:
             flavor: { get_param: flavor }
             networks:
                 - port: { get_resource: appliance_front_port }
+                - port: { get_resource: appliance_back_port }
             metadata: {
                 group: observability,
                 image: { get_param: image_id }

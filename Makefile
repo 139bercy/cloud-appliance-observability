@@ -185,7 +185,8 @@ metrics:
 		\
 		--parameter flavor=${METRICS_FLAVOR} \
 		--parameter image_id=${METRICS_IMAGE_ID} \
-		--parameter node_net_id=${METRICS_NET_ID} \
+		--parameter front_net_id=${METRICS_FRONT_NET_ID} \
+		--parameter back_net_id=${METRICS_BACK_NET_ID} \
 		--parameter default_secgroup_id=$(METRICS_SECGROUP_ID) \
 		--parameter os_username=$(METRICS_OS_USERNAME) \
 		--parameter os_password=$(METRICS_OS_PASSWORD) \
@@ -203,12 +204,13 @@ metrics:
 		\
 		--parameter internet_http_proxy_url=${METRICS_HTTP_PROXY} \
 		--parameter internet_http_no_proxy=${METRICS_NO_PROXY} \
+		--parameter static_hosts=${METRICS_STATIC_HOSTS} \
+		--parameter ntp_server=${METRICS_NTP_SERVER} \
 		\
 		--parameter git_repo_checkout=${GIT_REPO_CHECKOUT} \
 		--parameter git_repo_url=${GIT_REPO_URL} \
 		\
 		--parameter consul_usage=${METRICS_CONSUL_USAGE} \
-		--parameter consul_servers="${METRICS_CONSUL_SERVERS}" \
 		--parameter consul_dns_domain=${METRICS_CONSUL_DNS_DOMAIN} \
 		--parameter consul_datacenter=${METRICS_CONSUL_DATACENTER} \
 		--parameter consul_encrypt=${METRICS_CONSUL_ENCRYPT} \

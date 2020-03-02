@@ -77,9 +77,6 @@ logs:
 
 	@echo ${GRAYLOG_CONSUL_USAGE} | egrep -q "^(true|false)$$" \
 		|| ( echo GRAYLOG_CONSUL_USAGE must be set to true or false ; exit 1)
-	@(test -z ${GRAYLOG_CONSUL_SERVERS} && echo ${GRAYLOG_CONSUL_USAGE} | fgrep true ) \
-		&& ( echo GRAYLOG_CONSUL_SERVERS is empty ; exit 1) \
-		|| true
 	@(test -z ${GRAYLOG_CONSUL_DNS_DOMAIN} && echo ${GRAYLOG_CONSUL_USAGE} | fgrep true ) \
 		&& ( echo GRAYLOG_CONSUL_DNS_DOMAIN is empty ; exit 1) \
 		|| true
@@ -114,7 +111,6 @@ logs:
 		--parameter git_repo_url=${GIT_REPO_URL} \
 		\
 		--parameter consul_usage=${GRAYLOG_CONSUL_USAGE} \
-		--parameter consul_servers="${GRAYLOG_CONSUL_SERVERS}" \
 		--parameter consul_dns_domain=${GRAYLOG_CONSUL_DNS_DOMAIN} \
 		--parameter consul_datacenter=${GRAYLOG_CONSUL_DATACENTER} \
 		--parameter consul_encrypt=${GRAYLOG_CONSUL_ENCRYPT} \
@@ -163,9 +159,6 @@ metrics:
 
 	@echo ${METRICS_CONSUL_USAGE} | egrep -q "^(true|false)$$" \
 		|| ( echo METRICS_CONSUL_USAGE must be set to true or false ; exit 1)
-	@(test -z ${METRICS_CONSUL_SERVERS} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
-		&& ( echo METRICS_CONSUL_SERVERS is empty ; exit 1) \
-		|| true
 	@(test -z ${METRICS_CONSUL_DNS_DOMAIN} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
 		&& ( echo METRICS_CONSUL_DNS_DOMAIN is empty ; exit 1) \
 		|| true
@@ -226,6 +219,13 @@ metrics:
 #
 # Maintenance
 #
+
+# Prepare
+.PHONY: prepare # Download atifacts from internet to Swift
+prepare:
+	@./bin/copy_binaries.sh
+	@./bin/copy_packages.sh
+	@./bin/copy_containers.sh
 
 # Clean
 .PHONY: clean-logs # Destroy the logs appliance

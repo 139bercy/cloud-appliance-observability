@@ -4,6 +4,15 @@
 
 Deploy logs and metrics management appliances using Openstack HEAT.
 
+## Prerequisites
+
+You need to install consul localy in order to fix a value for `GRAYLOG_CONSUL_ENCRYPT`.
+
+Then, you can get a value:
+```bash
+export GRAYLOG_CONSUL_ENCRYPT=$(consul keygen)
+```
+
 ## Usage
 
 You must source your Openstack credentials first. Then, some variables need to 

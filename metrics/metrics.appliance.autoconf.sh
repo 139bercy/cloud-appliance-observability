@@ -9,6 +9,8 @@ export NO_PROXY=$NO_PROXY
 export http_proxy=$http_proxy
 export no_proxy=$no_proxy
 
+export static_hosts=$static_hosts
+
 export PLAYBOOK="$PLAYBOOK -v"
 
 export CONTAINERS_VOLUME=$CONTAINERS_VOLUME

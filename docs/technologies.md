@@ -9,9 +9,11 @@ de la partie métier.
 
 Nom de l'outil   | Fonction          | Support SLL
 -----------------|-------------------|------------
-Ubuntu 18.04 LTS | Système           |
+Centos 8         | Système           |
 Traefik          | Répartiteur       |
 Podman           | Exécution         |
+
+Centos 8 sera prochainement disponible.
 
 ### Métrologie et supervision
 
@@ -32,25 +34,39 @@ Graylog          | Gestion des logs  |
 MongoDB          | NoSQL             |
 Elasticsearch    | Base de logs      |
 
+
 ## Outils de développement
 
 ### Construction
 
 Les utilitaires de construction permettent de déployer la pile logicielle.
 
-Nom de l'outil   | Fonction      | Support SLL
------------------|---------------|------------
-Ansible          | Déployeur     | Oui
-Makefile         | Orchestration |
+Nom de l'outil   | Fonction               | Support SLL
+-----------------|------------------------|------------
+Ansible          | Déployeur              | Oui
+Makefile         | Enchaînement de tâches |
 
 ### Forge
 
-[Groupe des Ministères Économiques et Financiers](https://github.com/139bercy/cloud-appliance-observability)
+Forge interne hébergé sur le gitlab interministériel.
 
-### CI / CD
+### Intégration continue / Développement continu
 
-TODO: à réfléchir avec les cibles `Makefile`.
+L'intégration continue et le développement continu fonctionneront via la brique Jenkins de la PIC Cloud.
 
 ## Environnements de développement et de tests
 
-Hébergement infonuagique interne.
+
+### SI-1A
+
+Le développement de l'appliance est fait par SI-1A via 3 couloirs (production, secours, test) hébergés sur l'infonuagique interne.  
+
+### partenaires extérieurs
+
+Les partenaires extérieurs doivent utiliser leurs bacs à sable.
+
+## Stratégie de montée de version
+
+Le chef de projet décide de la reconstruction de son appliance avec la nouvelle version disponible.
+De cette façon l'appliance restaurera la dernière version en cours.
+Les actions de post-configuration du projet pourront être relancées.

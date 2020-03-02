@@ -10,6 +10,7 @@
       command: /usr/local/bin/consul reload
 
   roles:
+    - role: ansible-get-swift-objects
     - role: ansible-bootstrap-system
 
   post_tasks:

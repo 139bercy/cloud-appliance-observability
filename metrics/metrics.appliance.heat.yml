@@ -165,6 +165,7 @@ resources:
                     params:
                         $internet_http_proxy_url: { get_param : internet_http_proxy_url }
                         $internet_http_no_proxy: { get_param : internet_http_no_proxy }
+                        $static_hosts: { get_param: static_hosts }
 
                         $git_repo_checkout: { get_param: git_repo_checkout }
                         $git_repo_url: { get_param: git_repo_url }
@@ -214,12 +215,23 @@ resources:
                                 grep -q proxy= /etc/yum.conf || echo "proxy=$HTTP_PROXY" >> /etc/yum.conf
                             fi
 
-                            yum install --assumeyes ansible git jq
+                            yum install --assumeyes ansible git jq > /dev/null
                         else
-                            apt update
-                            apt -y install ansible git jq python3-swiftclient
+                            apt update > /dev/null
+                            apt -y install ansible git jq python3-swiftclient python3-openstackclient > /dev/null
                         fi
-                        
+
+                        # DNS: Populate /etc/hosts
+                        if [ ! -z "$static_hosts" ] ; then
+                            echo $static_hosts > /tmp/static_hosts
+                            cat /tmp/static_hosts \
+                                | perl -pe 's/\[|\]|{|}//g' \
+                                |  tr ',' '\n' \
+                                | awk -F: '{print $2,$1}' \
+                                | awk '{print $1,$2}' \
+                                >> /etc/hosts
+                        fi
+
                         # Configure ansible to work without an entire environment set
                         sed -i 's/~/\/root/' /etc/ansible/ansible.cfg
                         sed -i 's/^#remote_tmp/remote_tmp/' /etc/ansible/ansible.cfg
@@ -269,7 +281,7 @@ resources:
                         export CONSUL_DNS_SERVER="$consul_dns_server"
 
                         # Test proxy and Openstack endpoint
-                        curl -v $HTTP_PROXY
+                        curl -vks $HTTP_PROXY > /dev/null
                         openstack server list
                         openstack port show $appliance_back_port -c fixed_ips
                         export BACK_IP=$(openstack port show $appliance_back_port -c fixed_ips | perl -ne '/ip_address=.([\d|\.]+)., / && print $1')
@@ -278,6 +290,7 @@ resources:
                         export NTP_SERVER=$ntp_server
 
                         # Autoconf the appliance
+                        curl -vks $git_repo_url > /dev/null
                         git clone -b $git_repo_checkout $git_repo_url $REPO_PATH || exit 1
                         . $REPO_PATH/metrics/metrics.appliance.autoconf.sh
 

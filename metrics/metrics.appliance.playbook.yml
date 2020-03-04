@@ -10,8 +10,8 @@
       command: /usr/local/bin/consul reload
 
   roles:
-    - role: ansible-get-swift-objects
     - role: ansible-bootstrap-system
+    - role: ansible-get-swift-objects
 
   post_tasks:
     - name: Install consul agent

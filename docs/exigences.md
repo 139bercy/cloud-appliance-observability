@@ -2,14 +2,25 @@
 
 ## Dépendances externes
 
-* Dépôt `git` d'hébergement des scripts d'installation :
-  * github : [cloud-appliance-observability](https://github.com/139bercy/cloud-appliance-observability) ;
-  * gitlab : mirroir pour installer hors-ligne.
+* [Forge `gitlab` interministérielle](https://forge.dgfip.finances.rie.gouv.fr) :
+  * dépôt de l'appliance :
+    * [cloud-appliance-observability](https://forge.dgfip.finances.gouv.fr/dgfip/cloud/deploiements/cloud-appliance-observability) ;
+  * rôles `ansible` synchronisés depuis `github` :
+    * [ansible-bootstrap-system](https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-bootstrap-system) ;
+    * [ansible-consul](https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-consul) ;
+    * [ansible-dnsmasq](https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-dnsmasq) ;
+    * [ansible-get-swift-objects](https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-get-swift-objects) ;
+    * [ansible-graylog-input](https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-graylog-input) ;
+    * [ansible-influxdb-bucket](https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-influxdb-bucket) ;
+    * [ansible-influxdb-scraper](https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-influxdb-scraper) ;
+    * [ansible-podman](https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-podman) ;
+    * [ansible-rclone](https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-rclone) ;
+    * [ansible-telegraf](https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-telegraf).
 
 * Services infonuagiques :
   * stockage objects `swift` pour les sauvegardes ;
   * service d'orchestration `HEAT` pour l'installation de la solution ;
-  * portail de gestion des services d'infonuagiques pour piloter le cycle de 
+  * portail de gestion des services infonuagiques pour piloter le cycle de 
   vie du produit.
 
 * Services socles :
@@ -26,6 +37,9 @@ Les appliances sont auto-configurées. Les migrations et mises à jour consisten
 Afin d'éviter une migration technique majeure, il est préférable d'utiliser 
 la version `2.0-beta` d'`InfluxDB` directement. En effet, son cycle de vie est 
 beaucoup plus rapide que les projets internes.
+
+Le format utilisé pour la sauvegarde est totalement générique et est de fait 
+exportable dans d'autres types d'outils.
 
 ## Contraintes
 

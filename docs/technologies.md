@@ -7,11 +7,11 @@
 Ces éléments représentent les briques sous-jacentes nécessaires à l'exécution 
 de la partie métier.
 
-Nom de l'outil   | Fonction          | Support SLL
------------------|-------------------|------------
-Ubuntu 18.04 LTS | Système           |
-Traefik          | Répartiteur       |
-Podman           | Exécution         |
+Nom de l'outil | Fonction      | Support SLL
+---------------|---------------|------------
+CentOS 8       | Système       |
+Traefik        | Répartiteur   |
+Podman         | Exécution     |
 
 ### Métrologie et supervision
 
@@ -41,11 +41,10 @@ Les utilitaires de construction permettent de déployer la pile logicielle.
 Nom de l'outil   | Fonction      | Support SLL
 -----------------|---------------|------------
 Ansible          | Déployeur     | Oui
-Makefile         | Orchestration |
 
 ### Forge
 
-[Groupe des Ministères Économiques et Financiers](https://github.com/139bercy/cloud-appliance-observability)
+[Gitlab interministérielle sur le RIE](https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/deploiements/cloud-appliance-observability.git)
 
 ### CI / CD
 

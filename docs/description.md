@@ -17,6 +17,10 @@ espaces projets (`tenants`) infonuagiques.
 
 ## Principales fonctionnalités
 
+La solution se base sur le déploiement de solutions logicielles sur étagère 
+en conteneurs au sein d'une paire de machines virtuelles. Ces conteneurs sont 
+lancés par l'outil `podman`.
+
 La solution permet de :
 
 * centraliser les journaux d'évènements :

@@ -98,18 +98,16 @@ dgfip_logo.jpg:
 	@wget --quiet --output-document=dgfip_logo.jpg \
 			https://www.economie.gouv.fr/files/dgfip_logo.jpg
 
-.PHONY: placement.png
 placement.png:
 	@drawio \
 		--output placement.png \
-		--page-index=1 \
+		--page-index=0 \
 		$(DRAWIO_OPTS)
 
-.PHONY: briques.png
 briques.png:
 	@drawio \
 		--output briques.png \
-		--page-index=2 \
+		--page-index=1 \
 		$(DRAWIO_OPTS)
 
 .PHONY: latex

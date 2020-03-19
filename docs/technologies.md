@@ -13,6 +13,16 @@ CentOS 8       | Système       |
 Traefik        | Répartiteur   |
 Podman         | Exécution     |
 
+### Intégration cloud
+
+Ces éléments représentent les briques sous-jacentes nécessaires à l'intégration 
+des solutions logicielles avec les autres applicances.
+
+Nom de l'outil | Fonction             | Support SLL
+---------------|----------------------|------------
+Consul         | Mise en réseau cloud |
+Telegraf       | Client de métrologie |
+
 ### Métrologie et supervision
 
 Ces éléments représentent les outils de gestion de métriques et d'alertes.
@@ -41,14 +51,15 @@ Les utilitaires de construction permettent de déployer la pile logicielle.
 Nom de l'outil   | Fonction      | Support SLL
 -----------------|---------------|------------
 Ansible          | Déployeur     | Oui
+Openstack HEAT   | Déployeur     |
 
 ### Forge
 
-[Gitlab interministérielle sur le RIE](https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/deploiements/cloud-appliance-observability.git)
+[`Gitlab` interministérielle sur le RIE](https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/deploiements/cloud-appliance-observability.git)
 
 ### CI / CD
 
-TODO: à réfléchir avec les cibles `Makefile`.
+Les usines logicielles de la DGFIP sont utilisées
 
 ## Environnements de développement et de tests
 

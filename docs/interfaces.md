@@ -21,7 +21,7 @@ En conséquence, son insertion dans l'architecture du `tenant` doit être
 adaptées en fonction de son usage :
 
 * consultation des données : il est néccesaire de publier les services avec un 
-serveur mandataire sur le réseau de *back-office* `FIP_ADMINISTRATION` (cf. 
+serveur mandataire sur le réseau de *back-office* `FIP_ADMINISTRATION` (cf.
 restriction d'une adresse par projet sur ce réseau) ;
 
 * envoi des données : les ressources du `tenant` envoient directement les 
@@ -73,7 +73,7 @@ En conséquence, son insertion dans l'architecture du `tenant` doit être
 adaptées en fonction de son usage :
 
 * consultation des données : il est néccesaire de publier les services avec un 
-serveur mandataire sur le réseau de *back-office* `FIP_ADMINISTRATION` (cf. 
+serveur mandataire sur le réseau de *back-office* `FIP_ADMINISTRATION` (cf.
 restriction d'une adresse par projet sur ce réseau) ;
 
 * envoi des données : les ressources du `tenant` envoient directement les 

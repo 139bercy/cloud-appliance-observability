@@ -1,7 +1,7 @@
 ###############################################################################
 
 DATE	= $(shell git log -n 1 --date=short \
-		| awk '/^Date:/ {gsub("Date:\\s+","");print $$0}')
+		| awk '/^Date:/ {print $$2}')
 
 CLASSOPTION = 	-V classoption=oneside \
 		-V classoption=idxtotoc \
@@ -60,7 +60,7 @@ ODT_OPTS =	--output="$(OUTPUT_NAME).odt"
 DRAWIO_OPTS =	--border=1 \
 		--scale=2 \
 		--export \
-		diagrammes.xml
+		diagrammes.drawio
 
 PANDOC_OPTS =	-V title="$(TITLE)" \
 		-V subtitle="$(SUBTITLE)" \

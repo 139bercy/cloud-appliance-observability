@@ -92,7 +92,7 @@ test:
 	@which wget > /dev/null
 	@which drawio > /dev/null
 
-images: dgfip_logo.jpg placement.png briques.png
+images: dgfip_logo.jpg placement_mutu.png placement.png briques.png
 
 dgfip_logo.jpg:
 	@wget --quiet --output-document=dgfip_logo.jpg \
@@ -103,11 +103,16 @@ placement.png:
 		--output placement.png \
 		--page-index=0 \
 		$(DRAWIO_OPTS)
+placement_mutu.png:
+	@drawio \
+		--output placement_mutu.png \
+		--page-index=1 \
+		$(DRAWIO_OPTS)
 
 briques.png:
 	@drawio \
 		--output briques.png \
-		--page-index=1 \
+		--page-index=2 \
 		$(DRAWIO_OPTS)
 
 .PHONY: latex

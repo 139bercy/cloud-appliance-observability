@@ -2,7 +2,9 @@
 
 ## Schéma fonctionnel
 
-![Architecture applicative](./placement.png)
+![Architecture applicative dédiée à un projet](./placement.png)
+
+![Architecture applicative mutualisée](./placement_mutu.png)
 
 ## Description des briques
 

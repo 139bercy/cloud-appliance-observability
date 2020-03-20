@@ -342,7 +342,7 @@
                       --bucket default \
                       --org {{ influxdb_org }} \
                       --password {{ influxdb_password }} \
-                      --retention {{ influxdb_retention }} \
+                      --retention {{ influxdb_retention }}h \
                       --username {{ influxdb_admin }}
 
     - name: InfluxDB | Upload admin token to object storage

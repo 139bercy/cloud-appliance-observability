@@ -13,6 +13,8 @@ CentOS 8       | Système       |
 Traefik        | Répartiteur   |
 Podman         | Exécution     |
 
+Centos 8 sera prochainement disponible.
+
 ### Intégration cloud
 
 Ces éléments représentent les briques sous-jacentes nécessaires à l'intégration 
@@ -42,6 +44,7 @@ Graylog          | Gestion des logs  |
 MongoDB          | NoSQL             |
 Elasticsearch    | Base de logs      |
 
+
 ## Outils de développement
 
 ### Construction
@@ -57,10 +60,23 @@ Openstack HEAT   | Déployeur     |
 
 [`Gitlab` interministérielle sur le RIE](https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/deploiements/cloud-appliance-observability.git)
 
-### CI / CD
+### Intégration continue / Développement continu
 
-Les usines logicielles de la DGFIP sont utilisées
+Les usines logicielles de la DGFIP sont utilisées (cf. Jenkins de la PIC Cloud).
 
 ## Environnements de développement et de tests
 
-Hébergement infonuagique interne.
+
+### SI-1A
+
+Le développement de l'appliance est fait par SI-1A via 3 couloirs (production, secours, test) hébergés sur l'infonuagique interne.  
+
+### partenaires extérieurs
+
+Les partenaires extérieurs doivent utiliser leurs bacs à sable.
+
+## Stratégie de montée de version
+
+Le chef de projet décide de la reconstruction de son appliance avec la nouvelle version disponible.
+De cette façon l'appliance restaurera la dernière version en cours.
+Les actions de post-configuration du projet pourront être relancées.

@@ -86,6 +86,8 @@ Protocole | Format
 ----------|-------------------------------------------------------------------------------------------------
 HTTP      | [GELF](http://docs.graylog.org/en/3.2/pages/gelf.html#sending-gelf-messages-via-http-using-curl)
 
+Le format GELF a l'avantage d'être du JSON avec des champs obligatoires.
+
 ### Exemples de configuration des clients
 
 Des bibliothèques sont disponibles pour les langages autorisés à la DGFiP.

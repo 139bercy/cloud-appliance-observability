@@ -4,3 +4,5 @@
   * contrat d'interface ;
   * date de fourniture d'un bouchon ;
   * date de mise en production.
+
+* Demandé à Thierry AIME l'inscription au SLL des principales briques.

@@ -2,8 +2,7 @@
 
 ## Origine du projet
 
-Afin d'accompagner la démarche "dev-ops" des projets, l'équipe d'architecture 
-applicative fournit des socles d'outils pré-configurés. L'un de ces socles 
+Afin d'accompagner la démarche "dev-ops" des projets, la division méthodes et outils de développement (DMOD) du bureau SI-1A fournit des socles d'outils pré-configurés. L'un de ces socles 
 permet l'observabilité les ressources du projet selon trois axes :
 
 * centralisation des journaux d'évènements ;

@@ -364,6 +364,10 @@
                       --retention {{ influxdb_retention }}h \
                       --username {{ influxdb_admin }}
 
+    - name: InfluxDB | Get influxdb_admin_token from file
+      register: token_result
+      shell: awk -F '"' '/^\s+token/ {print $2}' /var/lib/influxdb/.conf/configs
+
     - name: InfluxDB | Update influxdb_admin_token fact
       set_fact: influxdb_admin_token="{{ token_result.stdout }}"
 
@@ -372,10 +376,6 @@
       shell: >
           echo {{ influxdb_admin_token }} | swift upload --object-name admin_token \
               {{ metrics_container }} -
-
-    - name: InfluxDB | Get influxdb_admin_token from file
-      register: token_result
-      shell: awk -F '"' '/^\s+token/ {print $2}' /var/lib/influxdb/.conf/configs
 
     - name: InfluxDB | Create buckets and tokens
       include_role:

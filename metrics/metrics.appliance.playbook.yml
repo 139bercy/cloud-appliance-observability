@@ -326,6 +326,16 @@
           influxdb_org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
           influxdb_retention: "{{ lookup('env', 'INFLUXDB_RETENTION_HOURS') }}"
           metrics_container: "{{ lookup('env', 'METRICS_CONTAINER') }}"
+          swift_available: true
+
+    - name: InfluxDB | Check Swift endpoint
+      ignore_errors: true
+      register: check_swift_result
+      command: openstack container list
+
+    - name: InfluxDB | Set facts
+      when: check_swift_result.stderr | length > 0
+      set_fact: swift_available=false
 
     - name: InfluxDB | Wait for InfluxDB to be UP
       register: ping_result
@@ -355,6 +365,7 @@
                       --username {{ influxdb_admin }}
 
     - name: InfluxDB | Upload admin token to object storage
+      when: swift_available | bool == true
       shell: >
           swift upload --object-name admin_token \
               {{ metrics_container }} \
@@ -376,6 +387,7 @@
           name: ansible-influxdb-scraper
 
     - name: InfluxDB | Send tokens to Swift
+      when: swift_available | bool == true
       shell: >
           for l in $(cat {{ influxdb_api.tokens_output_file }}) ; do \
               name=$(echo $l | awk -F, '{print $1"."$2"."$3}') ; \

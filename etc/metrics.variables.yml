@@ -178,7 +178,7 @@ influxdb_buckets:
 
 influxdb_scrapers:
     - name: influxdb
-      org: dgfip
+      org: "{{ influxdb_org }}"
       bucket: appliance-metrics
       type: prometheus
       url: http://127.0.0.1:{{ influxdb_conf.bind.port }}/metrics

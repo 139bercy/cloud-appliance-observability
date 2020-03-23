@@ -29,3 +29,11 @@
 - name: ansible-get-swift-objects
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-get-swift-objects
   version: master
+
+- name: ansible-influxdb-bucket
+  src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-influxdb-bucket
+  version: master
+
+- name: ansible-influxdb-scaper
+  src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-influxdb-scraper
+  version: master

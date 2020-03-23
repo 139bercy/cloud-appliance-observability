@@ -373,7 +373,7 @@
 
     - name: InfluxDB | Get influxdb_admin_token from file
       register: token_result
-      shell: cat /var/lib/influxdb/.conf/credentials
+      shell: awk -F '"' '/^\s+token/ {print $2}' /var/lib/influxdb/.conf/configs
 
     - name: InfluxDB | Update influxdb_admin_token fact
       set_fact: influxdb_admin_token="{{ token_result.stdout }}"

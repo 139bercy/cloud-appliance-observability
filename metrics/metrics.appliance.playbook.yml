@@ -209,6 +209,7 @@
               --name influxdb \
               --mount type=bind,src=/var/lib/influxdb,target=/var/lib/influxdb \
               --mount type=bind,src=/var/lib/influxdb/.conf,target=/.influxdbv2 \
+              --mount type=bind,src=/root/appliance/files/influxdb,target=/etc/influxdb,ro=true \
               quay.io/influxdb/influxdb:2.0.0-beta \
               influxd \
               --reporting-disabled \
@@ -384,6 +385,13 @@
     - name: InfluxDB | Create scrapers
       include_role:
           name: ansible-influxdb-scraper
+
+    - name: InfluxDB | Import packages
+      command: >
+          podman exec -ti influxdb \
+              influx \
+                  --host=http://localhost:{{ influxdb_conf.bind.port }} \
+                  pkg --recurse --file /etc/influxdb --force true --quiet
 
     - name: InfluxDB | Send tokens to Swift
       when: swift_available | bool == true

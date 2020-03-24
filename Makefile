@@ -11,7 +11,7 @@ syntax:
 	@which ansible-lint
 	@find . -type f -name "*.playbook.yml" -exec ansible-lint {} \;
 
-.PHONY: test # Testing YAML syntax, env variables and openstack connectivity
+
 test: syntax
 	@openstack stack list 1>/dev/null
 
@@ -21,6 +21,10 @@ status:
 	@echo "Cloud: ${OS_AUTH_URL}"
 	@echo "#######################################################"
 	@openstack stack list
+	@echo "#######################################################"
+	@cd metrics && terraform show
+	@echo "#######################################################"
+	@cd logs && terraform show
 
 .PHONY: help # This help message
 help:
@@ -33,6 +37,58 @@ help:
 #
 # Hosted services
 #
+.PHONY: metrics-check # Check metrics env variables
+metrics-check:
+	@test ! -z ${METRICS_SIZE_GB} \
+		|| (echo METRICS_SIZE_GB is empty ; exit 1)
+
+	@test ! -z ${METRICS_OS_USERNAME} \
+		|| (echo METRICS_OS_USERNAME is empty ; exit 1)
+	@test ! -z ${METRICS_OS_PASSWORD} \
+		|| (echo METRICS_OS_PASSWORD is empty ; exit 1)
+	@test ! -z ${METRICS_OS_AUTH_URL} \
+		|| (echo METRICS_OS_AUTH_URL is empty ; exit 1)
+
+	@test ! -z ${METRICS_FLAVOR} \
+		|| (echo METRICS_FLAVOR is empty ; exit 1)
+	@test ! -z ${METRICS_IMAGE_ID} \
+		|| (echo METRICS_IMAGE_ID is empty ; exit 1)
+	@test ! -z ${METRICS_FRONT_NET_ID} \
+		|| (echo METRICS_FRONT_NET_ID is empty ; exit 1)
+	@test ! -z ${METRICS_SECGROUP_ID} \
+		|| (echo METRICS_SECGROUP_ID is empty ; exit 1)
+
+	@test ! -z ${GRAFANA_ADMIN} \
+		|| (echo GRAFANA_ADMIN is empty ; exit 1)
+	@test ! -z ${GRAFANA_PASSWORD} \
+		|| (echo GRAFANA_PASSWORD is empty ; exit 1)
+	@test ! -z ${INFLUXDB_ADMIN} \
+		|| (echo INFLUXDB_ADMIN is empty ; exit 1)
+	@test ! -z ${INFLUXDB_PASSWORD} \
+		|| (echo INFLUXDB_PASSWORD is empty ; exit 1)
+	@test ! -z ${INFLUXDB_ORG} \
+		|| (echo INFLUXDB_ORG is empty ; exit 1)
+	@test ! -z ${INFLUXDB_RETENTION_HOURS} \
+		|| (echo INFLUXDB_RETENTION_HOURS is empty ; exit 1)
+
+	@test ! -z ${METRICS_ENDPOINT} \
+		|| (echo METRICS_ENDPOINT is empty ; exit 1)
+
+	@echo ${METRICS_CONSUL_USAGE} | egrep -q "^(true|false)$$" \
+		|| ( echo METRICS_CONSUL_USAGE must be set to true or false ; exit 1)
+	@(test -z ${METRICS_CONSUL_DNS_DOMAIN} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
+		&& ( echo METRICS_CONSUL_DNS_DOMAIN is empty ; exit 1) \
+		|| true
+	@(test -z ${METRICS_CONSUL_DATACENTER} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
+		&& ( echo METRICS_CONSUL_DATACENTER is empty ; exit 1) \
+		|| true
+	@(test -z ${METRICS_CONSUL_ENCRYPT} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
+		&& ( echo METRICS_CONSUL_ENCRYPT is empty ; exit 1) \
+		|| true
+	@(test -z ${METRICS_CONSUL_DNS_SERVER} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
+		&& ( echo METRICS_CONSUL_DNS_SERVER is empty ; exit 1) \
+		|| true
+
 .PHONY: logs # Configure graylog service
 logs:
 	@test ! -z ${GRAYLOG_SIZE_GB} \
@@ -111,6 +167,7 @@ logs:
 		--parameter git_repo_url=${GIT_REPO_URL} \
 		\
 		--parameter consul_usage=${GRAYLOG_CONSUL_USAGE} \
+		--parameter consul_servers=${GRAYLOG_CONSUL_SERVERS} \
 		--parameter consul_dns_domain=${GRAYLOG_CONSUL_DNS_DOMAIN} \
 		--parameter consul_datacenter=${GRAYLOG_CONSUL_DATACENTER} \
 		--parameter consul_encrypt=${GRAYLOG_CONSUL_ENCRYPT} \
@@ -118,60 +175,12 @@ logs:
 		\
 		--template ${PWD}/logs/graylog.appliance.heat.yml \
 		--wait \
-		--timeout 60 \
+		--timeout 120 \
 		\
 		logs
 
 .PHONY: metrics # Configure metrics service
-metrics:
-	@test ! -z ${METRICS_SIZE_GB} \
-		|| (echo METRICS_SIZE_GB is empty ; exit 1)
-
-	@test ! -z ${METRICS_OS_USERNAME} \
-		|| (echo METRICS_OS_USERNAME is empty ; exit 1)
-	@test ! -z ${METRICS_OS_PASSWORD} \
-		|| (echo METRICS_OS_PASSWORD is empty ; exit 1)
-	@test ! -z ${METRICS_OS_AUTH_URL} \
-		|| (echo METRICS_OS_AUTH_URL is empty ; exit 1)
-
-	@test ! -z ${METRICS_FLAVOR} \
-		|| (echo METRICS_FLAVOR is empty ; exit 1)
-	@test ! -z ${METRICS_IMAGE_ID} \
-		|| (echo METRICS_IMAGE_ID is empty ; exit 1) 
-	@test ! -z ${METRICS_NET_ID} \
-		|| (echo METRICS_NET_ID is empty ; exit 1) 
-	@test ! -z ${METRICS_SECGROUP_ID} \
-		|| (echo METRICS_SECGROUP_ID is empty ; exit 1) 
-
-	@test ! -z ${GRAFANA_ADMIN} \
-		|| (echo GRAFANA_ADMIN is empty ; exit 1) 
-	@test ! -z ${GRAFANA_PASSWORD} \
-		|| (echo GRAFANA_PASSWORD is empty ; exit 1) 
-	@test ! -z ${INFLUXDB_ADMIN} \
-		|| (echo INFLUXDB_ADMIN is empty ; exit 1) 
-	@test ! -z ${INFLUXDB_PASSWORD} \
-		|| (echo INFLUXDB_PASSWORD is empty ; exit 1)
-	@test ! -z ${INFLUXDB_ORG} \
-		|| (echo INFLUXDB_ORG is empty ; exit 1)
-
-	@test ! -z ${METRICS_ENDPOINT} \
-		|| (echo METRICS_ENDPOINT is empty ; exit 1) 
-
-	@echo ${METRICS_CONSUL_USAGE} | egrep -q "^(true|false)$$" \
-		|| ( echo METRICS_CONSUL_USAGE must be set to true or false ; exit 1)
-	@(test -z ${METRICS_CONSUL_DNS_DOMAIN} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
-		&& ( echo METRICS_CONSUL_DNS_DOMAIN is empty ; exit 1) \
-		|| true
-	@(test -z ${METRICS_CONSUL_DATACENTER} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
-		&& ( echo METRICS_CONSUL_DATACENTER is empty ; exit 1) \
-		|| true
-	@(test -z ${METRICS_CONSUL_ENCRYPT} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
-		&& ( echo METRICS_CONSUL_ENCRYPT is empty ; exit 1) \
-		|| true
-	@(test -z ${METRICS_CONSUL_DNS_SERVER} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
-		&& ( echo METRICS_CONSUL_DNS_SERVER is empty ; exit 1) \
-		|| true
-			
+metrics: metrics-check
 	@openstack stack create \
 		\
 		--parameter metrics_size_gb=${METRICS_SIZE_GB} \
@@ -211,9 +220,50 @@ metrics:
 		\
 		--template ${PWD}/metrics/metrics.appliance.heat.yml \
 		--wait \
-		--timeout 60 \
+		--timeout 120 \
 		\
 		metrics
+
+.PHONY: metrics-single-network # Configure metrics service
+metrics-single-network: metrics-check
+	@cd metrics && terraform plan -input=false -out=metrics.tfplan \
+		\
+		-var metrics_size_gb=${METRICS_SIZE_GB} \
+		\
+		-var flavor=${METRICS_FLAVOR} \
+		-var image_id=${METRICS_IMAGE_ID} \
+		-var front_net_id=${METRICS_FRONT_NET_ID} \
+		-var default_secgroup_id=$(METRICS_SECGROUP_ID) \
+		-var os_username=$(METRICS_OS_USERNAME) \
+		-var os_password=$(METRICS_OS_PASSWORD) \
+		-var os_auth_url=$(METRICS_OS_AUTH_URL) \
+		-var os_region_name=${METRICS_OS_REGION_NAME} \
+		\
+		-var grafana_admin_name=${GRAFANA_ADMIN} \
+		-var grafana_admin_password=${GRAFANA_PASSWORD} \
+		\
+		-var influxdb_admin_name=${INFLUXDB_ADMIN} \
+		-var influxdb_admin_password=${INFLUXDB_PASSWORD} \
+		-var influxdb_organisation=${INFLUXDB_ORG} \
+		-var influxdb_retention_hours=${INFLUXDB_RETENTION_HOURS} \
+		-var metrics_endpoint_url=${METRICS_ENDPOINT} \
+		-var metrics_container=${METRICS_CONTAINER} \
+		\
+		-var internet_http_proxy_url=${METRICS_HTTP_PROXY} \
+		-var internet_http_no_proxy=${METRICS_NO_PROXY} \
+		-var static_hosts=${METRICS_STATIC_HOSTS} \
+		-var ntp_server=${METRICS_NTP_SERVER} \
+		\
+		-var git_repo_checkout=${GIT_REPO_CHECKOUT} \
+		-var git_repo_url=${GIT_REPO_URL} \
+		\
+		-var consul_usage=${METRICS_CONSUL_USAGE} \
+		-var consul_dns_domain=${METRICS_CONSUL_DNS_DOMAIN} \
+		-var consul_datacenter=${METRICS_CONSUL_DATACENTER} \
+		-var consul_encrypt=${METRICS_CONSUL_ENCRYPT} \
+		-var consul_dns_server=${METRICS_CONSUL_DNS_SERVER}
+
+	@cd metrics && terraform apply metrics.tfplan
 
 ###############################################################################
 #
@@ -239,6 +289,44 @@ clean-metrics:
 	@openstack stack list | fgrep -q metrics \
 		&& openstack stack delete --wait --yes metrics \
 		|| echo
+
+clean-metrics-single:
+	@cd metrics && terraform destroy -auto-approve \
+		\
+		-var metrics_size_gb=${METRICS_SIZE_GB} \
+		\
+		-var flavor=${METRICS_FLAVOR} \
+		-var image_id=${METRICS_IMAGE_ID} \
+		-var front_net_id=${METRICS_FRONT_NET_ID} \
+		-var default_secgroup_id=$(METRICS_SECGROUP_ID) \
+		-var os_username=$(METRICS_OS_USERNAME) \
+		-var os_password=$(METRICS_OS_PASSWORD) \
+		-var os_auth_url=$(METRICS_OS_AUTH_URL) \
+		-var os_region_name=${METRICS_OS_REGION_NAME} \
+		\
+		-var grafana_admin_name=${GRAFANA_ADMIN} \
+		-var grafana_admin_password=${GRAFANA_PASSWORD} \
+		\
+		-var influxdb_admin_name=${INFLUXDB_ADMIN} \
+		-var influxdb_admin_password=${INFLUXDB_PASSWORD} \
+		-var influxdb_organisation=${INFLUXDB_ORG} \
+		-var influxdb_retention_hours=${INFLUXDB_RETENTION_HOURS} \
+		-var metrics_endpoint_url=${METRICS_ENDPOINT} \
+		-var metrics_container=${METRICS_CONTAINER} \
+		\
+		-var internet_http_proxy_url=${METRICS_HTTP_PROXY} \
+		-var internet_http_no_proxy=${METRICS_NO_PROXY} \
+		-var static_hosts=${METRICS_STATIC_HOSTS} \
+		-var ntp_server=${METRICS_NTP_SERVER} \
+		\
+		-var git_repo_checkout=${GIT_REPO_CHECKOUT} \
+		-var git_repo_url=${GIT_REPO_URL} \
+		\
+		-var consul_usage=${METRICS_CONSUL_USAGE} \
+		-var consul_dns_domain=${METRICS_CONSUL_DNS_DOMAIN} \
+		-var consul_datacenter=${METRICS_CONSUL_DATACENTER} \
+		-var consul_encrypt=${METRICS_CONSUL_ENCRYPT} \
+		-var consul_dns_server=${METRICS_CONSUL_DNS_SERVER}
 
 .PHONY: clean # Destroy the appliances
 clean: clean-logs clean-metrics

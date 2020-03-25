@@ -6,3 +6,10 @@
 *.jpg
 *.jpg.*
 *.pdf
+*.tfstate
+*.tfstate.backup
+*.tfplan
+.terraform
+provider.tf
+bootstrap.sh
+*openrc.sh

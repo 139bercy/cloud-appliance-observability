@@ -365,9 +365,16 @@
                       --retention {{ influxdb_retention }}h \
                       --username {{ influxdb_admin }}
 
-    - name: InfluxDB | Get influxdb_admin_token from file
+    - name: InfluxDB | Get influxdb_admin_token from CLI
       register: token_result
-      shell: awk -F '"' '/^\s+token/ {print $2}' /var/lib/influxdb/.conf/configs
+      shell: >
+          podman exec -it influxdb \
+              influx \
+                  --host=http://localhost:{{ influxdb_conf.bind.port }} \
+                  auth list \
+          | head -n2 \
+          | tail -n1 \
+          | awk '{print $2}'
 
     - name: InfluxDB | Update influxdb_admin_token fact
       set_fact: influxdb_admin_token="{{ token_result.stdout }}"

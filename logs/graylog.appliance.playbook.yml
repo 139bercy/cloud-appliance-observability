@@ -124,7 +124,7 @@
         - name: Check elasticsearch device result
           when: cinder_volume.stdout_lines | length < 1
           fail: msg="Cannot find any cinder device with ID {{ elasticsearch_device_short_id }}"
- 
+
         - name: Set full disk name
           set_fact: elasticsearch_device="{{ cinder_volume.stdout }}"
 
@@ -247,7 +247,7 @@
             --name mongo \
             --mount type=bind,src=/var/lib/mongodb,target=/data/db \
             docker.io/mongo:3
-            
+
     - name: Get Elasticsearch IP address
       register: els_result
       shell: >
@@ -273,7 +273,7 @@
 
     - name: Starting Graylog container
       shell: >
-          podman ps --all | grep -q graylog && podman rm -f graylog ;  \
+          podman ps --all | grep -q graylog && podman rm -f graylog ; \
           podman run \
           --rm \
           --detach \
@@ -365,10 +365,10 @@
                 - 201
                 - 200
             headers:
-                X-Requested-By: ansible  
+                X-Requested-By: ansible
 
     ###########################################################################
-    
+
     - name: Pipelines configuration
       block:
         - name: Retrieving configured rules
@@ -390,7 +390,7 @@
         - name: Generate rule's name
           set_fact:
             graylog_rule_titles: "{{ graylog_running_rules.json | json_query('[*].title') }}"
-            
+
         - name: Rules creation
           with_items: "{{ graylog_rules }}"
           when: "item.title not in graylog_rule_titles"
@@ -409,7 +409,7 @@
                 - 201
                 - 200
             headers:
-                X-Requested-By: ansible        
+                X-Requested-By: ansible
 
         - name: Get already configured pipelines
           register: graylog_running_pipelines
@@ -450,9 +450,9 @@
                 - 201
             headers:
                 X-Requested-By: ansible
-    
+
     ###########################################################################
-    
+
     - name: Pipelines management
       block:
         - name: Get existing pipelines
@@ -476,7 +476,7 @@
             graylog_default_stream_to_pipeline:
                 stream_id: "000000000000000000000001"
                 pipeline_ids: "{{ graylog_running_pipelines.json | json_query('[*].id') }}"
-       
+
         - name: Attach pipelines to the default stream (all messages)
           register: existing_streams
           retries: 10

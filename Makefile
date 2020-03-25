@@ -3,28 +3,38 @@
 # Configuration
 #
 
-GIT_REPO_URL=$(shell git remote get-url origin)
 GIT_REPO_CHECKOUT=$(shell git rev-parse --abbrev-ref HEAD)
 
 .PHONY: syntax # Testing YAML syntax
 syntax:
 	@which ansible-lint
 	@find . -type f -name "*.playbook.yml" -exec ansible-lint {} \;
-
-
-test: syntax
-	@openstack stack list 1>/dev/null
+	@terraform fmt -check=true -recursive=true
 
 .PHONY: status # Get some information about what is running
 status:
 	@echo "Projet: ${OS_PROJECT_NAME}"
 	@echo "Cloud: ${OS_AUTH_URL}"
+	@echo
 	@echo "#######################################################"
-	@openstack stack list
-	@echo "#######################################################"
-	@cd metrics && terraform show
-	@echo "#######################################################"
-	@cd logs && terraform show
+	@echo
+	@test -f logs/single-network/terraform.tfstate \
+		&& cd logs/single-network/ \
+		&& terraform show \
+		|| true
+	@test -f logs/dual-network/terraform.tfstate \
+		&& cd logs/dual-network/ \
+		&& terraform show \
+		|| true
+	@test -f metrics/single-network/terraform.tfstate \
+		&& cd metrics/single-network/ \
+		&& terraform show 
+	@test -f metrics/dual-network/terraform.tfstate \
+		&& cd metrics/dual-network/ \
+		&& terraform show \
+		|| true
+
+
 
 .PHONY: help # This help message
 help:
@@ -89,29 +99,26 @@ metrics-check:
 		&& ( echo METRICS_CONSUL_DNS_SERVER is empty ; exit 1) \
 		|| true
 
-.PHONY: logs # Configure graylog service
-logs:
+.PHONY: logs-check # Check graylog env variables
+logs-check:
 	@test ! -z ${GRAYLOG_SIZE_GB} \
 		|| (echo GRAYLOG_SIZE_GB is empty ; exit 1)
 	@test ! -z ${ELASTECSEARCH_SIZE_GB} \
 		|| (echo ELASTECSEARCH_SIZE_GB is empty ; exit 1)
 
-	# TODO: check GRAYLOG_OS_USERNAME instead of OS_USERNAME when swift is used
-	@test ! -z ${OS_USERNAME} \
+	@test ! -z ${GRAYLOG_OS_USERNAME} \
 		|| (echo OS_USERNAME is empty ; exit 1)
-	# TODO: check GRAYLOG_OS_PASSWORD instead of OS_PASSWORD when swift is used
-	@test ! -z ${OS_PASSWORD} \
+	@test ! -z ${GRAYLOG_OS_PASSWORD} \
 		|| (echo OS_PASSWORD is empty ; exit 1)
-	# TODO: check GRAYLOG_OS_AUTH_URL instead of OS_AUTH_URL when swift is used
-	@test ! -z ${OS_AUTH_URL} \
+	@test ! -z ${GRAYLOG_OS_AUTH_URL} \
 		|| (echo OS_AUTH_URL is empty ; exit 1)
 
 	@test ! -z ${GRAYLOG_FLAVOR} \
 		|| (echo GRAYLOG_FLAVOR is empty ; exit 1)
 	@test ! -z ${GRAYLOG_IMAGE_ID} \
 		|| (echo GRAYLOG_IMAGE_ID is empty ; exit 1)
-	@test ! -z ${GRAYLOG_NET_ID} \
-		|| (echo GRAYLOG_NET_ID is empty ; exit 1)
+	@test ! -z ${GRAYLOG_FRONT_NET_ID} \
+		|| (echo GRAYLOG_FRONT_NET_ID is empty ; exit 1)
 	@test ! -z ${GRAYLOG_SECGROUP_ID} \
 		|| (echo GRAYLOG_SECGROUP_ID is empty ; exit 1)
 
@@ -126,10 +133,10 @@ logs:
 	@echo ${GRAYLOG_ENDPOINT} | egrep -q "^(https|http)://" \
 		|| (echo GRAYLOG_ENDPOINT must begin with http:// or https:// ; exit 1)
 
-	@test ! -z ${GRAYLOG_HTTP_PROXY} \
-		|| (echo GRAYLOG_HTTP_PROXY is empty ; exit 1)
-	@test ! -z ${GRAYLOG_NO_PROXY} \
-		|| (echo GRAYLOG_NO_PROXY is empty ; exit 1)
+#	@test ! -z ${GRAYLOG_HTTP_PROXY} \
+#		|| (echo GRAYLOG_HTTP_PROXY is empty ; exit 1)
+#	@test ! -z ${GRAYLOG_NO_PROXY} \
+#		|| (echo GRAYLOG_NO_PROXY is empty ; exit 1)
 
 	@echo ${GRAYLOG_CONSUL_USAGE} | egrep -q "^(true|false)$$" \
 		|| ( echo GRAYLOG_CONSUL_USAGE must be set to true or false ; exit 1)
@@ -146,87 +153,56 @@ logs:
 		&& ( echo GRAYLOG_CONSUL_DNS_SERVER is empty ; exit 1) \
 		|| true
 
-	@openstack stack create \
-		\
-		--parameter graylog_size_gb=${GRAYLOG_SIZE_GB} \
-		--parameter elasticsearch_size_gb=${ELASTECSEARCH_SIZE_GB} \
-		\
-		--parameter flavor=${GRAYLOG_FLAVOR} \
-		--parameter image_id=${GRAYLOG_IMAGE_ID} \
-		--parameter node_net_id=${GRAYLOG_NET_ID} \
-		--parameter default_secgroup_id=$(GRAYLOG_SECGROUP_ID) \
-		\
-		--parameter graylog_admin_name=${GRAYLOG_ADMIN} \
-		--parameter graylog_admin_password=${GRAYLOG_PASSWORD} \
-		--parameter graylog_endpoint_url=${GRAYLOG_ENDPOINT} \
-		\
-		--parameter internet_http_proxy_url=${GRAYLOG_HTTP_PROXY} \
-		--parameter internet_http_no_proxy=${GRAYLOG_NO_PROXY} \
-		\
-		--parameter git_repo_checkout=${GIT_REPO_CHECKOUT} \
-		--parameter git_repo_url=${GIT_REPO_URL} \
-		\
-		--parameter consul_usage=${GRAYLOG_CONSUL_USAGE} \
-		--parameter consul_servers=${GRAYLOG_CONSUL_SERVERS} \
-		--parameter consul_dns_domain=${GRAYLOG_CONSUL_DNS_DOMAIN} \
-		--parameter consul_datacenter=${GRAYLOG_CONSUL_DATACENTER} \
-		--parameter consul_encrypt=${GRAYLOG_CONSUL_ENCRYPT} \
-		--parameter consul_dns_server=${GRAYLOG_CONSUL_DNS_SERVER} \
-		\
-		--template ${PWD}/logs/graylog.appliance.heat.yml \
-		--wait \
-		--timeout 120 \
-		\
-		logs
+logs/single-network/.terraform:
+	cd logs/single-network/ && terraform init
 
-.PHONY: metrics # Configure metrics service
-metrics: metrics-check
-	@openstack stack create \
+logs/dual-network/.terraform:
+	cd logs/dual-network/ && terraform init
+
+.PHONY: logs-single-network # Configure logs service
+logs-single-network: logs-check logs/single-network/.terraform
+	@cd logs/single-network && terraform plan -input=false -out=logs.tfplan \
 		\
-		--parameter metrics_size_gb=${METRICS_SIZE_GB} \
+		-var graylog_size_gb=${GRAYLOG_SIZE_GB} \
+		-var elasticsearch_size_gb=${ELASTECSEARCH_SIZE_GB} \
 		\
-		--parameter flavor=${METRICS_FLAVOR} \
-		--parameter image_id=${METRICS_IMAGE_ID} \
-		--parameter front_net_id=${METRICS_FRONT_NET_ID} \
-		--parameter back_net_id=${METRICS_BACK_NET_ID} \
-		--parameter default_secgroup_id=$(METRICS_SECGROUP_ID) \
-		--parameter os_username=$(METRICS_OS_USERNAME) \
-		--parameter os_password=$(METRICS_OS_PASSWORD) \
-		--parameter os_auth_url=$(METRICS_OS_AUTH_URL) \
+		-var flavor=${GRAYLOG_FLAVOR} \
+		-var image_id=${GRAYLOG_IMAGE_ID} \
+		-var front_net_id=${GRAYLOG_FRONT_NET_ID} \
+		-var default_secgroup_id=$(GRAYLOG_SECGROUP_ID) \
+		-var os_username=$(GRAYLOG_OS_USERNAME) \
+		-var os_password=$(GRAYLOG_OS_PASSWORD) \
+		-var os_auth_url=$(GRAYLOG_OS_AUTH_URL) \
+		-var os_region_name=${GRAYLOG_OS_REGION_NAME} \
 		\
-		--parameter grafana_admin_name=${GRAFANA_ADMIN} \
-		--parameter grafana_admin_password=${GRAFANA_PASSWORD} \
+		-var graylog_admin_name=${GRAYLOG_ADMIN} \
+		-var graylog_admin_password=${GRAYLOG_PASSWORD} \
+		-var graylog_endpoint_url=${GRAYLOG_ENDPOINT} \
 		\
-		--parameter influxdb_admin_name=${INFLUXDB_ADMIN} \
-		--parameter influxdb_admin_password=${INFLUXDB_PASSWORD} \
-		--parameter influxdb_organisation=${INFLUXDB_ORG} \
-		--parameter influxdb_retention_hours=${INFLUXDB_RETENTION_HOURS} \
-		--parameter metrics_endpoint_url=${METRICS_ENDPOINT} \
-		--parameter metrics_container=${METRICS_CONTAINER} \
+		-var internet_http_proxy_url=${GRAYLOG_HTTP_PROXY} \
+		-var internet_http_no_proxy=${GRAYLOG_NO_PROXY} \
 		\
-		--parameter internet_http_proxy_url=${METRICS_HTTP_PROXY} \
-		--parameter internet_http_no_proxy=${METRICS_NO_PROXY} \
-		--parameter static_hosts=${METRICS_STATIC_HOSTS} \
-		--parameter ntp_server=${METRICS_NTP_SERVER} \
+		-var git_repo_checkout=${GIT_REPO_CHECKOUT} \
+		-var git_repo_url=${GIT_REPO_URL} \
 		\
-		--parameter git_repo_checkout=${GIT_REPO_CHECKOUT} \
-		--parameter git_repo_url=${GIT_REPO_URL} \
-		\
-		--parameter consul_usage=${METRICS_CONSUL_USAGE} \
-		--parameter consul_dns_domain=${METRICS_CONSUL_DNS_DOMAIN} \
-		--parameter consul_datacenter=${METRICS_CONSUL_DATACENTER} \
-		--parameter consul_encrypt=${METRICS_CONSUL_ENCRYPT} \
-		--parameter consul_dns_server=${METRICS_CONSUL_DNS_SERVER} \
-		\
-		--template ${PWD}/metrics/metrics.appliance.heat.yml \
-		--wait \
-		--timeout 120 \
-		\
-		metrics
+		-var consul_usage=${GRAYLOG_CONSUL_USAGE} \
+		-var consul_servers=${GRAYLOG_CONSUL_SERVERS} \
+		-var consul_dns_domain=${GRAYLOG_CONSUL_DNS_DOMAIN} \
+		-var consul_datacenter=${GRAYLOG_CONSUL_DATACENTER} \
+		-var consul_encrypt=${GRAYLOG_CONSUL_ENCRYPT} \
+		-var consul_dns_server=${GRAYLOG_CONSUL_DNS_SERVER}
+
+	@cd logs/single-network && terraform apply logs.tfplan
+
+metrics/single-network/.terraform:
+	cd metrics/single-network/ && terraform init
+
+metrics/dual-network/.terraform:
+	cd metrics/dual-network/ && terraform init
 
 .PHONY: metrics-single-network # Configure metrics service
-metrics-single-network: metrics-check
-	@cd metrics && terraform plan -input=false -out=metrics.tfplan \
+metrics-single-network: metrics-check metrics/single-network/.terraform
+	@cd metrics/single-network && terraform plan -input=false -out=metrics.tfplan \
 		\
 		-var metrics_size_gb=${METRICS_SIZE_GB} \
 		\
@@ -263,7 +239,7 @@ metrics-single-network: metrics-check
 		-var consul_encrypt=${METRICS_CONSUL_ENCRYPT} \
 		-var consul_dns_server=${METRICS_CONSUL_DNS_SERVER}
 
-	@cd metrics && terraform apply metrics.tfplan
+	@cd metrics/single-network && terraform apply metrics.tfplan
 
 ###############################################################################
 #
@@ -278,20 +254,9 @@ prepare:
 	@./bin/copy_containers.sh
 
 # Clean
-.PHONY: clean-logs # Destroy the logs appliance
-clean-logs:
-	@openstack stack list | fgrep -q logs \
-		&& openstack stack delete --wait --yes logs \
-		|| echo
-
-.PHONY: clean-metrics # Destroy the metrics appliance
-clean-metrics:
-	@openstack stack list | fgrep -q metrics \
-		&& openstack stack delete --wait --yes metrics \
-		|| echo
-
+.PHONY: clean-metrics-single # Destroy the logs appliance
 clean-metrics-single:
-	@cd metrics && terraform destroy -auto-approve \
+	@cd metrics/single-network && terraform destroy -auto-approve \
 		\
 		-var metrics_size_gb=${METRICS_SIZE_GB} \
 		\
@@ -328,9 +293,38 @@ clean-metrics-single:
 		-var consul_encrypt=${METRICS_CONSUL_ENCRYPT} \
 		-var consul_dns_server=${METRICS_CONSUL_DNS_SERVER}
 
-.PHONY: clean # Destroy the appliances
-clean: clean-logs clean-metrics
-	@echo
+.PHONY: clean-logs-single-network # Destroy logs service
+clean-logs-single-network: logs-check
+	@cd logs/single-network && terraform destroy -auto-approve \
+		\
+		-var graylog_size_gb=${GRAYLOG_SIZE_GB} \
+		-var elasticsearch_size_gb=${ELASTECSEARCH_SIZE_GB} \
+		\
+		-var flavor=${GRAYLOG_FLAVOR} \
+		-var image_id=${GRAYLOG_IMAGE_ID} \
+		-var front_net_id=${GRAYLOG_FRONT_NET_ID} \
+		-var default_secgroup_id=$(GRAYLOG_SECGROUP_ID) \
+		-var os_username=$(GRAYLOG_OS_USERNAME) \
+		-var os_password=$(GRAYLOG_OS_PASSWORD) \
+		-var os_auth_url=$(GRAYLOG_OS_AUTH_URL) \
+		-var os_region_name=${GRAYLOG_OS_REGION_NAME} \
+		\
+		-var graylog_admin_name=${GRAYLOG_ADMIN} \
+		-var graylog_admin_password=${GRAYLOG_PASSWORD} \
+		-var graylog_endpoint_url=${GRAYLOG_ENDPOINT} \
+		\
+		-var internet_http_proxy_url=${GRAYLOG_HTTP_PROXY} \
+		-var internet_http_no_proxy=${GRAYLOG_NO_PROXY} \
+		\
+		-var git_repo_checkout=${GIT_REPO_CHECKOUT} \
+		-var git_repo_url=${GIT_REPO_URL} \
+		\
+		-var consul_usage=${GRAYLOG_CONSUL_USAGE} \
+		-var consul_servers=${GRAYLOG_CONSUL_SERVERS} \
+		-var consul_dns_domain=${GRAYLOG_CONSUL_DNS_DOMAIN} \
+		-var consul_datacenter=${GRAYLOG_CONSUL_DATACENTER} \
+		-var consul_encrypt=${GRAYLOG_CONSUL_ENCRYPT} \
+		-var consul_dns_server=${GRAYLOG_CONSUL_DNS_SERVER}
 
 # Rebuild
 .PHONY: rebuild-logs # Rebuild the logs appliance
@@ -345,6 +339,3 @@ rebuild-metrics:
 rebuild: rebuild-logs rebuild-metrics
 	@echo
 
-.PHONY: all # Deploy the appliances at once
-all: logs metrics
-	@echo

@@ -18,6 +18,8 @@ export METRICS_CONSUL_ENCRYPT=$(consul keygen)
 
 ## Usage
 
+### Resources management
+
 You must add a Terraform-provider file on the right directory:
 
 * `logs/single-network` : one network interface
@@ -111,3 +113,15 @@ syntax            # Testing YAML syntax
 test              # Test pre-requisites
 ```
 
+### Getting resources info
+
+First, go to the right directory. Then, `terraform show` can be used.
+```bash
+# Get appliance attributes
+terraform show -json \
+| jq -r '.values.root_module.resources[] | select(.address | contains("openstack_compute_instance_v2.appliance-")).values'
+
+# Get appliance address
+terraform show -json \
+| jq -r '.values.root_module.resources[] | select(.address | contains("openstack_compute_instance_v2.appliance-")).values.access_ip_v4'
+```

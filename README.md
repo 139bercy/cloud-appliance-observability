@@ -125,3 +125,21 @@ terraform show -json \
 terraform show -json \
 | jq -r '.values.root_module.resources[] | select(.address | contains("openstack_compute_instance_v2.appliance-")).values.access_ip_v4'
 ```
+
+## Day-2 operations
+
+### Manage InfluxDB
+
+```bash
+# TODO: Get the token from swift
+# Use influx CLI
+influx --host=http://$METRICS_ENDPOINT ping
+```
+
+### Manage Graylog
+
+A terraform-community-provided provider is available at 
+https://github.com/suzuki-shunsuke/go-graylog/blob/master/docs/README.md
+```bash
+# TODO
+```

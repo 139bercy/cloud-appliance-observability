@@ -89,24 +89,25 @@ Control the deployments
 # Get help
 make help
 
-# Testing
-make syntax
-make test
-make status
+clean-logs-single-network # Destroy logs service
+clean-metrics-single      # Destroy the logs appliance
 
-# Deployements
-make all
-make logs
-make metrics
+help                      # This help message
 
-# Cleanups
-make clean
-make clean-logs
-make clean-metrics
+logs-check                # Check graylog env variables
+logs-single-network       # Configure logs service
 
-# Rebuilds
-make rebuild
-make rebuild-logs
-make rebuild-metrics
+metrics-check             # Check metrics env variables
+metrics-single-network    # Configure metrics service
+
+prepare           # Download atifacts from internet to Swift
+
+rebuild           # Rebuild all the servers at once
+rebuild-logs      # Rebuild the logs appliance
+rebuild-metrics   # Rebuild the metrics appliance
+
+status            # Get some information about what is running
+syntax            # Testing YAML syntax
+test              # Test pre-requisites
 ```
 

@@ -327,7 +327,7 @@
             X-Requested-By: ansible
 
     ###########################################################################
-    
+
     - name: Indexes management
       block:
         - name: Get default index
@@ -505,6 +505,12 @@
     ###########################################################################
 
     - name: Configure telegraf
+      when:
+          - lookup('env', 'INFLUXDB_USAGE') | lower == 'true'
+          - lookup('env', 'INFLUXDB_ENDPOINT') | urlsplit != None
+          - lookup('env', 'INFLUXDB_TOKEN') | length > 0
+          - lookup('env', 'INFLUXDB_BUCKET') | length > 0
+
       include_role:
           name: ansible-telegraf
 

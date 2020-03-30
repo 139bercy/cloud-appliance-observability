@@ -297,7 +297,7 @@
           -e GRAYLOG_SERVER_JAVA_OPTS="-Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m -Xms{{ (ansible_memtotal_mb * 0.3) | int }}m" \
           -e GRAYLOG_MONGODB_URI="mongodb://{{ mongodb_ipaddr }}/graylog" \
           -e GRAYLOG_ELASTICSEARCH_HOSTS="http://{{ els_ipaddr }}:9200" \
-          docker.io/graylog/graylog:3.0
+          docker.io/graylog/graylog:3.2
 
 ###############################################################################
 # Post-configuration graylog

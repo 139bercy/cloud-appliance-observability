@@ -56,7 +56,7 @@ export OS_PASSWORD="${os_password}"
 export OS_REGION_NAME="${os_region_name}"
 export OS_INTERFACE=public
 export OS_IDENTITY_API_VERSION=3
-                        
+
 # Swift container
 export LOGS_CONTAINER=${logs_container}
 
@@ -70,13 +70,19 @@ export GRAYLOG_ADMIN_NAME="${graylog_admin_name}"
 export GRAYLOG_ADMIN_PASSWORD="${graylog_admin_password}"
 # Set Graylog endpoint
 export GRAYLOG_ENDPOINT_URL="${graylog_endpoint_url}"
-                        
+
 # Set Consul variables
 export CONSUL_USAGE="${consul_usage}"
 export CONSUL_DNS_DOMAIN="${consul_dns_domain}"
 export CONSUL_DATACENTER="${consul_datacenter}"
 export CONSUL_ENCRYPT="${consul_encrypt}"
 export CONSUL_DNS_SERVER="${consul_dns_server}"
+
+# Set InfluxDB variables
+export INFLUXDB_USAGE="${influxdb_usage}"
+export INFLUXDB_ENDPOINT="${influxdb_endpoint}"
+export INFLUXDB_TOKEN="${influxdb_token}"
+export INFLUXDB_BUCKET="${influxdb_bucket}"
 
 # Test proxy and Openstack endpoint
 test -z $HTTP_PROXY || curl -vks HTTP_PROXY > /dev/null
@@ -94,4 +100,3 @@ git clone -b ${git_repo_checkout} ${git_repo_url} $REPO_PATH || exit 1
 # Stop secure shell
 systemctl stop ssh
 systemctl disable ssh
-

@@ -39,6 +39,12 @@ resource "openstack_compute_instance_v2" "appliance-logs" {
       consul_encrypt    = var.consul_encrypt,
       consul_dns_server = var.consul_dns_server,
 
+      influxdb_usage    = var.influxdb_usage,
+      influxdb_endpoint = var.influxdb_endpoint,
+      influxdb_token    = var.influxdb_token,
+      influxdb_org      = var.influxdb_org,
+      influxdb_bucket   = var.influxdb_bucket,
+
       ntp_server = var.ntp_server,
 
       git_repo_checkout = var.git_repo_checkout,

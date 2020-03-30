@@ -35,14 +35,12 @@ dnsmasq_forwarding_zones:
 ###############################################################################
 # Telegraf
 #
-telegraf_use_docker: false
-
 telegraf_output_influxdbv2_config:
-    urls: [ "http://influxdb.service.{{ consul_datacenter }}.{{ consul_dns_domain }}" ]
-    token: "{{ influx_token }}"
-    bucket: "appliance-logs"
+    urls: [ "{{ lookup('env', 'INFLUXDB_ENDPOINT') }}" ]
+    token: "{{ lookup('env', 'INFLUXDB_TOKEN') }}"
+    bucket: "{{ lookup('env', 'INFLUXDB_BUCKET') }}"
     bucket_tag: ""
-    org: "{{ influxdb_org }}"
+    org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
     exclude_bucket_tag: false
     insecure_skip_verify: false
 
@@ -236,3 +234,4 @@ graylog_consul_service:
         checks:
             - http: "http://0.0.0.0:80"
               interval: "60s"
+

@@ -140,3 +140,33 @@ variable "consul_dns_server" {
   default     = ""
 }
 
+variable "influxdb_usage" {
+  type        = bool
+  description = "Do we send metrics to InfluxDB?"
+  default     = false
+}
+
+variable "influxdb_endpoint" {
+  type        = string
+  description = "Remote InfluxDB service to use to send metrics"
+  default     = ""
+}
+
+variable "influxdb_org" {
+  type        = string
+  description = "InfluxDB organization to use"
+  default     = ""
+}
+
+variable "influxdb_token" {
+  type        = string
+  description = "InfluxDB token to use to send metics"
+  default     = ""
+}
+
+variable "influxdb_bucket" {
+  type        = string
+  description = "InfluxDB bucket to use to send metrics"
+  default     = ""
+}
+

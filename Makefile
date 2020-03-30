@@ -5,19 +5,23 @@
 
 GIT_REPO_CHECKOUT=$(shell git rev-parse --abbrev-ref HEAD)
 
-.PHONY: syntax # Testing YAML syntax
+.PHONY: test # Test terraform pre-requisites
+test:
+	@which terraform
+
+.PHONY: syntax # Testing Ansible and HCL syntaxes (ansible-lint + terraform fmt)
 syntax:
 	@which ansible-lint
-	@find . -type f -name "*.playbook.yml" -exec ansible-lint {} \;
+	@ansible-lint \
+		etc/graylog.variables.yml \
+		logs/graylog.appliance.playbook.yml
+	@ansible-lint \
+		etc/metrics.variables.yml \
+		metrics/metrics.appliance.playbook.yml
 	@terraform fmt -check=true -recursive=true
 
 .PHONY: status # Get some information about what is running
 status:
-	@echo "Projet: ${OS_PROJECT_NAME}"
-	@echo "Cloud: ${OS_AUTH_URL}"
-	@echo
-	@echo "#######################################################"
-	@echo
 	@test -f logs/single-network/terraform.tfstate \
 		&& cd logs/single-network/ \
 		&& terraform show \
@@ -28,13 +32,11 @@ status:
 		|| true
 	@test -f metrics/single-network/terraform.tfstate \
 		&& cd metrics/single-network/ \
-		&& terraform show 
+		&& terraform show
 	@test -f metrics/dual-network/terraform.tfstate \
 		&& cd metrics/dual-network/ \
 		&& terraform show \
 		|| true
-
-
 
 .PHONY: help # This help message
 help:
@@ -85,17 +87,22 @@ metrics-check:
 		|| (echo METRICS_ENDPOINT is empty ; exit 1)
 
 	@echo ${METRICS_CONSUL_USAGE} | egrep -q "^(true|false)$$" \
-		|| ( echo METRICS_CONSUL_USAGE must be set to true or false ; exit 1)
-	@(test -z ${METRICS_CONSUL_DNS_DOMAIN} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
+		|| ( echo METRICS_CONSUL_USAGE must be set to true or false ; \
+			exit 1)
+	@(test -z ${METRICS_CONSUL_DNS_DOMAIN} && echo ${METRICS_CONSUL_USAGE} \
+		| fgrep true ) \
 		&& ( echo METRICS_CONSUL_DNS_DOMAIN is empty ; exit 1) \
 		|| true
-	@(test -z ${METRICS_CONSUL_DATACENTER} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
+	@(test -z ${METRICS_CONSUL_DATACENTER} && echo ${METRICS_CONSUL_USAGE} \
+		| fgrep true ) \
 		&& ( echo METRICS_CONSUL_DATACENTER is empty ; exit 1) \
 		|| true
-	@(test -z ${METRICS_CONSUL_ENCRYPT} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
+	@(test -z ${METRICS_CONSUL_ENCRYPT} && echo ${METRICS_CONSUL_USAGE} \
+		| fgrep true ) \
 		&& ( echo METRICS_CONSUL_ENCRYPT is empty ; exit 1) \
 		|| true
-	@(test -z ${METRICS_CONSUL_DNS_SERVER} && echo ${METRICS_CONSUL_USAGE} | fgrep true ) \
+	@(test -z ${METRICS_CONSUL_DNS_SERVER} && echo ${METRICS_CONSUL_USAGE} \
+		| fgrep true ) \
 		&& ( echo METRICS_CONSUL_DNS_SERVER is empty ; exit 1) \
 		|| true
 
@@ -131,7 +138,7 @@ logs-check:
 	@echo ${GRAYLOG_ENDPOINT} | grep -q /$$ \
 		|| (echo GRAYLOG_ENDPOINT must end with a / ; exit 1)
 	@echo ${GRAYLOG_ENDPOINT} | egrep -q "^(https|http)://" \
-		|| (echo GRAYLOG_ENDPOINT must begin with http:// or https:// ; exit 1)
+		|| (echo GRAYLOG_ENDPOINT must begin with http(s):// ; exit 1)
 
 #	@test ! -z ${GRAYLOG_HTTP_PROXY} \
 #		|| (echo GRAYLOG_HTTP_PROXY is empty ; exit 1)
@@ -139,17 +146,22 @@ logs-check:
 #		|| (echo GRAYLOG_NO_PROXY is empty ; exit 1)
 
 	@echo ${GRAYLOG_CONSUL_USAGE} | egrep -q "^(true|false)$$" \
-		|| ( echo GRAYLOG_CONSUL_USAGE must be set to true or false ; exit 1)
-	@(test -z ${GRAYLOG_CONSUL_DNS_DOMAIN} && echo ${GRAYLOG_CONSUL_USAGE} | fgrep true ) \
+		|| ( echo GRAYLOG_CONSUL_USAGE must be set to true or false ; \
+		exit 1)
+	@(test -z ${GRAYLOG_CONSUL_DNS_DOMAIN} && echo ${GRAYLOG_CONSUL_USAGE} \
+		| fgrep true ) \
 		&& ( echo GRAYLOG_CONSUL_DNS_DOMAIN is empty ; exit 1) \
 		|| true
-	@(test -z ${GRAYLOG_CONSUL_DATACENTER} && echo ${GRAYLOG_CONSUL_USAGE} | fgrep true ) \
+	@(test -z ${GRAYLOG_CONSUL_DATACENTER} && echo ${GRAYLOG_CONSUL_USAGE} \
+		| fgrep true ) \
 		&& ( echo GRAYLOG_CONSUL_DATACENTER is empty ; exit 1) \
 		|| true
-	@(test -z ${GRAYLOG_CONSUL_ENCRYPT} && echo ${GRAYLOG_CONSUL_USAGE} | fgrep true ) \
+	@(test -z ${GRAYLOG_CONSUL_ENCRYPT} && echo ${GRAYLOG_CONSUL_USAGE} \
+		| fgrep true ) \
 		&& ( echo GRAYLOG_CONSUL_ENCRYPT is empty ; exit 1) \
 		|| true
-	@(test -z ${GRAYLOG_CONSUL_DNS_SERVER} && echo ${GRAYLOG_CONSUL_USAGE} | fgrep true ) \
+	@(test -z ${GRAYLOG_CONSUL_DNS_SERVER} && echo ${GRAYLOG_CONSUL_USAGE} \
+		| fgrep true ) \
 		&& ( echo GRAYLOG_CONSUL_DNS_SERVER is empty ; exit 1) \
 		|| true
 
@@ -191,6 +203,12 @@ logs-single-network: logs-check logs/single-network/.terraform
 		-var consul_datacenter=${GRAYLOG_CONSUL_DATACENTER} \
 		-var consul_encrypt=${GRAYLOG_CONSUL_ENCRYPT} \
 		-var consul_dns_server=${GRAYLOG_CONSUL_DNS_SERVER}
+		\
+		-var influxdb_usage=${GRAYLOG_INFLUXDB_USAGE} \
+		-var influxdb_endpoint=${GRAYLOG_INFLUXDB_ENDPOINT} \
+		-var influxdb_token=${GRAYLOG_INFLUXDB_TOKEN} \
+		-var influxdb_org=${GRAYLOG_INFLUXDB_ORG} \
+		-var influxdb_bucket=${GRAYLOG_INFLUXDB_BUCKET}
 
 	@cd logs/single-network && terraform apply logs.tfplan
 
@@ -249,6 +267,11 @@ metrics-single-network: metrics-check metrics/single-network/.terraform
 # Prepare
 .PHONY: prepare # Download atifacts from internet to Swift
 prepare:
+	@which skopeo
+	@which swift
+	@which wget
+	@ansible-galaxy
+
 	@./bin/copy_binaries.sh
 	@./bin/copy_packages.sh
 	@./bin/copy_containers.sh
@@ -326,7 +349,11 @@ clean-logs-single-network: logs-check
 		-var consul_encrypt=${GRAYLOG_CONSUL_ENCRYPT} \
 		-var consul_dns_server=${GRAYLOG_CONSUL_DNS_SERVER}
 
+# TODO: write clean target
+.PHONY: clean
+
 # Rebuild
+# TODO: use terraform taint
 .PHONY: rebuild-logs # Rebuild the logs appliance
 rebuild-logs:
 	@openstack server rebuild --wait graylog
@@ -338,4 +365,3 @@ rebuild-metrics:
 .PHONY: rebuild # Rebuild all the servers at once
 rebuild: rebuild-logs rebuild-metrics
 	@echo
-

@@ -113,7 +113,6 @@
 
   roles:
     - role: ansible-rclone
-    - role: ansible-podman
 
 ###############################################################################
 # Grafana / InfluxDB / Traefik deployment
@@ -122,7 +121,7 @@
   hosts: localhost
   tags: metrics
 
-  tasks:
+  pre_tasks:
     - name: VG listing
       command: vgs --options name
       register: vg_list
@@ -193,40 +192,10 @@
           owner: 1200
         - path: /var/lib/influxdb/.conf
           state: directory
-          owner: 1200      
+          owner: 1200
         - path: /etc/traefik
           state: directory
           owner: 1300
-
-    # TODO: https://v2.docs.influxdata.com/v2.0/security/secrets/use-vault/
-    - name: Starting InfluxDB container
-      shell: >
-          podman ps --all | grep -q influxdb && podman rm -f influxdb ; \
-          podman run \
-              --rm \
-              --detach \
-              --user 1200 \
-              --name influxdb \
-              --mount type=bind,src=/var/lib/influxdb,target=/var/lib/influxdb \
-              --mount type=bind,src=/var/lib/influxdb/.conf,target=/.influxdbv2 \
-              --mount type=bind,src=/root/appliance/files/influxdb,target=/etc/influxdb,ro=true \
-              quay.io/influxdb/influxdb:2.0.0-beta \
-              influxd \
-              --reporting-disabled \
-              --bolt-path=/var/lib/influxdb/influxd.bolt \
-              --engine-path=/var/lib/influxdb/engine \
-              --http-bind-address=":{{ influxdb_conf.bind.port }}"
-
-    - name: Get InfluxDB IP address
-      register: influxdb_result
-      shell: >
-           podman inspect influxdb \
-           | jq -M '.[0].NetworkSettings.IPAddress' \
-           | awk -F'"' '{print $2}'
-
-    - name: Set facts (influxdb_ipaddr)
-      set_fact:
-          influxdb_ipaddr: "{{ influxdb_result.stdout }}"
 
     - name: Grafana | Install custom plugins
       with_items: "{{ grafana_plugins }}"
@@ -234,75 +203,14 @@
           dest: /var/lib/grafana/plugins/
           src: "{{ item.url }}"
 
-    - name: Starting Grafana container
-      shell: >
-          podman ps --all | grep -q grafana && podman rm -f grafana ; \
-          podman run \
-              --rm \
-              --detach \
-              --user 1100 \
-              --name grafana \
-              --mount type=bind,src=/var/lib/grafana,target=/var/lib/grafana \
-              --env NO_PROXY=$NO_PROXY,{{ influxdb_ipaddr }} \
-              --env no_proxy=$no_proxy,{{ influxdb_ipaddr }} \
-              --env GF_SERVER_ROOT_URL={{ lookup('env', 'METRICS_ENDPOINT_URL') | regex_replace('/$', '') }}/grafana \
-              --env GF_SERVER_SERVE_FROM_SUB_PATH=true \
-              --env GF_ANALYTICS_REPORTING_ENABLED=false \
-              --env GF_ANALYTICS_CHECK_FOR_UPDATES=false \
-              --env GF_PATHS_PROVISIONING=/var/lib/grafana/provisioning/ \
-              --env GF_LOG_MODE=console \
-              --env GF_LOG_LEVEL=debug \
-              --env GF_SECURITY_ADMIN_USER={{ lookup('env', 'GRAFANA_ADMIN_NAME') }} \
-              --env GF_SECURITY_ADMIN_PASSWORD={{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }} \
-              docker.io/grafana/grafana
-
-    - name: Get Grafana IP address
-      register: grafana_result
-      shell: >
-           podman inspect grafana \
-           | jq -M '.[0].NetworkSettings.IPAddress' \
-           | awk -F'"' '{print $2}'
-
-    - name: Set facts (grafana_ipaddr)
-      set_fact:
-          grafana_ipaddr: "{{ grafana_result.stdout }}"
-
     - name: Create Traefik file provider
       copy:
           content: "{{ traefik_conf | to_nice_yaml }}"
           dest: /etc/traefik/services.yml
           mode: 0644
 
-    - name: Reload ansible facts to get podman network interface
-      setup:
-
-    - name: Starting Traefik container
-      shell: >
-          podman ps --all | grep -q traefik && podman rm -f traefik ; \
-          podman run \
-              --rm \
-              --detach \
-              --user 1300 \
-              --name traefik \
-              --mount type=bind,src=/etc/traefik,target=/etc/traefik \
-              --env HTTP_PROXY= \
-              --env HTTPS_PROXY= \
-              --env http_proxy= \
-              --env https_proxy= \
-              --publish 80:{{ traefik_conf.entryPoints.web.address.split(':')[-1] }} \
-              --publish 443:{{ traefik_conf.entryPoints.websecure.address.split(':')[-1] }} \
-              docker.io/library/traefik \
-              traefik \
-              --entrypoints.web.address={{ traefik_conf.entryPoints.web.address }} \
-              --entrypoints.websecure.address={{ traefik_conf.entryPoints.websecure.address }} \
-              --accesslog=false \
-              --accesslog.format=json \
-              --log=true \
-              --log.format=json \
-              --metrics.influxdb=true \
-              --metrics.influxdb.protocol=http \
-              --metrics.influxdb.address={{ ansible_cni_podman0.ipv4.address }}:{{ telegraf_influxdb_listener_config.service_address | regex_replace('^\.*?:','') }} \
-              --providers.file.filename=/etc/traefik/services.yml
+  roles:
+    - role: ansible-podman
 
 ###############################################################################
 # Grafana / InfluxDB configuration

@@ -13,6 +13,67 @@ bootstrap_distro_packages:
 podman_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 podman_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 
+podman_pods:
+  - name: appliance
+    description: Metrics appliance POD
+    opts: >
+      "--publish 80:{{ traefik_conf.entryPoints.web.address.split(':')[-1] }} \
+       --publish 443:{{ traefik_conf.entryPoints.websecure.address.split(':')[-1] }}"
+
+podman_containers:
+  - name: traefik
+    run_opts: >
+      "--user 1300 --mount type=bind,src=/etc/traefik,target=/etc/traefik \
+      --env HTTP_PROXY= --env HTTPS_PROXY= \
+      --env http_proxy= --env https_proxy="
+    image: docker.io/library/traefik
+    command: traefik
+    command_opts: >
+      "--entrypoints.web.address={{ traefik_conf.entryPoints.web.address }} \
+      --entrypoints.websecure.address={{ traefik_conf.entryPoints.websecure.address }} \
+      --accesslog=false \
+      --accesslog.format=json \
+      --log=true \
+      --log.format=json \
+      --metrics.influxdb=true \
+      --metrics.influxdb.protocol=http \
+      --metrics.influxdb.address={{ ansible_cni_podman0.ipv4.address }}:{{ telegraf_influxdb_listener_config.service_address | regex_replace('^\.*?:','') }} \
+      --providers.file.filename=/etc/traefik/services.yml"
+  - name: grafana
+    run_opts: >
+      "--rm \
+       --user 1100 \
+       --name grafana \
+       --mount type=bind,src=/var/lib/grafana,target=/var/lib/grafana \
+       --env NO_PROXY=$NO_PROXY,127.0.0.1 \
+       --env no_proxy=$no_proxy,127.0.0.1 \
+       --env GF_SERVER_ROOT_URL={{ lookup('env', 'METRICS_ENDPOINT_URL') | regex_replace('/$', '') }}/grafana \
+       --env GF_SERVER_SERVE_FROM_SUB_PATH=true \
+       --env GF_ANALYTICS_REPORTING_ENABLED=false \
+       --env GF_ANALYTICS_CHECK_FOR_UPDATES=false \
+       --env GF_PATHS_PROVISIONING=/var/lib/grafana/provisioning/ \
+       --env GF_LOG_MODE=console \
+       --env GF_LOG_LEVEL=debug \
+       --env GF_SECURITY_ADMIN_USER={{ lookup('env', 'GRAFANA_ADMIN_NAME') }} \
+       --env GF_SECURITY_ADMIN_PASSWORD={{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}"
+    image: docker.io/grafana/grafana
+    command:
+    command_opts:
+  - name: influxdb
+    run_opts: >
+      "--rm \
+      --user 1200 \
+      --mount type=bind,src=/var/lib/influxdb,target=/var/lib/influxdb \
+      --mount type=bind,src=/var/lib/influxdb/.conf,target=/.influxdbv2 \
+      --mount type=bind,src=/root/appliance/files/influxdb,target=/etc/influxdb,ro=true"
+    image: "quay.io/influxdb/influxdb:2.0.0-beta"
+    command: influxd
+    command_opts: >
+      "--reporting-disabled \
+      --bolt-path=/var/lib/influxdb/influxd.bolt \
+      --engine-path=/var/lib/influxdb/engine \
+      --http-bind-address=':{{ influxdb_conf.bind.port }}'"
+
 ###############################################################################
 # Consul
 #
@@ -51,7 +112,7 @@ grafana_datasources:
           type: grafana-influxdb-flux-datasource
           typeLogoUrl: public/plugins/grafana-influxdb-flux-datasource/img/influxdb_logo.svg
           access: proxy
-          url: http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}
+          url: http://127.0.0.1:{{ influxdb_conf.bind.port }}
           password: ""
           user: ""
           database: ""
@@ -60,7 +121,7 @@ grafana_datasources:
           jsonData:
               bucket: "{{ item.name }}"
               organization: "{{ influxdb_org }}"
-              url: "http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}"
+              url: "http://127.0.0.1:{{ influxdb_conf.bind.port }}"
           secureJsonData:
               token: "{{ grafana_influxdb_token }}"
 
@@ -106,12 +167,12 @@ traefik_conf:
             grafana:
                 loadBalancer:
                     servers:
-                        - url: http://{{ grafana_ipaddr }}:3000/grafana
+                        - url: http://127.0.0.1:3000/grafana
             influxdb:
                 loadBalancer:
                     servers:
-                        - url: http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}/
-                        
+                        - url: http://127.0.0.1:{{ influxdb_conf.bind.port }}/
+
 ###############################################################################
 # InfluxDB
 #
@@ -122,7 +183,7 @@ influxdb_conf:
 influxdb_api:
     token: "{{ influxdb_admin_token }}"
     tokens_output_file: /root/.influxdb_tokens.csv
-    endpoint: "http://{{ influxdb_ipaddr }}:{{ influxdb_conf.bind.port }}"
+    endpoint: "http://127.0.0.1:{{ influxdb_conf.bind.port }}"
 
 influxdb_buckets:
     - name: haproxy
@@ -213,7 +274,7 @@ telegraf_custom_inputs:
     - name: grafana
       plugin: prometheus
       options:
-          - urls = ["http://{{ grafana_ipaddr }}:3000/metrics"]
+          - urls = ["http://127.0.0.1/grafana/metrics"]
 
 telegraf_influxdb_listener_config:
     service_address: ":8086"

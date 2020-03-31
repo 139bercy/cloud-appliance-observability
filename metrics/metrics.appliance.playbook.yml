@@ -258,8 +258,8 @@
     - name: InfluxDB | Wait for InfluxDB to be UP
       register: ping_result
       until: ping_result.stdout == "OK"
-      retries: 10
-      delay: 5
+      retries: 20
+      delay: 10
       shell: >
           podman exec -ti influxdb \
               influx \

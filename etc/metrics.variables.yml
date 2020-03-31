@@ -190,7 +190,7 @@ influxdb_conf:
 influxdb_api:
     token: "{{ influxdb_admin_token }}"
     tokens_output_file: /root/.influxdb_tokens.csv
-    endpoint: "http://127.0.0.1:{{ influxdb_conf.bind.port }}"
+    endpoint: "http://127.0.0.1:80"
 
 influxdb_buckets:
     - name: haproxy

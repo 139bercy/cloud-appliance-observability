@@ -356,9 +356,9 @@
       retries: 10
       delay: 5
       environment:
-        no_proxy: "{{ grafana_ipaddr }}"
+        no_proxy: "127.0.0.1"
       uri:
-        url: "http://{{ grafana_ipaddr }}:3000/login"
+        url: "http://127.0.0.1/grafana/login"
         method: GET
         validate_certs: no
         status_code:
@@ -367,9 +367,9 @@
     - name: Grafana | Create a datasource per bucket
       with_items: "{{ influxdb_buckets }}"
       environment:
-        no_proxy: "{{ grafana_ipaddr }}"
+        no_proxy: "127.0.0.1"
       uri:
-        url: "http://{{ grafana_ipaddr }}:3000/api/datasources"
+        url: "http://127.0.0.1/grafana/api/datasources"
         method: POST
         user: "{{ grafana_admin }}"
         password: "{{ grafana_password }}"

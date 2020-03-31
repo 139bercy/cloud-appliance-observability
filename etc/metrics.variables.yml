@@ -25,6 +25,7 @@ podman_containers:
     description: Traefik reverse proxy
     run_opts: >
       --pod appliance
+      --rm
       --user 1300 --mount type=bind,src=/etc/traefik,target=/etc/traefik
       --env HTTP_PROXY= --env HTTPS_PROXY=
       --env http_proxy= --env https_proxy=

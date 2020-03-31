@@ -37,7 +37,7 @@ podman_containers:
       --log.format=json \
       --metrics.influxdb=true \
       --metrics.influxdb.protocol=http \
-      --metrics.influxdb.address={{ ansible_cni_podman0.ipv4.address }}:{{ telegraf_influxdb_listener_config.service_address | regex_replace('^\.*?:','') }} \
+      --metrics.influxdb.address=127.0.0.1:{{ telegraf_influxdb_listener_config.service_address | regex_replace('^\.*?:','') }} \
       --providers.file.filename=/etc/traefik/services.yml"
   - name: grafana
     run_opts: >

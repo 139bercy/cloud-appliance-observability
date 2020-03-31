@@ -6,11 +6,12 @@ Deploy logs and metrics management appliances using Hashicorp Terraform.
 
 ## Prerequisites
 
-You need to install consul localy in order to fix a value for `GRAYLOG_CONSUL_ENCRYPT` 
-and `METRICS_CONSUL_ENCRYPT` if consul is enabled using `GRAYLOG_CONSUL_USAGE=true` or 
-`METRICS_CONSUL_USAGE=true`.
+You need to install consul localy in order to fix a value for
+`GRAYLOG_CONSUL_ENCRYPT` and `METRICS_CONSUL_ENCRYPT` if consul is enabled using
+`GRAYLOG_CONSUL_USAGE=true` or `METRICS_CONSUL_USAGE=true`.
 
 Then, you can get a value:
+
 ```bash
 export GRAYLOG_CONSUL_ENCRYPT=$(consul keygen)
 export METRICS_CONSUL_ENCRYPT=$(consul keygen)
@@ -116,6 +117,7 @@ test              # Test pre-requisites
 ### Getting resources info
 
 First, go to the right directory. Then, `terraform show` can be used.
+
 ```bash
 # Get appliance attributes
 terraform show -json \
@@ -133,13 +135,14 @@ terraform show -json \
 ```bash
 # TODO: Get the token from swift
 # Use influx CLI
-influx --host=http://$METRICS_ENDPOINT ping
+influx --host=$METRICS_ENDPOINT ping
 ```
 
 ### Manage Graylog
 
-A terraform-community-provided provider is available at 
-https://github.com/suzuki-shunsuke/go-graylog/blob/master/docs/README.md
+[A terraform-community-provided provider is available](https://github.com/suzuki-shunsuke/go-graylog/blob/master/docs/README.md)
+
 ```bash
 # TODO
 ```
+

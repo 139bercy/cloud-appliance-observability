@@ -9,7 +9,9 @@ export NO_PROXY=$NO_PROXY
 export http_proxy=$http_proxy
 export no_proxy=$no_proxy
 
-export PLAYBOOK="$PLAYBOOK -v"
+if echo $PLAYBOOK | egrep -qv "v$" ; then
+	export PLAYBOOK="$PLAYBOOK -v"
+fi
 
 export CONTAINERS_VOLUME=$CONTAINERS_VOLUME
 export ELASTICSEARCH_VOLUME=$ELASTICSEARCH_VOLUME

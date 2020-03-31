@@ -11,7 +11,9 @@ export no_proxy=$no_proxy
 
 export static_hosts=$static_hosts
 
-export PLAYBOOK="$PLAYBOOK -v"
+if echo $PLAYBOOK | egrep -qv "v$" ; then
+	export PLAYBOOK="$PLAYBOOK -v"
+fi
 
 export CONTAINERS_VOLUME=$CONTAINERS_VOLUME
 export METRICS_VOLUME=$METRICS_VOLUME

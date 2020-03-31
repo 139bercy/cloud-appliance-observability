@@ -17,62 +17,68 @@ podman_pods:
   - name: appliance
     description: Metrics appliance POD
     opts: >
-      "--publish 80:{{ traefik_conf.entryPoints.web.address.split(':')[-1] }} \
-       --publish 443:{{ traefik_conf.entryPoints.websecure.address.split(':')[-1] }}"
+      --publish 80:{{ traefik_conf.entryPoints.web.address.split(':')[-1] }}
+      --publish 443:{{ traefik_conf.entryPoints.websecure.address.split(':')[-1] }}
 
 podman_containers:
   - name: traefik
+    description: Traefik reverse proxy
     run_opts: >
-      "--user 1300 --mount type=bind,src=/etc/traefik,target=/etc/traefik \
-      --env HTTP_PROXY= --env HTTPS_PROXY= \
-      --env http_proxy= --env https_proxy="
+      --pod appliance
+      --user 1300 --mount type=bind,src=/etc/traefik,target=/etc/traefik
+      --env HTTP_PROXY= --env HTTPS_PROXY=
+      --env http_proxy= --env https_proxy=
     image: docker.io/library/traefik
     command: traefik
     command_opts: >
-      "--entrypoints.web.address={{ traefik_conf.entryPoints.web.address }} \
-      --entrypoints.websecure.address={{ traefik_conf.entryPoints.websecure.address }} \
-      --accesslog=false \
-      --accesslog.format=json \
-      --log=true \
-      --log.format=json \
-      --metrics.influxdb=true \
-      --metrics.influxdb.protocol=http \
-      --metrics.influxdb.address=127.0.0.1:{{ telegraf_influxdb_listener_config.service_address | regex_replace('^\.*?:','') }} \
-      --providers.file.filename=/etc/traefik/services.yml"
+      --entrypoints.web.address={{ traefik_conf.entryPoints.web.address }}
+      --entrypoints.websecure.address={{ traefik_conf.entryPoints.websecure.address }}
+      --accesslog=false
+      --accesslog.format=json
+      --log=true
+      --log.format=json
+      --metrics.influxdb=true
+      --metrics.influxdb.protocol=http
+      --metrics.influxdb.address=127.0.0.1:{{ telegraf_influxdb_listener_config.service_address | regex_replace('^\.*?:','') }}
+      --providers.file.filename=/etc/traefik/services.yml
   - name: grafana
+    description: Metrics dashboards manager
     run_opts: >
-      "--rm \
-       --user 1100 \
-       --name grafana \
-       --mount type=bind,src=/var/lib/grafana,target=/var/lib/grafana \
-       --env NO_PROXY=$NO_PROXY,127.0.0.1 \
-       --env no_proxy=$no_proxy,127.0.0.1 \
-       --env GF_SERVER_ROOT_URL={{ lookup('env', 'METRICS_ENDPOINT_URL') | regex_replace('/$', '') }}/grafana \
-       --env GF_SERVER_SERVE_FROM_SUB_PATH=true \
-       --env GF_ANALYTICS_REPORTING_ENABLED=false \
-       --env GF_ANALYTICS_CHECK_FOR_UPDATES=false \
-       --env GF_PATHS_PROVISIONING=/var/lib/grafana/provisioning/ \
-       --env GF_LOG_MODE=console \
-       --env GF_LOG_LEVEL=debug \
-       --env GF_SECURITY_ADMIN_USER={{ lookup('env', 'GRAFANA_ADMIN_NAME') }} \
-       --env GF_SECURITY_ADMIN_PASSWORD={{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}"
+      --pod appliance
+      --rm
+      --user 1100
+      --name grafana
+      --mount type=bind,src=/var/lib/grafana,target=/var/lib/grafana
+      --env NO_PROXY=$NO_PROXY,127.0.0.1
+      --env no_proxy=$no_proxy,127.0.0.1
+      --env GF_SERVER_ROOT_URL={{ lookup('env', 'METRICS_ENDPOINT_URL') | regex_replace('/$', '') }}/grafana
+      --env GF_SERVER_SERVE_FROM_SUB_PATH=true
+      --env GF_ANALYTICS_REPORTING_ENABLED=false
+      --env GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      --env GF_PATHS_PROVISIONING=/var/lib/grafana/provisioning/
+      --env GF_LOG_MODE=console
+      --env GF_LOG_LEVEL=debug
+      --env GF_SECURITY_ADMIN_USER={{ lookup('env', 'GRAFANA_ADMIN_NAME') }}
+      --env GF_SECURITY_ADMIN_PASSWORD={{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}
     image: docker.io/grafana/grafana
     command:
     command_opts:
   - name: influxdb
+    description: Metrics and monitoring manager
     run_opts: >
-      "--rm \
-      --user 1200 \
-      --mount type=bind,src=/var/lib/influxdb,target=/var/lib/influxdb \
-      --mount type=bind,src=/var/lib/influxdb/.conf,target=/.influxdbv2 \
-      --mount type=bind,src=/root/appliance/files/influxdb,target=/etc/influxdb,ro=true"
+      --pod appliance
+      --rm
+      --user 1200
+      --mount type=bind,src=/var/lib/influxdb,target=/var/lib/influxdb
+      --mount type=bind,src=/var/lib/influxdb/.conf,target=/.influxdbv2
+      --mount type=bind,src=/root/appliance/files/influxdb,target=/etc/influxdb,ro=true
     image: "quay.io/influxdb/influxdb:2.0.0-beta"
     command: influxd
     command_opts: >
-      "--reporting-disabled \
-      --bolt-path=/var/lib/influxdb/influxd.bolt \
-      --engine-path=/var/lib/influxdb/engine \
-      --http-bind-address=':{{ influxdb_conf.bind.port }}'"
+      --reporting-disabled
+      --bolt-path=/var/lib/influxdb/influxd.bolt
+      --engine-path=/var/lib/influxdb/engine
+      --http-bind-address=":{{ influxdb_conf.bind.port }}"
 
 ###############################################################################
 # Consul

@@ -212,6 +212,15 @@
   roles:
     - role: ansible-podman
 
+  post_tasks:
+    - name: Start the POD
+      with_items: "{{ podman_pods }}"
+      service: name={{ item.name }}.pod.service state=started enabled=yes
+
+    - name: Start the containers
+      with_items: "{{ podman_containers }}"
+      service: name={{ item.name }}.container.service state=started enabled=yes
+
 ###############################################################################
 # Grafana / InfluxDB configuration
 #

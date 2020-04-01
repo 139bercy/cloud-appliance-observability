@@ -261,7 +261,7 @@ https://github.com/mgrzybek/ansible-bootstrap-system) to configure syslog:
 
 #### Docker
 
-An [ansible role si available](
+An [ansible role is available](
 https://github.com/mgrzybek/ansible-docker/) to configure docker.
 
 `journald` / `syslog` can to used to send logs to Graylog. This is the default

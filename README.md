@@ -158,8 +158,10 @@ influx --host=$METRICS_ENDPOINT ping
 
 ### Send metrics to the appliance
 
-An [ansible role is available](https://github.com/mgrzybek/ansible-telegraf) is
-available to configure a telegraf agent:
+#### Using telegraf
+
+An [ansible role is available](https://github.com/mgrzybek/ansible-telegraf)
+to configure a telegraf agent:
 
 * system metrics ;
 * open a local InfluxDB v1 endpoint to allow business softwares to send metrics.
@@ -170,7 +172,7 @@ available to configure a telegraf agent:
      - ansible-telegraf
   vars:
      # Main InfluxDB v2 output configuration
-     telegraf_output_influxdbv2_config
+     telegraf_output_influxdbv2_config:
          urls: ["http://localhost:8086"] # use $METRICS_ENDPOINT
          token: "secret"                 # get the bucket's token from swift
          org: "my-org"                   # use $INFLUXDB_ORG or any post-configured organization
@@ -204,7 +206,34 @@ available to configure a telegraf agent:
             quiet: false
             logfile: ""
             omit_hostname: false
+
+     telegraf_custom_inputs:
+       # Kubernetes Inventory
+       # https://github.com/influxdata/telegraf/tree/master/plugins/inputs/kube_inventory
+       - name: kube_inventory
+         plugin: kube_inventory
+         options:
+           - 'url = "https://127.0.0.1"'
+           - 'namespace = ""'
+       # Kubernetes
+       # https://github.com/influxdata/telegraf/tree/master/plugins/inputs/kubernetes
+       - name: kubernetes
+         plugin: kubernetes
+         options:
+           - 'url = "http://127.0.0.1:10255"'
+       # Docker
+       # https://github.com/influxdata/telegraf/tree/master/plugins/inputs/docker
+       - name: docker
+         plugin: docker
+         options:
+           - 'endpoint = "unix:///var/run/docker.sock"'
+           - 'gather_services = false'
+           - 'source_tag = false'
 ```
+
+#### Using Java-based softwares
+
+#### Using PHP-based softwares
 
 ### Send logs to the appliance
 

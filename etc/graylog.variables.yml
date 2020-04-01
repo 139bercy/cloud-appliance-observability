@@ -12,7 +12,7 @@ podman_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 
 podman_pods:
   - name: appliance
-    description: Metrics appliance POD
+    description: Logs management appliance POD
     opts: >
       --publish 80:8080
       --publish 81:8081

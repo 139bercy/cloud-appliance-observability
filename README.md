@@ -13,8 +13,8 @@ You need to install consul locally in order to fix a value for
 Then, you can get a value:
 
 ```bash
-METRICS_CONSUL_USAGE=false
-GRAYLOG_CONSUL_USAGE=false
+export METRICS_CONSUL_USAGE=false
+export GRAYLOG_CONSUL_USAGE=false
 export GRAYLOG_CONSUL_ENCRYPT=$(consul keygen) # fake value
 export METRICS_CONSUL_ENCRYPT=$(consul keygen) # fake value
 ```

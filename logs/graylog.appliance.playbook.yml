@@ -147,7 +147,7 @@
       file:
         path: /var/lib/elasticsearch
         state: directory
-        owner: 1000
+        owner: 1300
         mode: 0755
 
 ###############################################################################

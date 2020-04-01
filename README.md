@@ -237,6 +237,8 @@ to configure a telegraf agent:
 
 ### Send logs to the appliance
 
+#### syslog configuration
+
 An [ansible role is available](
 https://github.com/mgrzybek/ansible-bootstrap-system) to configure syslog:
 
@@ -256,6 +258,29 @@ https://github.com/mgrzybek/ansible-bootstrap-system) to configure syslog:
       region: us-west-1
       az: seattle
 ```
+
+#### Docker
+
+An [ansible role si available)
+https://github.com/mgrzybek/ansible-docker/) to configure docker.
+
+`journald` / `syslog` can to used to send logs to Graylog. This is the default
+behaviour. `docker` can send logs directly to Graylog using GELF over TCP / UDP.
+
+```yaml
+- hosts: all
+  roles:
+     - ansible-docker
+  vars:
+     # Log management
+     # Default: journald
+     # https://docs.docker.com/config/containers/logging/configure/#supported-logging-drivers
+     docker_log_driver: gelf
+     docker_log_options:
+       - "gelf-address=udp://<graylog_endpoint>:<graylog_gelf_port>" # UDP or TCP port must be available
+```
+
+#### Java and PHP
 
 `log4j` appender for Java:
 

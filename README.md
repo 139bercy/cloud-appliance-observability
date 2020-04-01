@@ -172,9 +172,9 @@ available to configure a telegraf agent:
      # Main InfluxDB v2 output configuration
      telegraf_output_influxdbv2_config
          urls: ["http://localhost:8086"] # use $METRICS_ENDPOINT
-         token: "secret"  # get the bucket's token from swift
-         org: "my-org" # use $INFLUXDB_ORG or any post-configured organization
-         bucket: "default" # use a pre-configured or post-configured bucket
+         token: "secret"                 # get the bucket's token from swift
+         org: "my-org"                   # use $INFLUXDB_ORG or any post-configured organization
+         bucket: "default"               # use a pre-configured or post-configured bucket
          bucket_tag: ""
          exclude_bucket_tag: false
          insecure_skip_verify: false
@@ -218,9 +218,9 @@ https://github.com/mgrzybek/ansible-bootstrap-system) to configure syslog:
     - role: bootstrap-system
   vars:
     bootstrap_syslog_target_host: graylog.local # use $GRAYLOG_ENDPOINT
-    bootstrap_syslog_target_port: # use $GRAYLOG_ENDPOINT
+    bootstrap_syslog_target_port:               # use $GRAYLOG_ENDPOINT
     bootstrap_syslog_target_protocol: http
-    bootstrap_syslog_additional_tags: # add needed custom tags
+    bootstrap_syslog_additional_tags:           # add needed custom tags
       environment: production
       tenant: my-custom-tenant
       cloud: amazon
@@ -235,7 +235,8 @@ https://github.com/mgrzybek/ansible-bootstrap-system) to configure syslog:
 
 ```xml
 <Appenders>
-  <Http name="Http" url="https://localhost:9200/test/log4j/">
+  <!-- graylog-endpoint: GELF or HTTP endpoint -->
+  <Http name="Http" url="graylog-endpoint">
     <Property name="X-Java-Runtime" value="$${java:runtime}" />
     <GelfLayout compressionType="OFF" includeNullDelimiter="true"/>
   </Http>

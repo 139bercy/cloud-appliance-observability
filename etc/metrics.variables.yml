@@ -23,6 +23,7 @@ podman_pods:
 podman_containers:
   - name: traefik
     description: Traefik reverse proxy
+    after: "{{ podman_pods[0].name }}"
     run_opts: >
       --pod appliance
       --rm
@@ -44,6 +45,7 @@ podman_containers:
       --providers.file.filename=/etc/traefik/services.yml
   - name: grafana
     description: Metrics dashboards manager
+    after: "{{ podman_pods[0].name }}"
     run_opts: >
       --pod appliance
       --rm
@@ -66,6 +68,7 @@ podman_containers:
     command_opts:
   - name: influxdb
     description: Metrics and monitoring manager
+    after: "{{ podman_pods[0].name }}"
     run_opts: >
       --pod appliance
       --rm

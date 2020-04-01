@@ -6,15 +6,25 @@ Deploy logs and metrics management appliances using Hashicorp Terraform.
 
 ## Prerequisites
 
-You need to install consul localy in order to fix a value for
+You need to install consul locally in order to fix a value for
 `GRAYLOG_CONSUL_ENCRYPT` and `METRICS_CONSUL_ENCRYPT` if consul is enabled using
 `GRAYLOG_CONSUL_USAGE=true` or `METRICS_CONSUL_USAGE=true`.
 
 Then, you can get a value:
 
 ```bash
-export GRAYLOG_CONSUL_ENCRYPT=$(consul keygen)
-export METRICS_CONSUL_ENCRYPT=$(consul keygen)
+METRICS_CONSUL_USAGE=false
+GRAYLOG_CONSUL_USAGE=false
+export GRAYLOG_CONSUL_ENCRYPT=$(consul keygen) # fake value
+export METRICS_CONSUL_ENCRYPT=$(consul keygen) # fake value
+```
+
+If you want to connect against an existing `consul` service you should use your
+existing secret.
+
+```bash
+export GRAYLOG_CONSUL_ENCRYPT=$CONSUL_SERVICE_ENCRYPT
+export METRICS_CONSUL_ENCRYPT=$CONSUL_SERVICE_ENCRYPT
 ```
 
 ## Usage
@@ -144,5 +154,91 @@ influx --host=$METRICS_ENDPOINT ping
 
 ```bash
 # TODO
+```
+
+### Send metrics to the appliance
+
+An [ansible role is available](https://github.com/mgrzybek/ansible-telegraf) is
+available to configure a telegraf agent:
+
+* system metrics ;
+* open a local InfluxDB v1 endpoint to allow business softwares to send metrics.
+
+```yaml
+- hosts: all
+  roles:
+     - ansible-telegraf
+  vars:
+     # Main InfluxDB v2 output configuration
+     telegraf_output_influxdbv2_config
+         urls: ["http://localhost:8086"] # use $METRICS_ENDPOINT
+         token: "secret"  # get the bucket's token from swift
+         org: "my-org" # use $INFLUXDB_ORG or any post-configured organization
+         bucket: "default" # use a pre-configured or post-configured bucket
+         bucket_tag: ""
+         exclude_bucket_tag: false
+         insecure_skip_verify: false
+
+     # Add local InfluxDB v1 endpoint
+     telegraf_influxdb_listener_config:
+         service_address: ":8086"
+         read_timeout: 10s
+         write_timeout: 10s
+         max_body_size: 0
+         max_line_size: 0
+
+     # Main configuration
+     telegraf_main_config:
+         global_tags:
+            os_project: "cloud-1" # You can add any tag you want
+         add_node_type: false
+         agent:
+            interval: "{{ telegraf_metrics_agent_interval_seconds }}"
+            round_interval: false
+            metric_batch_size: 1024
+            metric_buffer_limit: 10240
+            collection_jitter: 8s
+            flush_jitter: 8s
+            precision: ""
+            debug: false
+            quiet: false
+            logfile: ""
+            omit_hostname: false
+```
+
+### Send logs to the appliance
+
+An [ansible role is available](
+https://github.com/mgrzybek/ansible-bootstrap-system) to configure syslog:
+
+```yaml
+- name: Do OS-ready configuration
+  hosts: all
+  roles:
+    - role: bootstrap-system
+  vars:
+    bootstrap_syslog_target_host: graylog.local # use $GRAYLOG_ENDPOINT
+    bootstrap_syslog_target_port: # use $GRAYLOG_ENDPOINT
+    bootstrap_syslog_target_protocol: http
+    bootstrap_syslog_additional_tags: # add needed custom tags
+      environment: production
+      tenant: my-custom-tenant
+      cloud: amazon
+      region: us-west-1
+      az: seattle
+```
+
+`log4j` appender for Java:
+
+* [GELF layout](https://logging.apache.org/log4j/2.x/manual/layouts.html#GELFLayout)
+* [HTTP Appender](https://logging.apache.org/log4j/2.x/manual/appenders.html#HttpAppender)
+
+```xml
+<Appenders>
+  <Http name="Http" url="https://localhost:9200/test/log4j/">
+    <Property name="X-Java-Runtime" value="$${java:runtime}" />
+    <GelfLayout compressionType="OFF" includeNullDelimiter="true"/>
+  </Http>
+</Appenders>
 ```
 

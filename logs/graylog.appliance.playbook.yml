@@ -225,10 +225,10 @@
       register: graylog_salt
       shell: head /dev/urandom | tr -dc A-Za-z0-9 | head -c 64
 
-  roles:
-    - role: ansible-podman
+    - name: Configure podman
+      include_role:
+        name: ansible-podman
 
-  post_tasks:
     - name: Start the POD
       with_items: "{{ podman_pods }}"
       service: name={{ item.name }}.pod.service state=started enabled=yes

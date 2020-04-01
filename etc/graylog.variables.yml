@@ -23,7 +23,7 @@ podman_pods:
 podman_containers:
   - name: elasticsearch
     description: Documents indexer
-    after: "{{ podman_pods[0].name }}"
+    after: "{{ podman_pods[0].name }}.pod.service"
     image: docker.io/elasticsearch:6.6.2
     run_opts: >
       --pod appliance
@@ -37,7 +37,7 @@ podman_containers:
 
   - name: mongodb
     description: NoSQL database
-    after: "{{ podman_pods[0].name }}"
+    after: "{{ podman_pods[0].name }}.pod.service"
     image: docker.io/mongo:3
     run_opts: >
       --pod appliance
@@ -46,7 +46,7 @@ podman_containers:
 
   - name: graylog
     description: Logs management
-    after: "{{ podman_pods[0].name }}"
+    after: "{{ podman_pods[0].name }}.pod.service"
     image: docker.io/graylog/graylog:3.2
     run_opts: >
       --pod appliance

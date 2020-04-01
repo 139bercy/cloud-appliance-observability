@@ -229,16 +229,8 @@
   tags: configuration
 
   tasks:
-    - name: InfluxDB | Get InfluxDB IP address
-      register: influxdb_result
-      shell: >
-           podman inspect influxdb \
-           | jq -M '.[0].NetworkSettings.IPAddress' \
-           | awk -F'"' '{print $2}'
-
     - name: InfluxDB | Set facts
       set_fact:
-          influxdb_ipaddr: "{{ influxdb_result.stdout }}"
           influxdb_admin: "{{ lookup('env', 'INFLUXDB_ADMIN_NAME') }}"
           influxdb_password: "{{ lookup('env', 'INFLUXDB_ADMIN_PASSWORD') }}"
           influxdb_org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
@@ -337,17 +329,9 @@
                   auth create --org {{ influxdb_org }} --read-buckets \
               | awk '/active/ {print $2}'
 
-    - name: Grafana | Get Grafana IP address
-      register: grafana_result
-      shell: >
-           podman inspect grafana \
-           | jq -M '.[0].NetworkSettings.IPAddress' \
-           | awk -F'"' '{print $2}'
-
     - name: Grafana | Set facts
       set_fact:
           grafana_influxdb_token: "{{ result_grafana_token.stdout }}"
-          grafana_ipaddr: "{{ grafana_result.stdout }}"
           grafana_admin: "{{ lookup('env', 'GRAFANA_ADMIN_NAME') }}"
           grafana_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}"
 
@@ -364,7 +348,23 @@
         status_code:
             - 200
 
+    - name: Grafana | Get existing datasources
+      register: grafana_existing_datasources
+      uri:
+        url: "http://127.0.0.1/grafana/api/datasources"
+        method: GET
+        user: "{{ grafana_admin }}"
+        password: "{{ grafana_password }}"
+        force_basic_auth: yes
+        body_format: json
+        validate_certs: no
+        status_code:
+            - 200
+
     - name: Grafana | Create a datasource per bucket
+      when: >
+        "'{{ influxdb_org }} - {{ item.name }}'
+          not in grafana_existing_datasources.json | json_query('[*].name')"
       with_items: "{{ influxdb_buckets }}"
       environment:
         no_proxy: "127.0.0.1"
@@ -395,26 +395,11 @@
               '/{{ influxdb_org }},appliance-metrics,write/ {print $NF}' \
               {{ influxdb_api.tokens_output_file }}
 
-    - name: Telegraf | Get InfluxDB IP address
-      register: influxdb_result
-      shell: >
-           podman inspect influxdb \
-           | jq -M '.[0].NetworkSettings.IPAddress' \
-           | awk -F'"' '{print $2}'
-
-    - name: Grafana | Get Grafana IP address
-      register: grafana_result
-      shell: >
-           podman inspect grafana \
-           | jq -M '.[0].NetworkSettings.IPAddress' \
-           | awk -F'"' '{print $2}'
-
     - name: Telegraf | Set facts
       set_fact:
-          influxdb_ipaddr: "{{ influxdb_result.stdout }}"
           influx_token: "{{ awk_result.stdout }}"
-          grafana_ipaddr: "{{ grafana_result.stdout }}"
 
     - name: Install telegraf client
       include_role:
           name: ansible-telegraf
+

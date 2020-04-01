@@ -10,6 +10,61 @@ bootstrap_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 podman_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 podman_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 
+podman_pods:
+  - name: appliance
+    description: Metrics appliance POD
+    opts: >
+      --publish 80:8080
+      --publish 81:8081
+      --publish 514:5140/tcp
+      --publish 514:5140/udp
+      --publish 12201:12201
+
+podman_containers:
+  - name: elasticsearch
+    description: Documents indexer
+    after: "{{ podman_pods[0].name }}"
+    image: docker.io/elasticsearch:6.6.2
+    run_opts: >
+      --pod appliance
+      --user 1000
+      --mount type=bind,src=/var/lib/elasticsearch,target=/usr/share/elasticsearch/data
+      --env discovery.type="single-node"
+      --env cluster.name="logs"
+      --env node.name="{{ ansible_hostname }}"
+      --env network.bind_host="0.0.0.0"
+      --env ES_JAVA_OPTS="-Xms{{ (ansible_memtotal_mb * 0.3) | int }}m -Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m"
+
+  - name: mongodb
+    description: NoSQL database
+    after: "{{ podman_pods[0].name }}"
+    image: docker.io/mongo:3
+    run_opts: >
+      --pod appliance
+      --user 1200
+      --mount type=bind,src=/var/lib/mongodb,target=/data/db
+
+  - name: graylog
+    description: Logs management
+    after: "{{ podman_pods[0].name }}"
+    image: docker.io/graylog/graylog:3.2
+    run_opts: >
+      --pod appliance
+      --user 1100
+      --mount type=bind,src=/var/lib/graylog,target=/var/lib/graylog
+      --env GRAYLOG_IS_MASTER="true"
+      --env GRAYLOG_MESSAGE_JOURNAL_ENABLED="true"
+      --env GRAYLOG_HTTP_EXTERNAL_URI="{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') }}"
+      --env GRAYLOG_HTTP_PUBLISH_URI="http://{{ ansible_default_ipv4.address }}:80"
+      --env GRAYLOG_HTTP_BIND_ADDRESS="0.0.0.0:8080"
+      --env GRAYLOG_PASSWORD_SECRET="{{ graylog_salt.stdout }}"
+      --env GRAYLOG_ROOT_USERNAME="{{ graylog_login_admin_local }}"
+      --env GRAYLOG_ROOT_PASSWORD_SHA2="{{ graylog_root_password | hash('sha256') }}"
+      --env GRAYLOG_ROOT_TIMEZONE="Europe/Paris"
+      --env GRAYLOG_SERVER_JAVA_OPTS="-Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m -Xms{{ (ansible_memtotal_mb * 0.3) | int }}m"
+      --env GRAYLOG_MONGODB_URI="mongodb://127.0.0.1/graylog"
+      --env GRAYLOG_ELASTICSEARCH_HOSTS="http://127.0.0.1:9200"
+
 ###############################################################################
 # Consul
 #

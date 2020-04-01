@@ -98,7 +98,6 @@
 
   roles:
     - role: ansible-rclone
-    - role: ansible-podman
 
 ###############################################################################
 # Elasticsearch configuration
@@ -150,21 +149,6 @@
         state: directory
         owner: 1000
         mode: 0755
-
-    - name: Starting Elasticsearch container
-      shell: >
-          podman ps --all | grep -q elasticsearch && podman rm -f elasticsearch ; \
-          podman run \
-              --rm \
-              --detach \
-              --name elasticsearch \
-              --mount type=bind,src=/var/lib/elasticsearch,target=/usr/share/elasticsearch/data \
-              -e discovery.type="single-node" \
-              -e cluster.name="logs" \
-              -e node.name="{{ ansible_hostname }}" \
-              -e network.bind_host="0.0.0.0" \
-              -e ES_JAVA_OPTS="-Xms{{ (ansible_memtotal_mb * 0.3) | int }}m -Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m" \
-              docker.io/elasticsearch:6.6.2
 
 ###############################################################################
 # Graylog configuration
@@ -237,67 +221,21 @@
           state: directory
           owner: 1200
 
-    - name: Starting MongoDB container
-      shell: >
-          podman ps --all | grep -q mongo && podman rm -f mongo ; \
-          podman run \
-            --rm \
-            --detach \
-            --user 1200 \
-            --name mongo \
-            --mount type=bind,src=/var/lib/mongodb,target=/data/db \
-            docker.io/mongo:3
-
-    - name: Get Elasticsearch IP address
-      register: els_result
-      shell: >
-           podman inspect elasticsearch \
-           | jq -M '.[0].NetworkSettings.IPAddress' \
-           | awk -F'"' '{print $2}'
-
-    - name: Get MongoDB IP address
-      register: mongo_result
-      shell: >
-           podman inspect mongo \
-           | jq -M '.[0].NetworkSettings.IPAddress' \
-           | awk -F'"' '{print $2}'
-
-    - name: Set facts
-      set_fact:
-          mongodb_ipaddr: "{{ mongo_result.stdout }}"
-          els_ipaddr: "{{ els_result.stdout }}"
-
     - name: Salt generation
       register: graylog_salt
       shell: head /dev/urandom | tr -dc A-Za-z0-9 | head -c 64
 
-    - name: Starting Graylog container
-      shell: >
-          podman ps --all | grep -q graylog && podman rm -f graylog ; \
-          podman run \
-          --rm \
-          --detach \
-          --user 1100
-          --name graylog \
-          --mount type=bind,src=/var/lib/graylog,target=/var/lib/graylog \
-          --publish 80:8080 \
-          --publish 81:8081 \
-          --publish 514:5140/tcp \
-          --publish 514:5140/udp \
-          --publish 12201:12201 \
-          -e GRAYLOG_IS_MASTER="true" \
-          -e GRAYLOG_MESSAGE_JOURNAL_ENABLED="true" \
-          -e GRAYLOG_HTTP_EXTERNAL_URI="{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') }}" \
-          -e GRAYLOG_HTTP_PUBLISH_URI="http://{{ ansible_default_ipv4.address }}:80" \
-          -e GRAYLOG_HTTP_BIND_ADDRESS="0.0.0.0:8080" \
-          -e GRAYLOG_PASSWORD_SECRET="{{ graylog_salt.stdout }}" \
-          -e GRAYLOG_ROOT_USERNAME="{{ graylog_login_admin_local }}" \
-          -e GRAYLOG_ROOT_PASSWORD_SHA2="{{ graylog_root_password | hash('sha256') }}" \
-          -e GRAYLOG_ROOT_TIMEZONE="Europe/Paris" \
-          -e GRAYLOG_SERVER_JAVA_OPTS="-Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m -Xms{{ (ansible_memtotal_mb * 0.3) | int }}m" \
-          -e GRAYLOG_MONGODB_URI="mongodb://{{ mongodb_ipaddr }}/graylog" \
-          -e GRAYLOG_ELASTICSEARCH_HOSTS="http://{{ els_ipaddr }}:9200" \
-          docker.io/graylog/graylog:3.2
+  roles:
+    - role: ansible-podman
+
+  post_tasks:
+    - name: Start the POD
+      with_items: "{{ podman_pods }}"
+      service: name={{ item.name }}.pod.service state=started enabled=yes
+
+    - name: Start the containers
+      with_items: "{{ podman_containers }}"
+      service: name={{ item.name }}.container.service state=started enabled=yes
 
 ###############################################################################
 # Post-configuration graylog

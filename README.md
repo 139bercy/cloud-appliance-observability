@@ -235,7 +235,7 @@ https://github.com/mgrzybek/ansible-bootstrap-system) to configure syslog:
 
 ```xml
 <Appenders>
-  <!-- graylog-endpoint: GELF or HTTP endpoint -->
+  <!-- graylog-endpoint: GELF over HTTP endpoint -->
   <Http name="Http" url="graylog-endpoint">
     <Property name="X-Java-Runtime" value="$${java:runtime}" />
     <GelfLayout compressionType="OFF" includeNullDelimiter="true"/>

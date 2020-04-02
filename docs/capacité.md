@@ -1,16 +1,25 @@
-# Plan de capacité
+-   [Plan de capacité](#plan-de-capacité)
+    -   [Évaluation des volumes de
+        données](#évaluation-des-volumes-de-données)
+    -   [Évaluation de la puissance
+        nécessaire](#évaluation-de-la-puissance-nécessaire)
 
-## Évaluation des volumes de données
+Plan de capacité
+================
 
-Type de données                   | Nombre  | Taille  
-----------------------------------|---------|--------
-Messages pauvres (syslog)         | 100 000 |
-Messages riches (exceptions Java) | 100 000 |
-Métriques                         | 100 000 | 
+Évaluation des volumes de données
+---------------------------------
 
-## Évaluation de la puissance nécessaire
+  Type de données                     Nombre    Taille
+  ----------------------------------- --------- --------
+  Messages pauvres (syslog)           100 000
+  Messages riches (exceptions Java)   100 000
+  Métriques                           100 000
 
-Taille de l'injection    | Nombre de vCPU | Consommation mémoire
--------------------------|----------------|---------------------
-1000 messages / seconde  |                |
-1000 métriques / seconde |                |
+Évaluation de la puissance nécessaire
+-------------------------------------
+
+  Taille de l'injection      Nombre de vCPU   Consommation mémoire
+  -------------------------- ---------------- ----------------------
+  1000 messages / seconde
+  1000 métriques / seconde

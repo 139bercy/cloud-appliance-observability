@@ -81,7 +81,7 @@ help:
 .PHONY: clean # Delete the temporary files
 clean:
 	@rm -f *.dvi *.tex *.log *.jpg *.jpg.*
-	
+
 .PHONY: dist-clean # Delete the documents and temporary files
 dist-clean: clean
 	@rm -f *.pdf *.epub *.odt
@@ -125,7 +125,9 @@ epub: images latex
 
 .PHONY: pdf # Generate PDF document
 pdf: images
-	@pandoc $(PANDOC_OPTS) $(PDF_OPTS) $(MARKDOWN_FILES)
+	./convert.sh ${MARKDOWN_FILES}
+	pandoc $(PANDOC_OPTS) $(PDF_OPTS) buffer.md
+	rm -f buffer.md
 
 .PHONY: odt # Generate ODT document
 odt: images

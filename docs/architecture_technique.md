@@ -49,36 +49,37 @@ Schéma technique
 Schéma des flux
 ---------------
 
-  Source       Destinations        Port            Usage
-  ------------ ------------------- --------------- ---------------------
-  Appliances   Gitlab              HTTPS (443)     Dépôts
-  Appliances   API cloud           HTTPS           Sauvegardes
-  Appliances   Proxy               HTTP (8080)     Ressources internet
-  Appliances   Services socles     HTTP (80/443)   Installation
-  Appliances   Services externes   HTTP (80/443)   Sondes métier
-  Métier       Appliances          HTTP (80/443)   Webservices
-  Appliances   Appliances          HTTP (80/443)   Webservices
-  Mandataire   Appliances          HTTP (80/443)   Webservices
+Source      | Destinations      | Port          | Usage
+------------|-------------------|---------------|---------------------
+Appliances  | Gitlab            | HTTPS (443)   | Dépôts
+Appliances  | API cloud         | HTTPS         | Sauvegardes
+Appliances  | Proxy             | HTTP (8080)   | Ressources internet
+Appliances  | Services socles   | HTTP (80/443) | Installation
+Appliances  | Services externes | HTTP (80/443) | Sondes métier
+Métier      | Appliances        | HTTP (80/443) | Webservices
+Appliances  | Appliances        | HTTP (80/443) | Webservices
+Mandataire  | Appliances        | HTTP (80/443) | Webservices
 
 Spécification des instances
 ---------------------------
 
 Caractéristiques minimales :
 
-  Appliance   vCPU   Mémoire   Volumes Cinder
-  ----------- ------ --------- ----------------
-  Logs        2      4 Go      3
-  Metrics     2      2 Go      2
+Appliance | vCPU | Mémoire | Volumes Cinder
+----------|------|---------|----------------
+Logs      | 2    | 4 Go    | 3
+Metrics   | 2    | 2 Go    | 2
 
 Budget
 ------
 
 Coût de puissance de calcul :
 
-  Type                 Prix unitaire   Quantité   Durée   Total annuel
-  -------------------- --------------- ---------- ------- --------------
-  vCPU                 € / min         4          365 j   €
-  RAM                  € / Go          6          365 j   €
-  Stockage éphémaire   € / Go          20         365 j   €
-  Stockage bloc        € / Go          236        365 j   €
-  Stockage objets      € / Go          500        365 j   €
+Type               | Prix unitaire | Quantité | Durée  | Total annuel
+-------------------|---------------|----------|--------|--------------
+vCPU               | € / min       | 4        | 365 j  | €
+RAM                | € / Go        | 6        | 365 j  | €
+Stockage éphémaire | € / Go        | 20       | 365 j  | €
+Stockage bloc      | € / Go        | 236      | 365 j  | €
+Stockage objets    | € / Go        | 500      | 365 j  | €
+

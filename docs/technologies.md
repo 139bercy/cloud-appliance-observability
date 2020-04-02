@@ -4,7 +4,7 @@
 
 ### Socle
 
-Ces éléments représentent les briques sous-jacentes nécessaires à l'exécution 
+Ces éléments représentent les briques sous-jacentes nécessaires à l'exécution
 de la partie métier.
 
 Nom de l'outil | Fonction      | Support SLL
@@ -17,7 +17,7 @@ Centos 8 sera prochainement disponible.
 
 ### Intégration cloud
 
-Ces éléments représentent les briques sous-jacentes nécessaires à l'intégration 
+Ces éléments représentent les briques sous-jacentes nécessaires à l'intégration
 des solutions logicielles avec les autres applicances.
 
 Nom de l'outil | Fonction             | Support SLL
@@ -54,7 +54,7 @@ Les utilitaires de construction permettent de déployer la pile logicielle.
 Nom de l'outil   | Fonction      | Support SLL
 -----------------|---------------|------------
 Ansible          | Déployeur     | Oui
-Openstack HEAT   | Déployeur     |
+Terraform        | Déployeur     |
 
 ### Forge
 
@@ -69,7 +69,7 @@ Les usines logicielles de la DGFIP sont utilisées (cf. Jenkins de la PIC Cloud)
 
 ### SI-1A
 
-Le développement de l'appliance est fait par SI-1A via 3 couloirs (production, secours, test) hébergés sur l'infonuagique interne.  
+Le développement de l'appliance est fait par SI-1A via 3 couloirs (production, secours, test) hébergés sur l'infonuagique interne.
 
 ### partenaires extérieurs
 

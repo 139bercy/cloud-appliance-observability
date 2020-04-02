@@ -24,7 +24,7 @@ podman_containers:
   - name: elasticsearch
     description: Documents indexer
     after: "{{ podman_pods[0].name }}.pod.service"
-    image: docker.io/elasticsearch:6.6.2
+    image: docker.io/elasticsearch:6.8.5
     run_opts: >
       --pod appliance
       --user 1300

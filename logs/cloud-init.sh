@@ -85,7 +85,7 @@ export INFLUXDB_TOKEN="${influxdb_token}"
 export INFLUXDB_BUCKET="${influxdb_bucket}"
 
 # Test proxy and Openstack endpoint
-test -z $HTTP_PROXY || curl -vks HTTP_PROXY > /dev/null
+test -z $HTTP_PROXY || curl -vks $HTTP_PROXY > /dev/null
 openstack server list
 
 # Set NTP variables

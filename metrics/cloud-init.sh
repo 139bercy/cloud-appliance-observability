@@ -83,7 +83,7 @@ export CONSUL_ENCRYPT="${consul_encrypt}"
 export CONSUL_DNS_SERVER="${consul_dns_server}"
 
 # Test proxy and Openstack endpoint
-test -z $HTTP_PROXY || curl -vks HTTP_PROXY > /dev/null
+test -z $HTTP_PROXY || curl -vks $HTTP_PROXY > /dev/null
 openstack server list
 
 # Set NTP variables

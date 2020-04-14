@@ -86,7 +86,7 @@ variable "static_hosts" {
 ################################################################################
 # Logs
 
-variable "logs_flavor" {
+variable "logs_flavor_id" {
   type        = string
   description = "Cloud flavor to use"
 }
@@ -187,7 +187,7 @@ variable "influxdb_bucket" {
 # Metrics
 #
 
-variable "metrics_flavor" {
+variable "metrics_flavor_id" {
   type        = string
   description = "Cloud flavor to use"
 }

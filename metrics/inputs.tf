@@ -37,6 +37,11 @@ variable "os_region_name" {
   description = "Cloud region name"
 }
 
+variable "os_swift_region_name" {
+  type        = string
+  description = "Cloud region name for swift"
+}
+
 variable "git_repo_url" {
   type        = string
   description = "cloud-appliance-observability repo"
@@ -78,7 +83,7 @@ variable "static_hosts" {
   default     = ""
 }
 
-variable "flavor" {
+variable "flavor_id" {
   type        = string
   description = "Cloud flavor to use"
 }

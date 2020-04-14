@@ -12,6 +12,7 @@ module logs_appliance {
   os_password             = var.os_password
   os_auth_url             = var.os_auth_url
   os_region_name          = var.os_region_name
+  os_swift_region_name    = var.os_swift_region_name
   git_repo_url            = var.git_repo_url
   git_repo_checkout       = var.git_repo_checkout
   default_secgroup_id     = var.default_secgroup_id
@@ -19,7 +20,7 @@ module logs_appliance {
   internet_http_no_proxy  = var.internet_http_no_proxy
   ntp_server              = var.ntp_server
   static_hosts            = var.static_hosts
-  flavor                  = var.logs_flavor_id
+  flavor_id               = var.logs_flavor_id
 
   elasticsearch_size_gb  = var.elasticsearch_size_gb
   graylog_size_gb        = var.graylog_size_gb
@@ -45,6 +46,7 @@ module metrics_appliance {
   os_password             = var.os_password
   os_auth_url             = var.os_auth_url
   os_region_name          = var.os_region_name
+  os_swift_region_name    = var.os_swift_region_name
   git_repo_url            = var.git_repo_url
   git_repo_checkout       = var.git_repo_checkout
   default_secgroup_id     = var.default_secgroup_id
@@ -52,7 +54,7 @@ module metrics_appliance {
   internet_http_no_proxy  = var.internet_http_no_proxy
   ntp_server              = var.ntp_server
   static_hosts            = var.static_hosts
-  flavor                  = var.metrics_flavor_id
+  flavor_id               = var.metrics_flavor_id
 
   metrics_size_gb          = var.metrics_size_gb
   grafana_admin_name       = var.grafana_admin_name

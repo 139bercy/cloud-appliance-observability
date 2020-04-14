@@ -4,14 +4,14 @@
 resource "openstack_compute_instance_v2" "appliance-metrics" {
   name      = "metrics"
   image_id  = var.image_id
-  flavor_id = var.flavor
+  flavor_id = var.flavor_id
 
   network {
     port = openstack_networking_port_v2.appliance-metrics-front-port.id
   }
 
   user_data = templatefile(
-    "../cloud-init.sh",
+    "${path.module}/cloud-init.sh",
     {
       internet_http_proxy_url = var.internet_http_proxy_url,
       internet_http_no_proxy  = var.internet_http_no_proxy,

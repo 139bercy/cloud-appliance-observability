@@ -26,5 +26,5 @@ resource "openstack_compute_volume_attach_v2" "appliance-metrics-containers" {
 #
 resource "openstack_objectstorage_container_v1" "appliance-metrics-objects-metrics" {
   name   = "metrics"
-  region = "GRA"
+  region = var.os_swift_region_name
 }

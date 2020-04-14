@@ -83,7 +83,7 @@ variable "static_hosts" {
   default     = ""
 }
 
-variable "flavor" {
+variable "flavor_id" {
   type        = string
   description = "Cloud flavor to use"
 }

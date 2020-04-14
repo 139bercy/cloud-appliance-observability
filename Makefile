@@ -22,18 +22,18 @@ syntax:
 
 .PHONY: status # Get some information about what is running
 status:
-	@test -f logs/single-network/terraform.tfstate \
+	@test -d logs/single-network/.terraform \
 		&& cd logs/single-network/ \
 		&& terraform show \
 		|| true
-	@test -f logs/dual-network/terraform.tfstate \
+	@test -d logs/dual-network/.terraform \
 		&& cd logs/dual-network/ \
 		&& terraform show \
 		|| true
-	@test -f metrics/single-network/terraform.tfstate \
+	@test -d metrics/single-network/.terraform \
 		&& cd metrics/single-network/ \
 		&& terraform show
-	@test -f metrics/dual-network/terraform.tfstate \
+	@test -d metrics/dual-network/.terraform \
 		&& cd metrics/dual-network/ \
 		&& terraform show \
 		|| true
@@ -172,7 +172,8 @@ logs/dual-network/.terraform:
 	cd logs/dual-network/ && terraform init
 
 .PHONY: logs-single-network # Configure logs service
-logs-single-network: logs-check logs/single-network/.terraform
+#logs-single-network: logs-check logs/single-network/.terraform
+logs-single-network: logs/single-network/.terraform
 	@cd logs/single-network && terraform plan -input=false -out=logs.tfplan \
 		\
 		-var graylog_size_gb=${GRAYLOG_SIZE_GB} \
@@ -181,11 +182,12 @@ logs-single-network: logs-check logs/single-network/.terraform
 		-var flavor=${GRAYLOG_FLAVOR} \
 		-var image_id=${GRAYLOG_IMAGE_ID} \
 		-var front_net_id=${GRAYLOG_FRONT_NET_ID} \
-		-var default_secgroup_id=$(GRAYLOG_SECGROUP_ID) \
-		-var os_username=$(GRAYLOG_OS_USERNAME) \
-		-var os_password=$(GRAYLOG_OS_PASSWORD) \
-		-var os_auth_url=$(GRAYLOG_OS_AUTH_URL) \
+		-var default_secgroup_id=${GRAYLOG_SECGROUP_ID} \
+		-var os_username=${GRAYLOG_OS_USERNAME} \
+		-var os_password=${GRAYLOG_OS_PASSWORD} \
+		-var os_auth_url=${GRAYLOG_OS_AUTH_URL} \
 		-var os_region_name=${GRAYLOG_OS_REGION_NAME} \
+		-var os_swift_region_name=${GRAYLOG_OS_SWIFT_REGION_NAME} \
 		\
 		-var graylog_admin_name=${GRAYLOG_ADMIN} \
 		-var graylog_admin_password=${GRAYLOG_PASSWORD} \
@@ -193,6 +195,8 @@ logs-single-network: logs-check logs/single-network/.terraform
 		\
 		-var internet_http_proxy_url=${GRAYLOG_HTTP_PROXY} \
 		-var internet_http_no_proxy=${GRAYLOG_NO_PROXY} \
+		-var static_hosts=${GRAYLOG_STATIC_HOSTS} \
+		-var ntp_server=${GRAYLOG_NTP_SERVER} \
 		\
 		-var git_repo_checkout=${GIT_REPO_CHECKOUT} \
 		-var git_repo_url=${GIT_REPO_URL} \
@@ -202,7 +206,7 @@ logs-single-network: logs-check logs/single-network/.terraform
 		-var consul_dns_domain=${GRAYLOG_CONSUL_DNS_DOMAIN} \
 		-var consul_datacenter=${GRAYLOG_CONSUL_DATACENTER} \
 		-var consul_encrypt=${GRAYLOG_CONSUL_ENCRYPT} \
-		-var consul_dns_server=${GRAYLOG_CONSUL_DNS_SERVER}
+		-var consul_dns_server=${GRAYLOG_CONSUL_DNS_SERVER} \
 		\
 		-var influxdb_usage=${GRAYLOG_INFLUXDB_USAGE} \
 		-var influxdb_endpoint=${GRAYLOG_INFLUXDB_ENDPOINT} \
@@ -227,11 +231,12 @@ metrics-single-network: metrics-check metrics/single-network/.terraform
 		-var flavor=${METRICS_FLAVOR} \
 		-var image_id=${METRICS_IMAGE_ID} \
 		-var front_net_id=${METRICS_FRONT_NET_ID} \
-		-var default_secgroup_id=$(METRICS_SECGROUP_ID) \
-		-var os_username=$(METRICS_OS_USERNAME) \
-		-var os_password=$(METRICS_OS_PASSWORD) \
-		-var os_auth_url=$(METRICS_OS_AUTH_URL) \
+		-var default_secgroup_id=${METRICS_SECGROUP_ID} \
+		-var os_username=${METRICS_OS_USERNAME} \
+		-var os_password=${METRICS_OS_PASSWORD} \
+		-var os_auth_url=${METRICS_OS_AUTH_URL} \
 		-var os_region_name=${METRICS_OS_REGION_NAME} \
+		-var os_swift_region_name=${METRICS_OS_SWIFT_REGION_NAME} \
 		\
 		-var grafana_admin_name=${GRAFANA_ADMIN} \
 		-var grafana_admin_password=${GRAFANA_PASSWORD} \
@@ -270,7 +275,7 @@ prepare:
 	@which skopeo
 	@which swift
 	@which wget
-	@ansible-galaxy
+	@which ansible-galaxy
 
 	@./bin/copy_binaries.sh
 	@./bin/copy_packages.sh
@@ -286,11 +291,12 @@ clean-metrics-single:
 		-var flavor=${METRICS_FLAVOR} \
 		-var image_id=${METRICS_IMAGE_ID} \
 		-var front_net_id=${METRICS_FRONT_NET_ID} \
-		-var default_secgroup_id=$(METRICS_SECGROUP_ID) \
-		-var os_username=$(METRICS_OS_USERNAME) \
-		-var os_password=$(METRICS_OS_PASSWORD) \
-		-var os_auth_url=$(METRICS_OS_AUTH_URL) \
+		-var default_secgroup_id=${METRICS_SECGROUP_ID} \
+		-var os_username=${METRICS_OS_USERNAME} \
+		-var os_password=${METRICS_OS_PASSWORD} \
+		-var os_auth_url=${METRICS_OS_AUTH_URL} \
 		-var os_region_name=${METRICS_OS_REGION_NAME} \
+		-var os_swift_region_name=${METRICS_OS_SWIFT_REGION_NAME} \
 		\
 		-var grafana_admin_name=${GRAFANA_ADMIN} \
 		-var grafana_admin_password=${GRAFANA_PASSWORD} \
@@ -326,11 +332,12 @@ clean-logs-single-network: logs-check
 		-var flavor=${GRAYLOG_FLAVOR} \
 		-var image_id=${GRAYLOG_IMAGE_ID} \
 		-var front_net_id=${GRAYLOG_FRONT_NET_ID} \
-		-var default_secgroup_id=$(GRAYLOG_SECGROUP_ID) \
-		-var os_username=$(GRAYLOG_OS_USERNAME) \
-		-var os_password=$(GRAYLOG_OS_PASSWORD) \
-		-var os_auth_url=$(GRAYLOG_OS_AUTH_URL) \
+		-var default_secgroup_id=${GRAYLOG_SECGROUP_ID} \
+		-var os_username=${GRAYLOG_OS_USERNAME} \
+		-var os_password=${GRAYLOG_OS_PASSWORD} \
+		-var os_auth_url=${GRAYLOG_OS_AUTH_URL} \
 		-var os_region_name=${GRAYLOG_OS_REGION_NAME} \
+		-var os_swift_region_name=${GRAYLOG_OS_SWIFT_REGION_NAME} \
 		\
 		-var graylog_admin_name=${GRAYLOG_ADMIN} \
 		-var graylog_admin_password=${GRAYLOG_PASSWORD} \
@@ -338,6 +345,8 @@ clean-logs-single-network: logs-check
 		\
 		-var internet_http_proxy_url=${GRAYLOG_HTTP_PROXY} \
 		-var internet_http_no_proxy=${GRAYLOG_NO_PROXY} \
+		-var static_hosts=${GRAYLOG_STATIC_HOSTS} \
+		-var ntp_server=${GRAYLOG_NTP_SERVER} \
 		\
 		-var git_repo_checkout=${GIT_REPO_CHECKOUT} \
 		-var git_repo_url=${GIT_REPO_URL} \

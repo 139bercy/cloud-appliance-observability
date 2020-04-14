@@ -3,7 +3,6 @@
 #
 resource "openstack_objectstorage_container_v1" "appliance-logs-objects-logs" {
   name   = "logs"
-  region = "GRA"
 }
 
 ################################################################################

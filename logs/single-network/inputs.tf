@@ -32,6 +32,11 @@ variable "os_region_name" {
   description = "Cloud region name"
 }
 
+variable "os_swift_region_name" {
+  type        = string
+  description = "Cloud region name used by objets storage"
+}
+
 variable "git_repo_url" {
   type        = string
   description = "cloud-appliance-observability repo"

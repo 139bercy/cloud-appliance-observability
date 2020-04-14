@@ -1,5 +1,5 @@
 ################################################################################
-# Inputs
+# Common
 #
 
 variable "image_id" {
@@ -10,6 +10,11 @@ variable "image_id" {
 variable "front_net_id" {
   type        = string
   description = "Network ID to use for the appliance"
+}
+
+variable "back_net_id" {
+  type        = string
+  description = "Backoffice network ID to use for the appliance"
 }
 
 variable "os_username" {
@@ -78,7 +83,10 @@ variable "static_hosts" {
   default     = ""
 }
 
-variable "flavor" {
+################################################################################
+# Logs
+
+variable "logs_flavor" {
   type        = string
   description = "Cloud flavor to use"
 }
@@ -175,3 +183,57 @@ variable "influxdb_bucket" {
   default     = ""
 }
 
+################################################################################
+# Metrics
+#
+
+variable "metrics_flavor" {
+  type        = string
+  description = "Cloud flavor to use"
+}
+
+variable "metrics_size_gb" {
+  type        = number
+  description = "InfluxDB and Grafana data size (Gb)"
+  default     = 100
+}
+
+variable "grafana_admin_name" {
+  type        = string
+  description = "Grafana admin username"
+}
+
+variable "grafana_admin_password" {
+  type        = string
+  description = "Grafana admin password"
+}
+
+variable "influxdb_admin_name" {
+  type        = string
+  description = "InfluxDB admin username"
+}
+
+variable "influxdb_admin_password" {
+  type        = string
+  description = "InfluxDB admin password"
+}
+
+variable "influxdb_organisation" {
+  type        = string
+  description = "InfluxDB Org name"
+}
+
+variable "influxdb_retention_hours" {
+  type        = number
+  description = "InfluxDB default retention (hours)"
+}
+
+variable "metrics_endpoint_url" {
+  type        = string
+  description = "Public hostname used to connect against the tools"
+}
+
+variable "metrics_container" {
+  type        = string
+  description = "Swift container to use for backups"
+}

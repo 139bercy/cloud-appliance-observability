@@ -2,7 +2,7 @@
 # Objects storage
 #
 resource "openstack_objectstorage_container_v1" "appliance-logs-objects-logs" {
-  name   = "logs"
+  name = "logs"
 }
 
 ################################################################################

@@ -5,8 +5,10 @@ bootstrap_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 bootstrap_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 bootstrap_http_proxy_packages:
 bootstrap_http_proxy_packages_per_repo:
-   - host: download.opensuse.org
-     proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+  - host: download.opensuse.org
+    proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+  - host: ppa.launchpad.net
+    proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 
 
 ###############################################################################

@@ -8,7 +8,7 @@ bootstrap_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 # Podman
 #
 podman_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
-podman_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
+podman_http_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 
 podman_pods:
   - name: appliance

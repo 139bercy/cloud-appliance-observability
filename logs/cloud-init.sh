@@ -20,7 +20,10 @@ if which yum > /dev/null 2>&1 ; then
 	yum install --assumeyes ansible git jq > /dev/null
 else
 	apt update > /dev/null
-	apt -y install ansible git jq python3-swiftclient python3-openstackclient > /dev/null
+	apt -y install \
+		ansible git jq \
+		python3-swiftclient python3-openstackclient \
+		unzip > /dev/null
 fi
 
 # DNS: Populate /etc/hosts

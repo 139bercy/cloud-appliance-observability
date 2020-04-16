@@ -10,6 +10,11 @@ resource "openstack_networking_port_v2" "appliance-logs-front-port" {
   network_id = var.front_net_id
 }
 
+resource "openstack_compute_interface_attach_v2" "appliance-logs-front-port" {
+  instance_id = openstack_compute_instance_v2.appliance-logs.id
+  port_id     = openstack_networking_port_v2.appliance-logs-front-port.id
+}
+
 resource "openstack_networking_port_v2" "appliance-logs-back-port" {
   name = "appliance-logs-front-port"
   security_group_ids = [

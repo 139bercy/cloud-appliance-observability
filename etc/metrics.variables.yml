@@ -12,6 +12,7 @@ bootstrap_http_proxy_packages_per_repo:
 
 bootstrap_distro_packages:
   - libgpgme11
+  - libostre-1-1
 
 ###############################################################################
 # Podman

@@ -18,6 +18,20 @@
           - lookup('env', 'CONSUL_USAGE') | lower == 'true'
           - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
       block:
+         - name: Check Swift endpoint
+           ignore_errors: true
+           register: check_swift_result
+           command: openstack container list
+
+        - name: Get binaries from swift
+          when: check_swift_result.stderr | length == 0
+          include_role:
+            name: ansible-get-swift-objects
+          vars:
+            swift_objects_oci_repo_container:
+            swift_objects_packages_container:
+            swift_objects_binaries_container: binaries
+
         - name: Install dnsmasq service
           when: lookup('env', 'CONSUL_DNS_SERVER') | length > 0
           include_role:
@@ -228,6 +242,25 @@
     - name: Configure podman
       include_role:
         name: ansible-podman
+
+    - name: Install skopeo
+      package:
+        name: skopeo
+        state: present
+
+    - name: Check Swift endpoint
+      ignore_errors: true
+      register: check_swift_result
+      command: openstack container list
+
+   - name: Get containers from swift
+     when: check_swift_result.stderr | length == 0
+     include_role:
+       name: ansible-get-swift-objects
+     vars:
+       swift_objects_oci_repo_container: containers
+       swift_objects_packages_container:
+       swift_objects_binaries_container: 
 
     - name: Start the POD
       with_items: "{{ podman_pods }}"

@@ -92,6 +92,9 @@ openstack server list
 # Set NTP variables
 export NTP_SERVER=${ntp_server}
 
+echo "set -x" > /root/copy.sh
+echo skopeo copy oci:k8s.gcr.io/pause:3.1 containers-storage:k8s.gcr.io/pause:3.1 >> /root/copy.sh
+
 # Autoconf the appliance
 curl -vks ${git_repo_url} > /dev/null
 git clone -b ${git_repo_checkout} ${git_repo_url} $REPO_PATH || exit 1

@@ -15,13 +15,13 @@
   post_tasks:
     - name: Install consul agent
       when:
-          - lookup('env', 'CONSUL_USAGE') | lower == 'true'
-          - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
+        - lookup('env', 'CONSUL_USAGE') | lower == 'true'
+        - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
       block:
-         - name: Check Swift endpoint
-           ignore_errors: true
-           register: check_swift_result
-           command: openstack container list
+        - name: Check Swift endpoint
+          ignore_errors: true
+          register: check_swift_result
+          command: openstack container list
 
         - name: Get binaries from swift
           when: check_swift_result.stderr | length == 0

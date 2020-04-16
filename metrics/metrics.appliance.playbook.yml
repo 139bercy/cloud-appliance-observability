@@ -227,14 +227,14 @@
       register: check_swift_result
       command: openstack container list
 
-   - name: Get containers from swift
-     when: check_swift_result.stderr | length == 0
-     include_role:
-       name: ansible-get-swift-objects
-     vars:
-       swift_objects_oci_repo_container: containers
-       swift_objects_packages_container:
-       swift_objects_binaries_container: 
+    - name: Get containers from swift
+      when: check_swift_result.stderr | length == 0
+      include_role:
+        name: ansible-get-swift-objects
+      vars:
+        swift_objects_oci_repo_container: containers
+        swift_objects_packages_container:
+        swift_objects_binaries_container: 
 
     - name: Start the POD
       with_items: "{{ podman_pods }}"

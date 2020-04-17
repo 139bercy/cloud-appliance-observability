@@ -2,3 +2,6 @@ docker.io/library/traefik
 quay.io/influxdb/influxdb:2.0.0-beta
 docker.io/grafana/grafana
 k8s.gcr.io/pause:3.1
+docker.io/elasticsearch:6.8.5
+docker.io/mongo:3
+docker.io/graylog/graylog:3.2

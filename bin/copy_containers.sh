@@ -1,5 +1,5 @@
 #! /usr/bin/env bash
-set -x
+
 export SWIFT_CONTAINERS=containers
 
 process_container() {

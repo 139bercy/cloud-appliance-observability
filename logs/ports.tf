@@ -1,6 +1,8 @@
 ################################################################################
 # Ports
 #
+
+# Front port is attached by default
 resource "openstack_networking_port_v2" "appliance-logs-front-port" {
   name = "appliance-logs-front-port"
   security_group_ids = [
@@ -10,13 +12,9 @@ resource "openstack_networking_port_v2" "appliance-logs-front-port" {
   network_id = var.front_net_id
 }
 
-resource "openstack_compute_interface_attach_v2" "appliance-logs-front-port" {
-  instance_id = openstack_compute_instance_v2.appliance-logs.id
-  port_id     = openstack_networking_port_v2.appliance-logs-front-port.id
-}
-
+# Additional port with attachement
 resource "openstack_networking_port_v2" "appliance-logs-back-port" {
-  name = "appliance-logs-front-port"
+  name = "appliance-logs-back-port"
   security_group_ids = [
     var.default_secgroup_id,
     openstack_networking_secgroup_v2.appliance-logs-secgroup.id
@@ -28,4 +26,3 @@ resource "openstack_compute_interface_attach_v2" "appliance-logs-back-port" {
   instance_id = openstack_compute_instance_v2.appliance-logs.id
   port_id     = openstack_networking_port_v2.appliance-logs-back-port.id
 }
-

@@ -3,7 +3,7 @@
 #
 resource "openstack_blockstorage_volume_v2" "appliance-metrics-metrics" {
   name = "metrics"
-  size = 10
+  size = var.metrics_size_gb
 }
 
 resource "openstack_blockstorage_volume_v2" "appliance-metrics-containers" {

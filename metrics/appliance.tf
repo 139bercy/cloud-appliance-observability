@@ -22,7 +22,6 @@ resource "openstack_compute_instance_v2" "appliance-metrics" {
       os_password    = var.os_password,
       os_region_name = var.os_region_name,
 
-      metrics_container        = var.metrics_container,
       cinder_containers_volume = openstack_blockstorage_volume_v2.appliance-metrics-containers.id,
       cinder_metrics_volume    = openstack_blockstorage_volume_v2.appliance-metrics-metrics.id,
 

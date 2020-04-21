@@ -77,9 +77,9 @@ Coût de puissance de calcul :
 
 Type               | Prix unitaire | Quantité | Durée  | Total annuel
 -------------------|---------------|----------|--------|--------------
-vCPU               | € / min       | 4        | 365 j  | €
-RAM                | € / Go        | 6        | 365 j  | €
-Stockage éphémaire | € / Go        | 20       | 365 j  | €
-Stockage bloc      | € / Go        | 236      | 365 j  | €
-Stockage objets    | € / Go        | 500      | 365 j  | €
+vCPU               | 220 € / an    | 4        | 365 j  | 880 €
+RAM                | 220 € / 4 Go  | 6 Go     | 365 j  | 147 €
+Stockage bloc      | 400 € / To    | 236 Go   | 365 j  |  92 €
+Stockage objets    | 239 € / To    | 500 Go   | 365 j  | 117 €
 
+Total annuel : 1236 € / an.

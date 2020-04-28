@@ -316,5 +316,7 @@ telegraf_main_config:
         logfile: ""
         omit_hostname: false
 
+telegraf_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+telegraf_http_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 
 

@@ -10,6 +10,10 @@ resource "openstack_compute_instance_v2" "appliance-metrics" {
     port = openstack_networking_port_v2.appliance-metrics-front-port.id
   }
 
+  network {
+    port = openstack_networking_port_v2.appliance-metrics-back-port.id
+  }
+
   user_data = templatefile(
     "${path.module}/cloud-init.sh",
     {

@@ -1,0 +1,5 @@
+---
+
+- name: ansible-graylog-input
+  src: git+https://github.com/mgrzybek/ansible-graylog-input
+  version: master

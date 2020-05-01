@@ -1,7 +1,5 @@
 ---
 
-# Requirements used by ansible-galaxy tool
-#
 - name: ansible-bootstrap-system
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-bootstrap-system
   version: master

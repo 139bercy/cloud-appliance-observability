@@ -1,7 +1,5 @@
 ---
 
-# Requirements used by ansible-galaxy tool
-
 - name: ansible-influxdb-bucket
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-influxdb-bucket
   version: master

@@ -59,14 +59,14 @@ export OS_PASSWORD="${os_password}"
 export OS_REGION_NAME="${os_region_name}"
 export OS_INTERFACE=public
 export OS_IDENTITY_API_VERSION=3
-                        
+ 
 # Swift container
 export METRICS_CONTAINER=${metrics_container}
 
 # Set the volumes' IDs
 export CONTAINERS_VOLUME=${cinder_containers_volume}
 export METRICS_VOLUME=${cinder_metrics_volume}
-                        
+ 
 # Set the Grafana credentials
 export GRAFANA_ADMIN_NAME="${grafana_admin_name}"
 export GRAFANA_ADMIN_PASSWORD="${grafana_admin_password}"
@@ -77,7 +77,7 @@ export INFLUXDB_ORG="${influxdb_organisation}"
 export INFLUXDB_RETENTION_HOURS="${influxdb_retention_hours}"
 # Set metrics endpoint
 export METRICS_ENDPOINT_URL="${metrics_endpoint_url}"
-                        
+ 
 # Set Consul variables
 export CONSUL_USAGE="${consul_usage}"
 export CONSUL_DNS_DOMAIN="${consul_dns_domain}"
@@ -86,17 +86,14 @@ export CONSUL_ENCRYPT="${consul_encrypt}"
 export CONSUL_DNS_SERVER="${consul_dns_server}"
 
 # Test proxy and Openstack endpoint
-test -z $HTTP_PROXY || curl -vks $HTTP_PROXY > /dev/null
+test -z $HTTP_PROXY || curl -m1 -vks $HTTP_PROXY > /dev/null
 openstack server list
 
 # Set NTP variables
 export NTP_SERVER=${ntp_server}
 
-echo "set -x" > /root/copy.sh
-echo skopeo copy oci:k8s.gcr.io/pause:3.1 containers-storage:k8s.gcr.io/pause:3.1 >> /root/copy.sh
-
 # Autoconf the appliance
-curl -vks ${git_repo_url} > /dev/null
+curl -m1 -vks ${git_repo_url} > /dev/null
 git clone -b ${git_repo_checkout} ${git_repo_url} $REPO_PATH || exit 1
 
 . $REPO_PATH/metrics/metrics.appliance.autoconf.sh

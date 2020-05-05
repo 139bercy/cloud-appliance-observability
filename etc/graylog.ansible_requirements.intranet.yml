@@ -1,0 +1,5 @@
+---
+
+- name: ansible-graylog-input
+  src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-graylog-input
+  version: master

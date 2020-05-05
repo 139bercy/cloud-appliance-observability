@@ -1,0 +1,16 @@
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/buildah_1.14.8~1_amd64.deb
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/catatonit_0.1.4~1_amd64.deb
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/conmon_2.0.15~1_amd64.deb
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/containernetworking-plugins_0.8.5~75_amd64.deb
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/cri-o-1.16_1.16.2~1_amd64.deb
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/cri-o-1.17_1.17.2~1_amd64.deb
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/cri-o-runc_1.0.0-3~dev2_amd64.deb
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/cri-tools_1.17.0~3_amd64.deb
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/libvarlink-dev_19~1_amd64.deb
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/libvarlink_19~1_amd64.deb
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/podman-plugins_0.0.0~1_amd64.deb
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/podman-rootless_1.8.2~144_amd64.deb
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/podman_1.8.2~144_amd64.deb
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/skopeo_0.2.0~1_amd64.deb
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/slirp4netns_0.4.3~1_amd64.deb
+http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/amd64/varlink_19~1_amd64.deb

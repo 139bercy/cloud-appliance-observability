@@ -51,8 +51,14 @@ sed -i 's/exit 1/false/' $REPO_PATH/metrics/metrics.appliance.autoconf.sh
 . $REPO_PATH/metrics/metrics.appliance.autoconf.sh
 EOF
 
-ansible-galaxy install -r $ETC_PATH/appliance.ansible_requirements.yml
-ansible-galaxy install -r $ETC_PATH/metrics.ansible_requirements.yml
+if curl -qs https://github.com 2>&1 > /dev/null ; then
+	export remote_repo=internet
+else
+	export remote_repo=intranet
+fi
+
+ansible-galaxy install -r $ETC_PATH/appliance.ansible_requirements.${remote_repo}.yml
+ansible-galaxy install -r $ETC_PATH/metrics.ansible_requirements.${remote_repo}.yml
 
 ansible-playbook -t os-ready $PLAYBOOK \
 	-e@$ETC_PATH/metrics.variables.yml \

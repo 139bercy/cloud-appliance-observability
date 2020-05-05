@@ -45,6 +45,8 @@ podman_containers:
   - name: grafana
     description: Metrics dashboards manager
     after: "{{ podman_pods[0].name }}.pod.service"
+    selinux_sandboxing_paths:
+      - /var/lib/grafana
     run_opts: >
       --pod appliance
       --rm
@@ -68,6 +70,8 @@ podman_containers:
   - name: influxdb
     description: Metrics and monitoring manager
     after: "{{ podman_pods[0].name }}.pod.service"
+    selinux_sandboxing_paths:
+      - /var/lib/influxdb
     run_opts: >
       --pod appliance
       --rm

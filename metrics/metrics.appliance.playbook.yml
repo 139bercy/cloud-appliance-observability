@@ -13,15 +13,23 @@
     - role: ansible-bootstrap-system
 
   post_tasks:
-    - name: Check Swift endpoint
+    - name: Check openstack cli
       ignore_errors: true
-      register: check_swift_result
-      command: openstack container list
+      register: check_openstack
+      command: which openstack
 
-    - name: Get static content from swift
-      when: check_swift_result.stderr | length == 0
-      include_role:
-          name: ansible-get-swift-objects
+    - name: Deal with Swift
+      when: check_openstack is success
+      block:
+        - name: Check Swift endpoint
+          ignore_errors: true
+          register: check_swift_result
+          command: openstack container list
+
+        - name: Get static content from swift
+          when: check_swift_result.stderr | length == 0
+          include_role:
+              name: ansible-get-swift-objects
 
     - name: Install consul agent
       when:

@@ -221,6 +221,18 @@
     - role: ansible-podman
 
   post_tasks:
+    - name: Pull images and deal with poor internet connection
+      with_items: "{{ podman_containers }}"
+      register: pull_image
+      until: pull_image is success
+      retries: 5
+      delay: 30
+      shell: podman pull {{ item.image }}
+      environment:
+        https_proxy: "{{ podman_https_proxy }}"
+        http_proxy: "{{ podman_http_proxy }}"
+        no_proxy: "{{ podman_http_no_proxy }}"
+
     - name: Start the POD
       with_items: "{{ podman_pods }}"
       service: name={{ item.name }}.pod.service state=started enabled=yes
@@ -244,7 +256,7 @@
           influxdb_org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
           influxdb_retention: "{{ lookup('env', 'INFLUXDB_RETENTION_HOURS') }}"
           metrics_container: "{{ lookup('env', 'METRICS_CONTAINER') }}"
-          swift_available: true
+          swift_available: false
 
     - name: InfluxDB | Check Swift endpoint
       ignore_errors: true
@@ -252,8 +264,8 @@
       command: openstack container list
 
     - name: InfluxDB | Set facts
-      when: check_swift_result.stderr | length > 0
-      set_fact: swift_available=false
+      when: check_swift_result is success
+      set_fact: swift_available=true
 
     - name: InfluxDB | Wait for InfluxDB to be UP
       register: ping_result

@@ -4,8 +4,7 @@
 bootstrap_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 bootstrap_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 
-bootstrap_distro_packages:
-    - libgpgme11
+bootstrap_distro_packages: []
 
 ###############################################################################
 # Podman

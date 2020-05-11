@@ -39,7 +39,6 @@ MARKDOWN_FILES =	"description.md" \
 			"calendrier.md" \
 			"exigences.md" \
 			"exploitabilité.md" \
-			"risques.md" \
 			"récap.md"
 
 LATEX_OPTS = 	--to=latex \

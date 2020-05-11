@@ -7,5 +7,4 @@
 -   [calendrier](calendrier.md)
 -   [exigences](exigences.md)
 -   [exploitabilité](exploitabilité.md)
--   [risques](risques.md)
 -   [récap](récap.md)

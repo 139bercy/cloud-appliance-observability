@@ -217,10 +217,15 @@
           dest: /etc/traefik/services.yml
           mode: 0644
 
-  roles:
-    - role: ansible-podman
+    - name: Check project atomic ppa repo
+      register: repo_stat
+      stat: path=/etc/apt/sources.list.d/projectatomic-ubuntu-ppa-{{ ansible_distribution_release }}.list
 
-  post_tasks:
+    - name: Configure podman
+      when: repo_stat.exists | lower == 'false'
+      include_role:
+          name: ansible-podman
+
     - name: Pull images and deal with poor internet connection
       with_items: "{{ podman_containers }}"
       register: pull_image

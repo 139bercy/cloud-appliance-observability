@@ -3,7 +3,7 @@
 # Configuration
 #
 
-GIT_REPO_URL=$(shell git remote get-url origin)
+#GIT_REPO_URL=$(shell git remote get-url origin)
 #GIT_REPO_CHECKOUT=$(shell git rev-parse --abbrev-ref HEAD)
 
 .PHONY: syntax # Testing YAML syntax
@@ -37,8 +37,8 @@ help:
 logs:
 	@test ! -z ${GRAYLOG_SIZE_GB} \
 		|| (echo GRAYLOG_SIZE_GB is empty ; exit 1)
-	@test ! -z ${ELASTECSEARCH_SIZE_GB} \
-		|| (echo ELASTECSEARCH_SIZE_GB is empty ; exit 1)
+	@test ! -z ${ELASTICSEARCH_SIZE_GB} \
+		|| (echo ELASTICSEARCH_SIZE_GB is empty ; exit 1)
 
 	# TODO: check OS_USERNAME instead of OS_USERNAME when swift is used
 	@test ! -z ${OS_USERNAME} \
@@ -50,57 +50,57 @@ logs:
 	@test ! -z ${OS_AUTH_URL} \
 		|| (echo OS_AUTH_URL is empty ; exit 1)
 
-	@test ! -z ${GRAYLOG_FLAVOR_ID} \
-		|| (echo GRAYLOG_FLAVOR_ID is empty ; exit 1)
-	@test ! -z ${GRAYLOG_IMAGE_ID} \
-		|| (echo GRAYLOG_IMAGE_ID is empty ; exit 1)
-	@test ! -z ${GRAYLOG_SECGROUP_ID} \
-		|| (echo GRAYLOG_SECGROUP_ID is empty ; exit 1)
+	@test ! -z ${LOGS_FLAVOR_ID} \
+		|| (echo LOGS_FLAVOR_ID is empty ; exit 1)
+	@test ! -z ${LOGS_IMAGE_ID} \
+		|| (echo LOGS_IMAGE_ID is empty ; exit 1)
+	@test ! -z ${LOGS_SECGROUP_ID} \
+		|| (echo LOGS_SECGROUP_ID is empty ; exit 1)
 
-	@test ! -z ${GRAYLOG_ADMIN} \
-		|| (echo GRAYLOG_ADMIN is empty ; exit 1)
-	@test ! -z ${GRAYLOG_PASSWORD} \
-		|| (echo GRAYLOG_PASSWORD is empty ; exit 1)
-	@test ! -z ${GRAYLOG_ENDPOINT} \
-		|| (echo GRAYLOG_ENDPOINT is empty ; exit 1)
-	@echo ${GRAYLOG_ENDPOINT} | grep -q /$$ \
-		|| (echo GRAYLOG_ENDPOINT must end with a / ; exit 1)
-	@echo ${GRAYLOG_ENDPOINT} | egrep -q "^(https|http)://" \
-		|| (echo GRAYLOG_ENDPOINT must begin with http:// or https:// ; exit 1)
+	@test ! -z ${GRAYLOG_ADMIN_NAME} \
+		|| (echo GRAYLOG_ADMIN_NAME is empty ; exit 1)
+	@test ! -z ${GRAYLOG_ADMIN_PASSWORD} \
+		|| (echo GRAYLOG_ADMIN_PASSWORD is empty ; exit 1)
+	@test ! -z ${GRAYLOG_ENDPOINT_URL} \
+		|| (echo GRAYLOG_ENDPOINT_URL is empty ; exit 1)
+	@echo ${GRAYLOG_ENDPOINT_URL} | grep -q /$$ \
+		|| (echo GRAYLOG_ENDPOINT_URL must end with a / ; exit 1)
+	@echo ${GRAYLOG_ENDPOINT_URL} | egrep -q "^(https|http)://" \
+		|| (echo GRAYLOG_ENDPOINT_URL must begin with http:// or https:// ; exit 1)
 
 	@test ! -z ${INTERNET_HTTP_PROXY_URL} \
 		|| (echo INTERNET_HTTP_PROXY_URL is empty ; exit 1)
 	@test ! -z ${INTERNET_HTTP_NO_PROXY} \
 		|| (echo INTERNET_HTTP_NO_PROXY is empty ; exit 1)
 
-	@echo ${GRAYLOG_CONSUL_USAGE} | egrep -q "^(true|false)$$" \
-		|| ( echo GRAYLOG_CONSUL_USAGE must be set to true or false ; exit 1)
-	@(test -z ${GRAYLOG_CONSUL_DNS_DOMAIN} && echo ${GRAYLOG_CONSUL_USAGE} | fgrep true ) \
+	@echo ${CONSUL_USAGE} | egrep -q "^(true|false)$$" \
+		|| ( echo CONSUL_USAGE must be set to true or false ; exit 1)
+	@(test -z ${GRAYLOG_CONSUL_DNS_DOMAIN} && echo ${CONSUL_USAGE} | fgrep true ) \
 		&& ( echo GRAYLOG_CONSUL_DNS_DOMAIN is empty ; exit 1) \
 		|| true
-	@(test -z ${GRAYLOG_CONSUL_DATACENTER} && echo ${GRAYLOG_CONSUL_USAGE} | fgrep true ) \
+	@(test -z ${GRAYLOG_CONSUL_DATACENTER} && echo ${CONSUL_USAGE} | fgrep true ) \
 		&& ( echo GRAYLOG_CONSUL_DATACENTER is empty ; exit 1) \
 		|| true
-	@(test -z ${GRAYLOG_CONSUL_ENCRYPT} && echo ${GRAYLOG_CONSUL_USAGE} | fgrep true ) \
-		&& ( echo GRAYLOG_CONSUL_ENCRYPT is empty ; exit 1) \
+	@(test -z ${CONSUL_ENCRYPT} && echo ${CONSUL_USAGE} | fgrep true ) \
+		&& ( echo CONSUL_ENCRYPT is empty ; exit 1) \
 		|| true
-	@(test -z ${GRAYLOG_CONSUL_DNS_SERVER} && echo ${GRAYLOG_CONSUL_USAGE} | fgrep true ) \
+	@(test -z ${GRAYLOG_CONSUL_DNS_SERVER} && echo ${CONSUL_USAGE} | fgrep true ) \
 		&& ( echo GRAYLOG_CONSUL_DNS_SERVER is empty ; exit 1) \
 		|| true
 
-	@openstack stack create \
+	openstack stack create \
 		\
 		--parameter graylog_size_gb=${GRAYLOG_SIZE_GB} \
-		--parameter elasticsearch_size_gb=${ELASTECSEARCH_SIZE_GB} \
+		--parameter elasticsearch_size_gb=${ELASTICSEARCH_SIZE_GB} \
 		\
-		--parameter flavor=${GRAYLOG_FLAVOR_ID} \
-		--parameter image_id=${GRAYLOG_IMAGE_ID} \
+		--parameter flavor=${LOGS_FLAVOR_ID} \
+		--parameter image_id=${LOGS_IMAGE_ID} \
 		--parameter node_net_id=${GRAYLOG_NET_ID} \
-		--parameter default_secgroup_id=$(GRAYLOG_SECGROUP_ID) \
+		--parameter default_secgroup_id=$(LOGS_SECGROUP_ID) \
 		\
-		--parameter graylog_admin_name=${GRAYLOG_ADMIN} \
-		--parameter graylog_admin_password=${GRAYLOG_PASSWORD} \
-		--parameter graylog_endpoint_url=${GRAYLOG_ENDPOINT} \
+		--parameter graylog_admin_name=${GRAYLOG_ADMIN_NAME} \
+		--parameter graylog_admin_password=${GRAYLOG_ADMIN_PASSWORD} \
+		--parameter graylog_endpoint_url=${GRAYLOG_ENDPOINT_URL} \
 		\
 		--parameter internet_http_proxy_url=${INTERNET_HTTP_PROXY_URL} \
 		--parameter internet_http_no_proxy=${INTERNET_HTTP_NO_PROXY} \
@@ -108,11 +108,12 @@ logs:
 		--parameter git_repo_checkout=${GIT_REPO_CHECKOUT} \
 		--parameter git_repo_url=${GIT_REPO_URL} \
 		\
-		--parameter consul_usage=${GRAYLOG_CONSUL_USAGE} \
+		--parameter consul_usage=${CONSUL_USAGE} \
 		--parameter consul_dns_domain=${GRAYLOG_CONSUL_DNS_DOMAIN} \
 		--parameter consul_datacenter=${GRAYLOG_CONSUL_DATACENTER} \
-		--parameter consul_encrypt=${GRAYLOG_CONSUL_ENCRYPT} \
+		--parameter consul_encrypt=${CONSUL_ENCRYPT} \
 		--parameter consul_dns_server=${GRAYLOG_CONSUL_DNS_SERVER} \
+		--parameter consul_servers=${CONSUL_SERVERS} \
 		\
 		--template ${PWD}/logs/graylog.appliance.heat.yml \
 		--wait \

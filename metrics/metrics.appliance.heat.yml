@@ -306,11 +306,12 @@ resources:
                         curl -m1 -vks $git_repo_url > /dev/null
                         git clone -b $git_repo_checkout $git_repo_url $REPO_PATH || exit 1
 
+                        which setenforce && setenforce 0
                         . $REPO_PATH/metrics/metrics.appliance.autoconf.sh
 
                         # Stop secure shell
-                        systemctl stop ssh
-                        systemctl disable ssh
+                        #systemctl stop ssh
+                        #systemctl disable ssh
 
 #######################################################
 # Security group
@@ -332,6 +333,13 @@ resources:
                     protocol: tcp,
                     port_range_min: 443,
                     port_range_max: 443,
+                    remote_ip_prefix: 0.0.0.0/0,
+                    direction: ingress
+                },
+                {
+                    protocol: tcp,
+                    port_range_min: 22,
+                    port_range_max: 22,
                     remote_ip_prefix: 0.0.0.0/0,
                     direction: ingress
                 },
@@ -357,9 +365,16 @@ resources:
                 { get_resource: metrics_appliance_secgroup }
             ]
 
+    appliance_fip:
+        type: OS::Neutron::FloatingIP
+        properties:
+          floating_network: FIP_ADMINISTRATION_DGFIP
+          port_id: { get_resource: appliance_back_port }
+
     appliance:
         type: OS::Nova::Server
         properties:
+            key_name: station_mathieu
             name: metrics
             image: { get_param: image_id }
             flavor: { get_param: flavor }

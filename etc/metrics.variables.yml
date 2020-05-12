@@ -308,6 +308,3 @@ telegraf_main_config:
         quiet: false
         logfile: ""
         omit_hostname: false
-
-
-

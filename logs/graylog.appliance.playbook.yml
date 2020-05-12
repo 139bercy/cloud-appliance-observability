@@ -451,4 +451,3 @@
 
       include_role:
           name: ansible-telegraf
-

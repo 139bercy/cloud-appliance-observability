@@ -9,4 +9,3 @@ resource "openstack_networking_port_v2" "appliance-logs-front-port" {
   ]
   network_id = var.front_net_id
 }
-

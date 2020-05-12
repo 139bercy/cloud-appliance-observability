@@ -296,4 +296,3 @@ behaviour. `docker` can send logs directly to Graylog using GELF over TCP / UDP.
   </Http>
 </Appenders>
 ```
-

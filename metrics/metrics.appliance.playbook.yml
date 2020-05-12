@@ -402,4 +402,3 @@
     - name: Install telegraf client
       include_role:
           name: ansible-telegraf
-

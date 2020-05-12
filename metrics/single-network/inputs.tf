@@ -152,4 +152,3 @@ variable "consul_dns_server" {
   description = "IP address to use for non-consul-managed domains"
   default     = ""
 }
-

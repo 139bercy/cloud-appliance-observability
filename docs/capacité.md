@@ -23,4 +23,3 @@ Taille de l'injection    | Nombre de vCPU | Consommation mémoire
 -------------------------|----------------|-----------------------
 1000 messages / seconde  |                |
 1000 métriques / seconde |                |
-

@@ -174,4 +174,3 @@ variable "influxdb_bucket" {
   description = "InfluxDB bucket to use to send metrics"
   default     = ""
 }
-

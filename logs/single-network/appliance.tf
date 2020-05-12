@@ -126,4 +126,3 @@ resource "openstack_networking_secgroup_rule_v2" "appliance-logs-secgroup-gelf-u
   remote_ip_prefix  = "0.0.0.0/0"
   security_group_id = openstack_networking_secgroup_v2.appliance-logs-secgroup.id
 }
-

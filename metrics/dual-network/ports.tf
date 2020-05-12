@@ -22,4 +22,3 @@ resource "openstack_compute_interface_attach_v2" "appliance-metrics-back-port" {
   instance_id = openstack_compute_instance_v2.appliance-metrics.id
   port_id     = openstack_networking_port_v2.appliance-metrics-back-port.id
 }
-

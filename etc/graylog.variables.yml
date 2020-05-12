@@ -290,4 +290,3 @@ graylog_consul_service:
         checks:
             - http: "http://0.0.0.0:80"
               interval: "60s"
-

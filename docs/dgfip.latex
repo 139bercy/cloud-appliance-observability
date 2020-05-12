@@ -477,7 +477,7 @@ $endif$
 	$for(include-before)$
 		$include-before$
 	$endfor$
-	
+
 	$if(toc)$
 		$if(beamer)$
 			\begin{frame}
@@ -493,11 +493,11 @@ $endif$
 			}
 		$endif$
 	$endif$
-	
+
 	$if(lot)$
 		\listoftables
 	$endif$
-	
+
 	$if(lof)$
 		\listoffigures
 	$endif$

@@ -17,7 +17,7 @@
 - name: ansible-rclone
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-rclone
   version: master
- 
+
 - name: ansible-telegraf
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-telegraf
   version: master
@@ -29,4 +29,3 @@
 - name: ansible-get-swift-objects
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-get-swift-objects
   version: master
-

@@ -41,7 +41,7 @@ podman_containers:
       --env cluster.name="logs"
       --env node.name="{{ ansible_hostname }}"
       --env network.bind_host="0.0.0.0"
-      --env data.path="/usr/share/elasticsearch/data"
+      --env path.data="/usr/share/elasticsearch/data"
       --env ES_JAVA_OPTS="-Xms{{ (ansible_memtotal_mb * 0.3) | int }}m -Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m"
 
   - name: mongodb

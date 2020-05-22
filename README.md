@@ -2,7 +2,7 @@
 
 ## Description
 
-Deploy logs and metrics management appliances using Hashicorp Terraform.
+Deploy logs and metrics management appliances using Openstack HEAT.
 
 ## Prerequisites
 
@@ -31,69 +31,81 @@ export METRICS_CONSUL_ENCRYPT=$CONSUL_SERVICE_ENCRYPT
 
 ### Resources management
 
-You must add a Terraform-provider file on the right directory:
+Your project must contain two networks:
 
-* `logs/single-network` : one network interface
-* `logs/dual-network` : two network interfaces
-* `metrics/single-network` : one network interface
-* `metrics/dual-network` : two network interfaces
+* front-office: used to access the internet and other public resources ;
+* back-office: used to publish los and metrics services.
 
-Then, some variables need to be set.
+You must set your Openstack credentials in your environment. Then, some 
+variables need to be set.
 
 ```bash
-export GIT_REPO_URL=$(git remote show github -n| awk '/Fetch/ {print $NF}')
+# Common
+export IMAGE_ID=$(openstack image list | awk '/_server/{ print $2 }')
+export DEFAULT_SECGROUP_ID=$(openstack security group list | awk '/default-secgroup/ {print $2}')
+export FRONT_NET_ID=$(openstack network list | awk '/front-office/ {print $2}')
+export BACK_NET_ID=$(openstack network list | awk '/back-office/ {print $2}')
+export STATIC_HOSTS='[{"gitlab.cloud":"3.4.5.6"},{"api.cloud":"5.4.3.2"}]'
+export GIT_REPO_URL="https://github.com/139bercy/cloud-appliance-observability"
+export GIT_REPO_CHECKOUT=heat-stacks
+export OS_SWIFT_REGION_NAME=RegionOne
 
-# Logs management
-export GRAYLOG_SIZE_GB=
-export ELASTECSEARCH_SIZE_GB=
-export GRAYLOG_FLAVOR=
-export GRAYLOG_IMAGE_ID=
-export GRAYLOG_FRONT_NET_ID=
-export GRAYLOG_BACK_NET_ID= # dual network
-export GRAYLOG_SECGROUP_ID=
+export OS_AUTH_URL=$OS_AUTH_URL
+export OS_PASSWORD=$OS_PASSWORD
+export OS_REGION_NAME=$OS_REGION_NAME
+export OS_USERNAME=$OS_USERNAME
 
-export GRAYLOG_ADMIN=
-export GRAYLOG_PASSWORD=
-export GRAYLOG_ENDPOINT=
+export NTP_SERVER=192.168.0.1 # Set your own NTP address
 
-export GRAYLOG_HTTP_PROXY=
-export GRAYLOG_NO_PROXY=
+export CONSUL_DATACENTER=
+export CONSUL_DNS_DOMAIN=
+export CONSUL_DNS_SERVER=
+export CONSUL_ENCRYPT=EMkFSodo5bE2JZdYoRah/nWYi+c/vCcTHOaUNj2k01k=
+export CONSUL_SERVERS=
+export CONSUL_USAGE=false
 
-export GRAYLOG_CONSUL_USAGE=false
-export GRAYLOG_CONSUL_DNS_DOMAIN=
-export GRAYLOG_CONSUL_DATACENTER=
-export GRAYLOG_CONSUL_ENCRYPT=$(consul keygen)
-export GRAYLOG_CONSUL_DNS_SERVER=
-export GRAYLOG_CONSUL_SERVER=
+# Logs
+export LOGS_FRONT_NET_ID=$FRONT_NET_ID
+export LOGS_BACK_NET_ID=$BACK_NET_ID
+export LOGS_IMAGE_ID=$IMAGE_ID
+export LOGS_FLAVOR_ID=$(openstack flavor list | awk '/ CO1.2 / {print $2}')
+export LOGS_SECGROUP_ID=$DEFAULT_SECGROUP_ID
+export GRAYLOG_ADMIN_NAME=ADMIN
+export GRAYLOG_ADMIN_PASSWORD=ADMIN
+export GRAYLOG_ENDPOINT_URL=http://logs.cloud
+export GRAYLOG_SIZE_GB=10
+export ELASTICSEARCH_SIZE_GB=10
 
-export GRAYLOG_OS_USERNAME=
-export GRAYLOG_OS_PASSWORD=
-export GRAYLOG_OS_AUTH_URL=
+export LOGS_INFLUXDB_USAGE=false
+export LOGS_INFLUXDB_BUCKET=
+export LOGS_INFLUXDB_ENDPOINT=
+export LOGS_INFLUXDB_ORG=
+export LOGS_INFLUXDB_TOKEN=
 
-# Metrics management
-export GRAFANA_ADMIN=
-export GRAFANA_PASSWORD=
-export INFLUXDB_ADMIN=
-export INFLUXDB_ORG=
-export INFLUXDB_PASSWORD=
-export INFLUXDB_RETENTION_HOURS=
+export INTERNET_HTTP_PROXY_URL=http://proxy:3128
+export INTERNET_HTTP_NO_PROXY=cloud,$CONSUL_DNS_DOMAIN # add your internal RPM / deb repo
 
-export METRICS_CONSUL_ENCRYPT=$(consul keygen)
-export METRICS_CONSUL_USAGE=false
+export FIP_LOGS_APPLIANCE=1.2.3.4
 
-export METRICS_ENDPOINT=
-export METRICS_FLAVOR=
-export METRICS_FRONT_NET_ID=
-export METRICS_BACK_NET_ID= # dual network
-export METRICS_IMAGE_ID=
+# Metrics
+export METRICS_FRONT_NET_ID=$FRONT_NET_ID
+export METRICS_BACK_NET_ID=$BACK_NET_ID
+export METRICS_IMAGE_ID=$IMAGE_ID
+export METRICS_FLAVOR_ID=$(openstack flavor list | awk '/ CO1.1 / {print $2}')
+export METRICS_SECGROUP_ID=$DEFAULT_SECGROUP_ID
+export METRICS_SIZE_GB=10
+export METRICS_CONTAINER=metrics
+export METRICS_ENDPOINT_URL=http://metrics.cloud
 
-export METRICS_OS_AUTH_URL=
-export METRICS_OS_PASSWORD=
-export METRICS_OS_USERNAME=
-export METRICS_OS_REGIONS_NAME=
+export INFLUXDB_RETENTION_HOURS=24
+export INFLUXDB_ORGANISATION=cloud
+export INFLUXDB_ADMIN_PASSWORD=ADMIN01ADMIN
+export INFLUXDB_ADMIN_NAME=ADMIN
 
-export METRICS_SECGROUP_ID=
-export METRICS_SIZE_GB=
+export GRAFANA_ADMIN_NAME=ADMIN
+export GRAFANA_ADMIN_PASSWORD=ADMIN
+
+export FIP_METRICS_APPLIANCE=2.3.4.5
 ```
 
 Control the deployments
@@ -101,41 +113,28 @@ Control the deployments
 ```bash
 # Get help
 make help
-
-clean-logs-single-network # Destroy logs service
-clean-metrics-single      # Destroy the logs appliance
-
-help                      # This help message
-
-logs-check                # Check graylog env variables
-logs-single-network       # Configure logs service
-
-metrics-check             # Check metrics env variables
-metrics-single-network    # Configure metrics service
-
-prepare           # Download atifacts from internet to Swift
-
-rebuild           # Rebuild all the servers at once
-rebuild-logs      # Rebuild the logs appliance
-rebuild-metrics   # Rebuild the metrics appliance
-
-status            # Get some information about what is running
-syntax            # Testing YAML syntax
-test              # Test pre-requisites
+all                 Deploy the appliances at once
+clean               Destroy the appliances
+clean-logs          Destroy the logs appliance
+clean-metrics       Destroy the metrics appliance
+help                This help message
+logs                Configure graylog service
+metrics             Configure metrics service
+prepare             Download atifacts from internet to Swift
+rebuild-logs        Rebuild the logs appliance
+rebuild-metrics     Rebuild the metrics appliance
+rebuild             Rebuild all the servers at once
+status              Get some information about what is running
+syntax              Testing YAML syntax
+test                Testing YAML syntax, env variables and openstack connectivity
 ```
 
 ### Getting resources info
 
-First, go to the right directory. Then, `terraform show` can be used.
-
 ```bash
 # Get appliance attributes
-terraform show -json \
-| jq -r '.values.root_module.resources[] | select(.address | contains("openstack_compute_instance_v2.appliance-")).values'
-
-# Get appliance address
-terraform show -json \
-| jq -r '.values.root_module.resources[] | select(.address | contains("openstack_compute_instance_v2.appliance-")).values.access_ip_v4'
+openstack server show metrics
+openstack server show graylog
 ```
 
 ## Day-2 operations
@@ -149,8 +148,6 @@ influx --host=$METRICS_ENDPOINT ping
 ```
 
 ### Manage Graylog
-
-[A terraform-community-provided provider is available](https://github.com/suzuki-shunsuke/go-graylog/blob/master/docs/README.md)
 
 ```bash
 # TODO

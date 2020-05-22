@@ -95,7 +95,8 @@ logs:
 		\
 		--parameter flavor=${LOGS_FLAVOR_ID} \
 		--parameter image_id=${LOGS_IMAGE_ID} \
-		--parameter node_net_id=${GRAYLOG_NET_ID} \
+		--parameter front_net_id=${LOGS_FRONT_NET_ID} \
+		--parameter back_net_id=${LOGS_BACK_NET_ID} \
 		--parameter default_secgroup_id=$(LOGS_SECGROUP_ID) \
 		\
 		--parameter graylog_admin_name=${GRAYLOG_ADMIN_NAME} \

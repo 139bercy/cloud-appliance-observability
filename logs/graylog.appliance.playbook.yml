@@ -243,12 +243,7 @@
       register: graylog_salt
       shell: head /dev/urandom | tr -dc A-Za-z0-9 | head -c 64
 
-    - name: Check project atomic ppa repo
-      register: repo_stat
-      stat: path=/etc/apt/sources.list.d/projectatomic-ubuntu-ppa-{{ ansible_distribution_release }}.list
-
     - name: Configure podman
-      when: repo_stat.exists | lower == 'false'
       include_role:
           name: ansible-podman
 

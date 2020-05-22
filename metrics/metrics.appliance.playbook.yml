@@ -217,12 +217,7 @@
           dest: /etc/traefik/services.yml
           mode: 0644
 
-    - name: Check project atomic ppa repo
-      register: repo_stat
-      stat: path=/etc/apt/sources.list.d/projectatomic-ubuntu-ppa-{{ ansible_distribution_release }}.list
-
     - name: Configure podman
-      when: repo_stat.exists | lower == 'false'
       include_role:
           name: ansible-podman
 

@@ -14,6 +14,7 @@ bootstrap_http_proxy_packages_per_repo:
 # Podman
 #
 podman_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+podman_https_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 podman_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 
 podman_pods:

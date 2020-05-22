@@ -10,9 +10,17 @@ parameters:
         description: Operating system image to use
         default: ubuntu18.04_server
 
-    node_net_id:
+    front_net_id:
         type: string
         description: Network ID to use for the appliance
+        constraints:
+            - custom_constraint: neutron.network
+
+    back_net_id:
+        type: string
+        description: Network ID to use for the appliance
+        constraints:
+            - custom_constraint: neutron.network
 
 #    os_username:
 #        type: string
@@ -288,7 +296,20 @@ resources:
     appliance_front_port:
         type: OS::Neutron::Port
         properties:
-            network_id: { get_param: node_net_id }
+            network_id: { get_param: front_net_id }
+            security_groups: [
+                { get_param: default_secgroup_id }
+            ]
+            security_groups: [
+                { get_param: default_secgroup_id }
+            ]
+#            fixed_ips:
+#                - subnet_id: { get_resource: node_subnet }
+
+    appliance_back_port:
+        type: OS::Neutron::Port
+        properties:
+            network_id: { get_param: back_net_id }
             security_groups: [
                 { get_param: default_secgroup_id }
             ]
@@ -296,8 +317,6 @@ resources:
                 { get_param: default_secgroup_id },
                 { get_resource: graylog_appliance_secgroup }
             ]
-#            fixed_ips:
-#                - subnet_id: { get_resource: node_subnet }
 
     appliance:
         type: OS::Nova::Server

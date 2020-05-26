@@ -1,6 +1,7 @@
 ###############################################################################
 # Bootstrap
 #
+bootstrap_selinux_config_mode: disabled
 bootstrap_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 bootstrap_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 bootstrap_http_proxy_packages:

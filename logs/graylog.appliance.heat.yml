@@ -326,6 +326,7 @@ resources:
             flavor: { get_param: flavor }
             networks:
                 - port: { get_resource: appliance_front_port }
+                - port: { get_resource: appliance_back_port }
             metadata: {
                 group: observability,
                 image: { get_param: image_id }

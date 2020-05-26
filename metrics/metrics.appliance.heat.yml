@@ -365,16 +365,9 @@ resources:
                 { get_resource: metrics_appliance_secgroup }
             ]
 
-    appliance_fip:
-        type: OS::Neutron::FloatingIP
-        properties:
-          floating_network: FIP_ADMINISTRATION_DGFIP
-          port_id: { get_resource: appliance_back_port }
-
     appliance:
         type: OS::Nova::Server
         properties:
-            key_name: station_mathieu
             name: metrics
             image: { get_param: image_id }
             flavor: { get_param: flavor }

@@ -9,10 +9,17 @@
     - name: reload consul
       command: /usr/local/bin/consul reload
 
-  roles:
-    - role: ansible-bootstrap-system
+  tasks:
+    - name: Set ntp server fact
+      when: lookup('env', 'NTP_SERVER') | length > 0
+      set_fact:
+          bootstrap_ntpdate_servers:
+              - "{{ lookup('env', 'NTP_SERVER') }}"
 
-  post_tasks:
+    - name: Bootstrap
+      include_role:
+          name: ansible-bootstrap-system
+
     - name: Check openstack cli
       ignore_errors: true
       register: check_openstack

@@ -37,6 +37,8 @@ export CONSUL_DNS_DOMAIN=$CONSUL_DNS_DOMAIN
 export CONSUL_DATACENTER=$CONSUL_DATACENTER
 export CONSUL_ENCRYPT=$CONSUL_ENCRYPT
 
+export NTP_SERVER=$NTP_SERVER
+
 sed -i 's/exit 1/false/' $REPO_PATH/logs/graylog.appliance.autoconf.sh
 
 . $REPO_PATH/logs/graylog.appliance.autoconf.sh

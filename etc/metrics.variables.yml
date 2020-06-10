@@ -173,7 +173,7 @@ traefik_conf:
         routers:
             grafana:
                 service: grafana
-                rule: "PathPrefix(`/grafana`)"
+                rule: "PathPrefix(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') | regex_replace('/$', '') }}/grafana`)"
                 entryPoints:
                     - web
             influxdb:

@@ -145,7 +145,7 @@ grafana_datasources:
 
 grafana_plugins:
     - name: flux
-      url: "{{ lookup('env' , 'REPO_PATH') }}/files/grafana-influxdb-flux-datasource-v5.4.1-0-gfd7f150.zip"
+      url: "{{ lookup('env' , 'REPO_PATH') }}/files/grafana-influxdb-flux-datasource-7.0.0.zip"
 
 grafana_consul_service:
     - service:

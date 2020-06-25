@@ -2,8 +2,8 @@
 
 - name: ansible-influxdb-bucket
   src: git+https://github.com/mgrzybek/ansible-influxdb-bucket
-  version: master
+  version: v1.0
 
 - name: ansible-influxdb-scraper
   src: git+https://github.com/mgrzybek/ansible-influxdb-scraper
-  version: master
+  version: v1.0

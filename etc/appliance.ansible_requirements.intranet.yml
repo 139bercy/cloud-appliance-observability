@@ -2,29 +2,29 @@
 
 - name: ansible-bootstrap-system
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-bootstrap-system
-  version: master
+  version: v1.0
 
 - name: ansible-consul
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-consul
-  version: master
+  version: v1.0
 
 - name: ansible-dnsmasq
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-dnsmasq
-  version: master
+  version: v1.0
 
 - name: ansible-rclone
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-rclone
-  version: master
+  version: v1.0
  
 - name: ansible-telegraf
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-telegraf
-  version: master
+  version: v1.0
 
 - name: ansible-podman
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-podman
-  version: master
+  version: v1.0
 
 - name: ansible-get-swift-objects
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-get-swift-objects
-  version: master
+  version: v1.0
 

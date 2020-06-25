@@ -60,14 +60,6 @@ fi
 ansible-galaxy install -r $ETC_PATH/appliance.ansible_requirements.${remote_repo}.yml
 ansible-galaxy install -r $ETC_PATH/metrics.ansible_requirements.${remote_repo}.yml
 
-ansible-playbook -t os-ready $PLAYBOOK \
+ansible-playbook $PLAYBOOK \
 	-e@$ETC_PATH/metrics.variables.yml \
-	-e dnsmasq_listening_interfaces="{{['lo']|from_yaml}}" \
-	|| exit 1
-
-ansible-playbook -t containers $PLAYBOOK \
-	|| exit 1
-
-ansible-playbook -t metrics,configuration,telegraf $PLAYBOOK \
-	-e@$ETC_PATH/metrics.variables.yml \
-	|| exit 1
+	-e dnsmasq_listening_interfaces="{{['lo']|from_yaml}}"

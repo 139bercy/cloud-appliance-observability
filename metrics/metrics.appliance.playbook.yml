@@ -13,25 +13,29 @@
     - role: ansible-bootstrap-system
 
   post_tasks:
-    - name: Install consul agent
-      when:
-        - lookup('env', 'CONSUL_USAGE') | lower == 'true'
-        - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
+    - name: Check openstack cli
+      ignore_errors: true
+      register: check_openstack
+      command: which openstack
+
+    - name: Deal with Swift
+      when: check_openstack is success
       block:
         - name: Check Swift endpoint
           ignore_errors: true
           register: check_swift_result
           command: openstack container list
 
-        - name: Get binaries from swift
+        - name: Get static content from swift
           when: check_swift_result.stderr | length == 0
           include_role:
-            name: ansible-get-swift-objects
-          vars:
-            swift_objects_oci_repo_container:
-            swift_objects_packages_container:
-            swift_objects_binaries_container: binaries
+              name: ansible-get-swift-objects
 
+    - name: Install consul agent
+      when:
+          - lookup('env', 'CONSUL_USAGE') | lower == 'true'
+          - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
+      block:
         - name: Install dnsmasq service
           when: lookup('env', 'CONSUL_DNS_SERVER') | length > 0
           include_role:
@@ -125,7 +129,7 @@
   hosts: localhost
   tags: metrics
 
-  tasks:
+  pre_tasks:
     - name: VG listing
       command: vgs --options name
       register: vg_list
@@ -215,26 +219,19 @@
 
     - name: Configure podman
       include_role:
-        name: ansible-podman
+          name: ansible-podman
 
-    - name: Install skopeo
-      package:
-        name: skopeo
-        state: present
-
-    - name: Check Swift endpoint
-      ignore_errors: true
-      register: check_swift_result
-      command: openstack container list
-
-    - name: Get containers from swift
-      when: check_swift_result.stderr | length == 0
-      include_role:
-        name: ansible-get-swift-objects
-      vars:
-        swift_objects_oci_repo_container: containers
-        swift_objects_packages_container:
-        swift_objects_binaries_container: 
+    - name: Pull images and deal with poor internet connection
+      with_items: "{{ podman_containers }}"
+      register: pull_image
+      until: pull_image is success
+      retries: 5
+      delay: 30
+      shell: podman pull {{ item.image }}
+      environment:
+        https_proxy: "{{ podman_https_proxy }}"
+        http_proxy: "{{ podman_http_proxy }}"
+        no_proxy: "{{ podman_no_proxy }}"
 
     - name: Start the POD
       with_items: "{{ podman_pods }}"
@@ -259,7 +256,7 @@
           influxdb_org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
           influxdb_retention: "{{ lookup('env', 'INFLUXDB_RETENTION_HOURS') }}"
           metrics_container: "{{ lookup('env', 'METRICS_CONTAINER') }}"
-          swift_available: true
+          swift_available: false
 
     - name: InfluxDB | Check Swift endpoint
       ignore_errors: true
@@ -267,8 +264,8 @@
       command: openstack container list
 
     - name: InfluxDB | Set facts
-      when: check_swift_result.stderr | length > 0
-      set_fact: swift_available=false
+      when: check_swift_result is success
+      set_fact: swift_available=true
 
     - name: InfluxDB | Wait for InfluxDB to be UP
       register: ping_result
@@ -425,4 +422,3 @@
     - name: Install telegraf client
       include_role:
           name: ansible-telegraf
-

@@ -12,18 +12,20 @@ export no_proxy=${internet_http_no_proxy},127.0.0.1,localhost,0.0.0.0
 # Install required packages to start git-ops-based auto-configuratiom
 if which yum > /dev/null 2>&1 ; then
 	sed -i 's/gpgcheck=1/gpgcheck=1\nproxy=_none_/g' /etc/yum.repos.d/centos.repo
+	sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/epel.repo
 
 	if [ ! -z "$HTTP_PROXY" ] ; then
 		grep -q proxy= /etc/yum.conf || echo "proxy=$HTTP_PROXY" >> /etc/yum.conf
 	fi
 
-	yum install --assumeyes ansible git jq > /dev/null
+	yum install --assumeyes ansible git jq unzip > /dev/null
 else
 	apt update > /dev/null
 	apt -y install \
 		ansible git jq \
 		python3-swiftclient python3-openstackclient \
-		unzip > /dev/null
+		unzip \
+		libgpgme11 > /dev/null
 fi
 
 # DNS: Populate /etc/hosts
@@ -96,6 +98,7 @@ export NTP_SERVER=${ntp_server}
 curl -m1 -vks ${git_repo_url} > /dev/null
 git clone -b ${git_repo_checkout} ${git_repo_url} $REPO_PATH || exit 1
 
+which setenforce && setenforce 0
 . $REPO_PATH/metrics/metrics.appliance.autoconf.sh
 
 # Stop secure shell

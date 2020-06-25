@@ -1,6 +1,7 @@
 ###############################################################################
 # Bootstrap
 #
+bootstrap_selinux_config_mode: disabled
 bootstrap_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 bootstrap_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 bootstrap_http_proxy_packages:
@@ -10,15 +11,12 @@ bootstrap_http_proxy_packages_per_repo:
   - host: ppa.launchpad.net
     proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 
-bootstrap_distro_packages:
-  - libgpgme11
-  - libostree-1-1
-
 ###############################################################################
 # Podman
 #
 podman_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
-podman_http_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
+podman_https_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+podman_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 
 podman_pods:
   - name: appliance
@@ -37,12 +35,14 @@ podman_containers:
     image: docker.io/elasticsearch:6.8.5
     run_opts: >
       --pod appliance
+      --rm
       --user 1300
       --mount type=bind,src=/var/lib/elasticsearch,target=/usr/share/elasticsearch/data
       --env discovery.type="single-node"
       --env cluster.name="logs"
       --env node.name="{{ ansible_hostname }}"
       --env network.bind_host="0.0.0.0"
+      --env path.data="/usr/share/elasticsearch/data"
       --env ES_JAVA_OPTS="-Xms{{ (ansible_memtotal_mb * 0.3) | int }}m -Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m"
 
   - name: mongodb
@@ -51,6 +51,7 @@ podman_containers:
     image: docker.io/mongo:3
     run_opts: >
       --pod appliance
+      --rm
       --user 1200
       --mount type=bind,src=/var/lib/mongodb,target=/data/db
 
@@ -60,8 +61,9 @@ podman_containers:
     image: docker.io/graylog/graylog:3.2
     run_opts: >
       --pod appliance
+      --rm
       --user 1100
-      --mount type=bind,src=/var/lib/graylog,target=/var/lib/graylog
+      --mount type=bind,src=/var/lib/graylog,target=/usr/share/graylog/data/journal
       --env GRAYLOG_IS_MASTER="true"
       --env GRAYLOG_MESSAGE_JOURNAL_ENABLED="true"
       --env GRAYLOG_HTTP_EXTERNAL_URI="{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') }}"

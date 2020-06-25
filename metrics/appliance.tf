@@ -14,6 +14,10 @@ resource "openstack_compute_instance_v2" "appliance-metrics" {
     port = openstack_networking_port_v2.appliance-metrics-back-port.id
   }
 
+  depends_on = [
+    openstack_networking_port_v2.appliance-metrics-front-port,
+    openstack_networking_port_v2.appliance-metrics-back-port
+  ]
   user_data = templatefile(
     "${path.module}/cloud-init.sh",
     {

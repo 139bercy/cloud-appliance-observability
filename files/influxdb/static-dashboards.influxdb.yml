@@ -1,3 +1,4 @@
+---
 apiVersion: influxdata.com/v2alpha1
 kind: Label
 metadata:
@@ -8,7 +9,7 @@ spec:
 apiVersion: influxdata.com/v2alpha1
 kind: Variable
 metadata:
-    name: apache_host
+    name: apache-host
 spec:
     associations:
       - kind: Label
@@ -36,7 +37,7 @@ spec:
 apiVersion: influxdata.com/v2alpha1
 kind: Dashboard
 metadata:
-    name: Apache Data
+    name: apache-data
 spec:
     associations:
       - kind: Label
@@ -66,7 +67,7 @@ spec:
                   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
                   |> filter(fn: (r) => r._measurement == "apache")
                   |> filter(fn: (r) => r._field == "Uptime")
-                  |> filter(fn: (r) => r.host == v.apache_host)
+                  |> filter(fn: (r) => r.host == v.apache-host)
                   |> last()
                   |> map(fn: (r) => ({_value : r._value / 60.0 / 60.0 / 24.0}))
         suffix: ' d'
@@ -92,7 +93,7 @@ spec:
                 from(bucket: v.bucket)
                   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
                   |> filter(fn: (r) => r._measurement == "apache")
-                  |> filter(fn: (r) => r.host == v.apache_host)
+                  |> filter(fn: (r) => r.host == v.apache-host)
                   |> filter(fn: (r) => r._field == "BytesPerSec")
         suffix: ' B/s'
         width: 4
@@ -119,7 +120,7 @@ spec:
                 from(bucket: v.bucket)
                   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
                   |> filter(fn: (r) => r._measurement == "apache")
-                  |> filter(fn: (r) => r.host == v.apache_host)
+                  |> filter(fn: (r) => r.host == v.apache-host)
                   |> filter(fn: (r) => r._field == "ReqPerSec")
         suffix: ' r/s'
         width: 4
@@ -142,7 +143,7 @@ spec:
                 from(bucket: v.bucket)
                   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
                   |> filter(fn: (r) => r._measurement == "apache")
-                  |> filter(fn: (r) => r.host == v.apache_host)
+                  |> filter(fn: (r) => r.host == v.apache-host)
                   |> filter(fn: (r) => r._field == "IdleWorkers" or r._field == "BusyWorkers")
         width: 4
         xCol: _time
@@ -164,7 +165,7 @@ spec:
                 from(bucket: v.bucket)
                   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
                   |> filter(fn: (r) => r._measurement == "apache")
-                  |> filter(fn: (r) => r.host == v.apache_host)
+                  |> filter(fn: (r) => r.host == v.apache-host)
                   |> filter(fn: (r) => r._field =~ /^scboard_*/)
         width: 12
         xCol: _time
@@ -212,7 +213,7 @@ spec:
                   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
                   |> filter(fn: (r) => r._measurement == "system")
                   |> filter(fn: (r) => r._field == "n_cpus")
-                  |> filter(fn: (r) => r.host == v.apache_host)
+                  |> filter(fn: (r) => r.host == v.apache-host)
                   |> window(period: v.windowPeriod)
                   |> last()
                   |> group(columns: ["_value", "_time", "_start", "_stop"], mode: "except")
@@ -234,7 +235,7 @@ spec:
                   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
                   |> filter(fn: (r) => r._measurement == "mem")
                   |> filter(fn: (r) => r._field == "total")
-                  |> filter(fn: (r) => r.host == v.apache_host)
+                  |> filter(fn: (r) => r.host == v.apache-host)
                   |> last()
                   |> map(fn: (r) => ({_value: r._value / 1024 / 1024 / 1024}))
         suffix: ' GB'
@@ -251,12 +252,12 @@ spec:
         geom: line
         height: 4
         kind: Xy
-        name: CPU Load (System, User)
+        name: CPU Load (system, User)
         queries:
           - query: "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop:
                 v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"apache\")\n
-                \ |> filter(fn: (r) => r._field == \"CPUSystem\" or r._field == \"CPUUser\")
-                \ \n  |> filter(fn: (r) => r.host == v.apache_host)\n  |> aggregateWindow(every:
+                \ |> filter(fn: (r) => r._field == \"CPUsystem\" or r._field == \"CPUUser\")
+                \ \n  |> filter(fn: (r) => r.host == v.apache-host)\n  |> aggregateWindow(every:
                 v.windowPeriod, fn: mean, createEmpty: false)"
         width: 4
         xCol: _time
@@ -278,7 +279,7 @@ spec:
           - query: "from(bucket: v.bucket)\n  |> range(start: v.timeRangeStart, stop:
                 v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"diskio\")\n
                 \ |> filter(fn: (r) => r._field == \"read_bytes\" or r._field == \"write_bytes\")
-                \ \n  |> filter(fn: (r) => r.host == v.apache_host)\n  |> derivative(unit:
+                \ \n  |> filter(fn: (r) => r.host == v.apache-host)\n  |> derivative(unit:
                 v.windowPeriod, nonNegative: false)\n  |> yield(name: \"derivative\")"
         width: 4
         xCol: _time
@@ -306,7 +307,7 @@ spec:
                   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
                   |> filter(fn: (r) => r._measurement == "mem")
                   |> filter(fn: (r) => r._field == "used_percent")
-                  |> filter(fn: (r) => r.host == v.apache_host)
+                  |> filter(fn: (r) => r.host == v.apache-host)
         suffix: '%'
         width: 6
         xCol: _time
@@ -330,7 +331,7 @@ spec:
                   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
                   |> filter(fn: (r) => r._measurement == "apache")
                   |> filter(fn: (r) => r._field == "Load1" or r._field == "Load15" or r._field == "Load5")
-                  |> filter(fn: (r) => r.host == v.apache_host)
+                  |> filter(fn: (r) => r.host == v.apache-host)
         width: 4
         xCol: _time
         xPos: 8
@@ -353,7 +354,7 @@ spec:
                   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
                   |> filter(fn: (r) => r._measurement == "net")
                   |> filter(fn: (r) => r._field == "bytes_recv" or r._field == "bytes_sent")
-                  |> filter(fn: (r) => r.host == v.apache_host)
+                  |> filter(fn: (r) => r.host == v.apache-host)
                   |> derivative(unit: v.windowPeriod, nonNegative: false)
                   |> yield(name: "derivative")
         width: 4
@@ -366,7 +367,7 @@ spec:
 apiVersion: influxdata.com/v2alpha1
 kind: Dashboard
 metadata:
-    name: InfluxDB 2.0 OSS Metrics
+    name: influxdb2-metrics
 spec:
     charts:
       - height: 1
@@ -757,14 +758,14 @@ spec:
 apiVersion: influxdata.com/v2alpha1
 kind: Dashboard
 metadata:
-    name: JMeter
+    name: jmeter
 spec:
     charts:
       - height: 1
         kind: Markdown
         name: Name this Cell
-        note: "    \n    \n#### This Dashboard gives you an overview of some JMeter
-            metrics. Check out [documentation page for configuring JMeter](https://jmeter.apache.org/usermanual/realtime-results.html)
+        note: "    \n    \n#### This Dashboard gives you an overview of some jmeter
+            metrics. Check out [documentation page for configuring jmeter](https://jmeter.apache.org/usermanual/realtime-results.html)
             if you don't see any data below."
         queries: null
         width: 12
@@ -1087,19 +1088,19 @@ spec:
         width: 3
         xPos: 9
         yPos: 7
-    description: A collection of useful visualizations for monitoring your JMeter
+    description: A collection of useful visualizations for monitoring your jmeter
         using backend listener
 ---
 apiVersion: influxdata.com/v2alpha1
 kind: Dashboard
 metadata:
-    name: Nginx
+    name: nginx
 spec:
     charts:
       - height: 1
         kind: Markdown
         name: Name this Cell
-        note: This dashboard gives you an overview of [Nginx](https://nginx.com) metrics.
+        note: This dashboard gives you an overview of [nginx](https://nginx.com) metrics.
             See the [Telegraf Documentation](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/nginx)
             for help configuring these plugins.
         queries: null
@@ -1110,7 +1111,7 @@ spec:
             type: text
         height: 1
         kind: Single_Stat
-        name: System Uptime
+        name: system Uptime
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -1162,7 +1163,7 @@ spec:
         decimalPlaces: 2
         height: 3
         kind: Single_Stat_Plus_Line
-        name: Nginx active connections
+        name: nginx active connections
         queries:
           - query: |-
                 from(bucket:v.bucket)
@@ -1230,7 +1231,7 @@ spec:
         geom: line
         height: 3
         kind: Xy
-        name: 'Nginx reading: writing/waiting'
+        name: 'nginx reading: writing/waiting'
         queries:
           - query: |-
                 from(bucket:v.bucket)
@@ -1249,7 +1250,7 @@ spec:
         decimalPlaces: 2
         height: 1
         kind: Single_Stat
-        name: System Load
+        name: system Load
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -1275,7 +1276,7 @@ spec:
         geom: line
         height: 3
         kind: Xy
-        name: System Load
+        name: system Load
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -1297,7 +1298,7 @@ spec:
         geom: line
         height: 3
         kind: Xy
-        name: Nginx requests & connections / min
+        name: nginx requests & connections / min
         queries:
           - query: |-
                 from(bucket:v.bucket)
@@ -1419,18 +1420,18 @@ spec:
         width: 3
         xPos: 9
         yPos: 5
-    description: A collection of useful visualizations for monitoring your Nginx
+    description: A collection of useful visualizations for monitoring your nginx
 ---
 apiVersion: influxdata.com/v2alpha1
 kind: Dashboard
 metadata:
-    name: Redis
+    name: redis
 spec:
     charts:
       - height: 1
         kind: Markdown
         name: Name this Cell
-        note: This dashboard gives you an overview of [Nginx](https://nginx.com) metrics.
+        note: This dashboard gives you an overview of [nginx](https://nginx.com) metrics.
             See the [Telegraf Documentation](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/nginx)
             for help configuring these plugins.
         queries: null
@@ -1441,7 +1442,7 @@ spec:
             type: text
         height: 1
         kind: Single_Stat
-        name: System Uptime
+        name: system Uptime
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -1489,7 +1490,7 @@ spec:
         geom: line
         height: 4
         kind: Xy
-        name: Redis used memory
+        name: redis used memory
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -1510,7 +1511,7 @@ spec:
         geom: line
         height: 2
         kind: Xy
-        name: Redis eviced/expired keys
+        name: redis eviced/expired keys
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -1535,7 +1536,7 @@ spec:
         decimalPlaces: 2
         height: 2
         kind: Single_Stat_Plus_Line
-        name: Redis connected slaves
+        name: redis connected slaves
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -1627,7 +1628,7 @@ spec:
         geom: line
         height: 4
         kind: Xy
-        name: Redis CPU
+        name: redis CPU
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -1646,7 +1647,7 @@ spec:
         decimalPlaces: 2
         height: 1
         kind: Single_Stat
-        name: System Load
+        name: system Load
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -1672,7 +1673,7 @@ spec:
         geom: line
         height: 3
         kind: Xy
-        name: System Load
+        name: system Load
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -1695,7 +1696,7 @@ spec:
         geom: line
         height: 4
         kind: Xy
-        name: Redis - Network Input/Output
+        name: redis - Network Input/Output
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -1738,7 +1739,7 @@ spec:
         geom: line
         height: 4
         kind: Xy
-        name: 'Redis # commands processed per sec'
+        name: 'redis # commands processed per sec'
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -1830,7 +1831,7 @@ spec:
         decimalPlaces: 2
         height: 2
         kind: Single_Stat_Plus_Line
-        name: Redis connections
+        name: redis connections
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -1849,7 +1850,7 @@ spec:
         decimalPlaces: 2
         height: 2
         kind: Single_Stat
-        name: Redis uptime
+        name: redis uptime
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -1863,18 +1864,18 @@ spec:
         width: 3
         xPos: 9
         yPos: 11
-    description: A collection of useful visualizations for monitoring your Redis
+    description: A collection of useful visualizations for monitoring your redis
 ---
 apiVersion: influxdata.com/v2alpha1
 kind: Dashboard
 metadata:
-    name: System
+    name: system
 spec:
     charts:
       - height: 1
         kind: Markdown
         name: Name this Cell
-        note: This dashboard gives you an overview of System metrics with metrics
+        note: This dashboard gives you an overview of system metrics with metrics
             from `system`, `mem`, `diskio`, `swap` and `net` measurements. See the
             [Telegraf Documentation](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/system)
             for help configuring these plugins.
@@ -1886,7 +1887,7 @@ spec:
             type: text
         height: 1
         kind: Single_Stat
-        name: System Uptime
+        name: system Uptime
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -2031,7 +2032,7 @@ spec:
         decimalPlaces: 2
         height: 1
         kind: Single_Stat
-        name: System Load
+        name: system Load
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -2057,7 +2058,7 @@ spec:
         geom: line
         height: 3
         kind: Xy
-        name: System Load
+        name: system Load
         queries:
           - query: |-
                 from(bucket: v.bucket)
@@ -2182,3 +2183,4 @@ spec:
         yPos: 5
     description: A collection of useful visualizations for monitoring your system
         stats
+

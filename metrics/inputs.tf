@@ -1,12 +1,20 @@
 ################################################################################
-# Inputs
+# Cloud
 #
 
+# System sizing
+variable "flavor_id" {
+  type        = string
+  description = "Cloud flavor to use"
+}
+
+# Image
 variable "image_id" {
   type        = string
   description = "Operating system image to use"
 }
 
+# Networking
 variable "front_net_id" {
   type        = string
   description = "Network ID to use for the appliance"
@@ -17,6 +25,12 @@ variable "back_net_id" {
   description = "Backoffice network ID to use for the appliance"
 }
 
+variable "default_secgroup_id" {
+  type        = string
+  description = "Default security group to use"
+}
+
+# Provider endpoint and attributes
 variable "os_username" {
   type        = string
   description = "loud username for some internal batches"
@@ -42,6 +56,11 @@ variable "os_swift_region_name" {
   description = "Cloud region name for swift"
 }
 
+################################################################################
+# Cloud-init
+#
+
+# Git-ops
 variable "git_repo_url" {
   type        = string
   description = "cloud-appliance-observability repo"
@@ -54,11 +73,7 @@ variable "git_repo_checkout" {
   default     = "master"
 }
 
-variable "default_secgroup_id" {
-  type        = string
-  description = "Default security group to use"
-}
-
+# Internet proxy
 variable "internet_http_proxy_url" {
   type        = string
   description = "HTTP proxy"
@@ -71,29 +86,35 @@ variable "internet_http_no_proxy" {
   default     = ""
 }
 
+# Time sync
 variable "ntp_server" {
   type        = string
   description = "Remote NTP to use for sync"
   default     = ""
 }
 
+# Direct hostname resolution
 variable "static_hosts" {
   type        = string
   description = "JSON array of host:ip tuples"
   default     = ""
 }
 
-variable "flavor_id" {
-  type        = string
-  description = "Cloud flavor to use"
-}
+# Sending logs to a remote Graylog endpoint
+# TODO
 
+################################################################################
+# Metrics
+#
+
+# Storage sizing
 variable "metrics_size_gb" {
   type        = number
   description = "InfluxDB and Grafana data size (Gb)"
   default     = 100
 }
 
+# Grafana configuration
 variable "grafana_admin_name" {
   type        = string
   description = "Grafana admin username"
@@ -104,6 +125,7 @@ variable "grafana_admin_password" {
   description = "Grafana admin password"
 }
 
+# InfluxDB configuration
 variable "influxdb_admin_name" {
   type        = string
   description = "InfluxDB admin username"
@@ -134,6 +156,9 @@ variable "metrics_container" {
   description = "Swift container to use for backups"
 }
 
+################################################################################
+# Consul
+#
 variable "consul_usage" {
   type        = bool
   description = "Do we use consul?"

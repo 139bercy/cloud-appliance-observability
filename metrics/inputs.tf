@@ -101,7 +101,38 @@ variable "static_hosts" {
 }
 
 # Sending logs to a remote Graylog endpoint
-# TODO
+variable "syslog_protocol" {
+  type        = string
+  description = "Protocol used to send logs: udp, tcp or http"
+  default     = "udp"
+
+  #  validation {
+  #    condition     = var.syslog_protocol == "udp" || var.syslog_protocol == "tcp" || var.syslog_protocol == "http"
+  #    error_message = "The log management protocol must be 'udp', 'tcp' or 'http'"
+  #  }
+}
+
+variable "syslog_log_format" {
+  type        = string
+  description = "Log format used to send logs: gelf or syslog"
+  default     = "gelf"
+
+  #  validation {
+  #    condition     = var.syslog_log_format == "gelf" || var.syslog_log_format == "syslog"
+  #    error_message = "The log format must be 'gelf' or 'syslog'"
+  #  }
+}
+
+variable "syslog_hostname" {
+  type        = string
+  description = "Hostname or address of the remote log management endpoint"
+}
+
+variable "syslog_port" {
+  type        = number
+  description = "Port number of the remote log management endpoint"
+  default     = 12201
+}
 
 ################################################################################
 # Metrics

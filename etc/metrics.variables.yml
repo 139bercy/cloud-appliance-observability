@@ -1,15 +1,25 @@
 ###############################################################################
 # Bootstrap
 #
+
+# Logs
+bootstrap_syslog_target_protocol: "{{ lookup('env', 'SYSLOG_PROTOCOL') | lower }}"
+bootstrap_syslog_target_log_format: "{{ lookup('env', 'SYSLOG_LOG_FORMAT') | lower }}"
+bootstrap_syslog_target_host: "{{ lookup('env', 'SYSLOG_HOSTNAME') }}"
+bootstrap_syslog_target_port: "{{ lookup('env', 'SYSLOG_PORT') }}"
+
+# Security
 bootstrap_selinux_config_mode: disabled
+
+# Proxy
 bootstrap_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 bootstrap_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 bootstrap_http_proxy_packages:
 bootstrap_http_proxy_packages_per_repo:
-  - host: download.opensuse.org
-    proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
-  - host: ppa.launchpad.net
-    proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+- host: download.opensuse.org
+  proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+- host: ppa.launchpad.net
+  proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 
 ###############################################################################
 # Podman
@@ -19,78 +29,78 @@ podman_https_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 podman_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 
 podman_pods:
-  - name: appliance
-    description: Metrics appliance POD
-    opts: >
-      --publish 80:{{ traefik_conf.entryPoints.web.address.split(':')[-1] }}
-      --publish 443:{{ traefik_conf.entryPoints.websecure.address.split(':')[-1] }}
+- name: appliance
+  description: Metrics appliance POD
+  opts: >
+    --publish 80:{{ traefik_conf.entryPoints.web.address.split(':')[-1] }}
+    --publish 443:{{ traefik_conf.entryPoints.websecure.address.split(':')[-1] }}
 
 podman_containers:
-  - name: traefik
-    description: Traefik reverse proxy
-    after: "{{ podman_pods[0].name }}.pod.service"
-    run_opts: >
-      --pod appliance
-      --rm
-      --user 1300 --mount type=bind,src=/etc/traefik,target=/etc/traefik
-      --env HTTP_PROXY= --env HTTPS_PROXY=
-      --env http_proxy= --env https_proxy=
-    image: docker.io/library/traefik
-    command: traefik
-    command_opts: >
-      --entrypoints.web.address={{ traefik_conf.entryPoints.web.address }}
-      --entrypoints.websecure.address={{ traefik_conf.entryPoints.websecure.address }}
-      --accesslog=false
-      --accesslog.format=json
-      --log=true
-      --log.format=json
-      --metrics.influxdb=true
-      --metrics.influxdb.protocol=http
-      --metrics.influxdb.address=127.0.0.1:{{ telegraf_influxdb_listener_config.service_address | regex_replace('^\.*?:','') }}
-      --providers.file.filename=/etc/traefik/services.yml
-  - name: grafana
-    description: Metrics dashboards manager
-    after: "{{ podman_pods[0].name }}.pod.service"
-    selinux_sandboxing_paths:
-      - /var/lib/grafana
-    run_opts: >
-      --pod appliance
-      --rm
-      --user 1100
-      --name grafana
-      --mount type=bind,src=/var/lib/grafana,target=/var/lib/grafana
-      --env NO_PROXY=$NO_PROXY,127.0.0.1
-      --env no_proxy=$no_proxy,127.0.0.1
-      --env GF_SERVER_ROOT_URL={{ lookup('env', 'METRICS_ENDPOINT_URL') | regex_replace('/$', '') }}/grafana
-      --env GF_SERVER_SERVE_FROM_SUB_PATH=true
-      --env GF_ANALYTICS_REPORTING_ENABLED=false
-      --env GF_ANALYTICS_CHECK_FOR_UPDATES=false
-      --env GF_PATHS_PROVISIONING=/var/lib/grafana/provisioning/
-      --env GF_LOG_MODE=console
-      --env GF_LOG_LEVEL=debug
-      --env GF_SECURITY_ADMIN_USER={{ lookup('env', 'GRAFANA_ADMIN_NAME') }}
-      --env GF_SECURITY_ADMIN_PASSWORD={{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}
-    image: docker.io/grafana/grafana
-    command:
-    command_opts:
-  - name: influxdb
-    description: Metrics and monitoring manager
-    after: "{{ podman_pods[0].name }}.pod.service"
-    selinux_sandboxing_paths:
-      - /var/lib/influxdb
-    run_opts: >
-      --pod appliance
-      --rm
-      --user 1200
-      --mount type=bind,src=/var/lib/influxdb,target=/var/lib/influxdb
-      --mount type=bind,src=/var/lib/influxdb/.conf,target=/.influxdbv2
-      --mount type=bind,src=/root/appliance/files/influxdb,target=/etc/influxdb,ro=true
-    image: "quay.io/influxdb/influxdb:2.0.0-beta"
-    command: influxd
-    command_opts: >
-      --reporting-disabled
-      --bolt-path=/var/lib/influxdb/influxd.bolt
-      --engine-path=/var/lib/influxdb/engine
+- name: traefik
+  description: Traefik reverse proxy
+  after: '{{ podman_pods[0].name }}.pod.service'
+  run_opts: >
+    --pod appliance
+    --rm
+    --user 1300 --mount type=bind,src=/etc/traefik,target=/etc/traefik
+    --env HTTP_PROXY= --env HTTPS_PROXY=
+    --env http_proxy= --env https_proxy=
+  image: docker.io/library/traefik
+  command: traefik
+  command_opts: >
+    --entrypoints.web.address={{ traefik_conf.entryPoints.web.address }}
+    --entrypoints.websecure.address={{ traefik_conf.entryPoints.websecure.address }}
+    --accesslog=false
+    --accesslog.format=json
+    --log=true
+    --log.format=json
+    --metrics.influxdb=true
+    --metrics.influxdb.protocol=http
+    --metrics.influxdb.address=127.0.0.1:{{ telegraf_influxdb_listener_config.service_address | regex_replace('^\.*?:','') }}
+    --providers.file.filename=/etc/traefik/services.yml
+- name: grafana
+  description: Metrics dashboards manager
+  after: '{{ podman_pods[0].name }}.pod.service'
+  selinux_sandboxing_paths:
+  - /var/lib/grafana
+  run_opts: >
+    --pod appliance
+    --rm
+    --user 1100
+    --name grafana
+    --mount type=bind,src=/var/lib/grafana,target=/var/lib/grafana
+    --env NO_PROXY=$NO_PROXY,127.0.0.1
+    --env no_proxy=$no_proxy,127.0.0.1
+    --env GF_SERVER_ROOT_URL={{ lookup('env', 'METRICS_ENDPOINT_URL') | regex_replace('/$', '') }}/grafana
+    --env GF_SERVER_SERVE_FROM_SUB_PATH=true
+    --env GF_ANALYTICS_REPORTING_ENABLED=false
+    --env GF_ANALYTICS_CHECK_FOR_UPDATES=false
+    --env GF_PATHS_PROVISIONING=/var/lib/grafana/provisioning/
+    --env GF_LOG_MODE=console
+    --env GF_LOG_LEVEL=debug
+    --env GF_SECURITY_ADMIN_USER={{ lookup('env', 'GRAFANA_ADMIN_NAME') }}
+    --env GF_SECURITY_ADMIN_PASSWORD={{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}
+  image: docker.io/grafana/grafana
+  command:
+  command_opts:
+- name: influxdb
+  description: Metrics and monitoring manager
+  after: '{{ podman_pods[0].name }}.pod.service'
+  selinux_sandboxing_paths:
+  - /var/lib/influxdb
+  run_opts: >
+    --pod appliance
+    --rm
+    --user 1200
+    --mount type=bind,src=/var/lib/influxdb,target=/var/lib/influxdb
+    --mount type=bind,src=/var/lib/influxdb/.conf,target=/.influxdbv2
+    --mount type=bind,src=/root/appliance/files/influxdb,target=/etc/influxdb,ro=true
+  image: quay.io/influxdb/influxdb:2.0.0-beta
+  command: influxd
+  command_opts: >
+    --reporting-disabled
+    --bolt-path=/var/lib/influxdb/influxd.bolt
+    --engine-path=/var/lib/influxdb/engine
 
 ###############################################################################
 # Consul
@@ -105,175 +115,175 @@ consul_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 consul_consul_encrypt: "{{ lookup('env', 'CONSUL_ENCRYPT') }}"
 
 consul_retry_join:
-    - "provider=os tag_key=group tag_value=management user_name={{ lookup('env', 'OS_USERNAME') }} password={{ lookup('env', 'OS_PASSWORD') }} auth_url={{ lookup('env', 'OS_AUTH_URL') }} project_id={{ lookup('env', 'OS_PROJECT_ID') }} domain_name={{ lookup('env', 'OS_USER_DOMAIN_NAME') }} insecure=true"
+- provider=os tag_key=group tag_value=management user_name={{ lookup('env', 'OS_USERNAME') }} password={{ lookup('env', 'OS_PASSWORD') }} auth_url={{ lookup('env', 'OS_AUTH_URL') }} project_id={{ lookup('env', 'OS_PROJECT_ID') }} domain_name={{ lookup('env', 'OS_USER_DOMAIN_NAME') }} insecure=true
 
 ###############################################################################
 # Dnsmasq
 #
 dnsmasq_main_conf:
-    servers:
-        - "{{ lookup('env', 'CONSUL_DNS_SERVER') }}"
+  servers:
+  - "{{ lookup('env', 'CONSUL_DNS_SERVER') }}"
 
 dnsmasq_forwarding_zones:
-    - name: "{{ consul_dns_domain }}"
-      forwarder:
-          hostname: 127.0.0.1
-          port: 8600
+- name: '{{ consul_dns_domain }}'
+  forwarder:
+    hostname: 127.0.0.1
+    port: 8600
 
 ###############################################################################
 # Grafana
 #
 grafana_datasources:
-    apiVersion: 1
-    datasources:
-        - name: "{{ influxdb_org }} - {{ item.name }}"
-          type: grafana-influxdb-flux-datasource
-          typeLogoUrl: public/plugins/grafana-influxdb-flux-datasource/img/influxdb_logo.svg
-          access: proxy
-          url: http://127.0.0.1:{{ influxdb_conf.bind.port }}
-          password: ""
-          user: ""
-          database: ""
-          basicAuth: false
-          isDefault: false
-          jsonData:
-              bucket: "{{ item.name }}"
-              organization: "{{ influxdb_org }}"
-              url: "http://127.0.0.1:{{ influxdb_conf.bind.port }}"
-          secureJsonData:
-              token: "{{ grafana_influxdb_token }}"
+  apiVersion: 1
+  datasources:
+  - name: '{{ influxdb_org }} - {{ item.name }}'
+    type: grafana-influxdb-flux-datasource
+    typeLogoUrl: public/plugins/grafana-influxdb-flux-datasource/img/influxdb_logo.svg
+    access: proxy
+    url: http://127.0.0.1:{{ influxdb_conf.bind.port }}
+    password: ''
+    user: ''
+    database: ''
+    basicAuth: false
+    isDefault: false
+    jsonData:
+      bucket: '{{ item.name }}'
+      organization: '{{ influxdb_org }}'
+      url: http://127.0.0.1:{{ influxdb_conf.bind.port }}
+    secureJsonData:
+      token: '{{ grafana_influxdb_token }}'
 
 grafana_plugins:
-    - name: flux
-      url: "{{ lookup('env' , 'REPO_PATH') }}/files/grafana-influxdb-flux-datasource-7.0.0.zip"
+- name: flux
+  url: "{{ lookup('env' , 'REPO_PATH') }}/files/grafana-influxdb-flux-datasource-7.0.0.zip"
 
 grafana_consul_service:
-    - service:
-        name: "grafana"
-        tags:
-            - "metrics"
-            - "appliance"
-        port: 80
-        enable_tag_override: false
-        checks:
-            - http: "http://0.0.0.0:80/grafana/login"
-              interval: "60s"
+- service:
+    name: grafana
+    tags:
+    - metrics
+    - appliance
+    port: 80
+    enable_tag_override: false
+    checks:
+    - http: http://0.0.0.0:80/grafana/login
+      interval: 60s
 
 ###############################################################################
 # Traefik
 #
 traefik_conf:
-    entryPoints:
-        web:
-            address: ":8080"
+  entryPoints:
+    web:
+      address: :8080
 
-        websecure:
-            address: ":8443"
-    http:
-        routers:
-            grafana:
-                service: grafana
-                rule: "PathPrefix(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') | regex_replace('/$', '') }}/grafana`)"
-                entryPoints:
-                    - web
-            influxdb:
-                service: influxdb
-                rule: "PathPrefix(`/`)"
-                entryPoints:
-                    - web
-        services:
-            grafana:
-                loadBalancer:
-                    servers:
-                        - url: http://127.0.0.1:3000/grafana
-            influxdb:
-                loadBalancer:
-                    servers:
-                        - url: http://127.0.0.1:{{ influxdb_conf.bind.port }}/
+    websecure:
+      address: :8443
+  http:
+    routers:
+      grafana:
+        service: grafana
+        rule: PathPrefix(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') | regex_replace('/$', '') }}/grafana`)
+        entryPoints:
+        - web
+      influxdb:
+        service: influxdb
+        rule: PathPrefix(`/`)
+        entryPoints:
+        - web
+    services:
+      grafana:
+        loadBalancer:
+          servers:
+          - url: http://127.0.0.1:3000/grafana
+      influxdb:
+        loadBalancer:
+          servers:
+          - url: http://127.0.0.1:{{ influxdb_conf.bind.port }}/
 
 ###############################################################################
 # InfluxDB
 #
 influxdb_conf:
-    bind:
-        address: 0.0.0.0
-        port: 9999
+  bind:
+    address: 0.0.0.0
+    port: 9999
 
 influxdb_api:
-    token: "{{ influxdb_admin_token }}"
-    tokens_output_file: /root/.influxdb_tokens.csv
-    endpoint: "http://127.0.0.1:80"
+  token: '{{ influxdb_admin_token }}'
+  tokens_output_file: /root/.influxdb_tokens.csv
+  endpoint: http://127.0.0.1:80
 
 influxdb_buckets:
-    - name: haproxy
-      org: "{{ influxdb_org }}"
-      retention_hours: "{{ influxdb_retention }}"
-      create_write_token: true
-    - name: traefik
-      org: "{{ influxdb_org }}"
-      retention_hours: "{{ influxdb_retention }}"
-      create_write_token: true
-    - name: postgresql
-      org: "{{ influxdb_org }}"
-      retention_hours: "{{ influxdb_retention }}"
-      create_write_token: true
-    - name: apache-php
-      org: "{{ influxdb_org }}"
-      retention_hours: "{{ influxdb_retention }}"
-      create_write_token: true
-    - name: nginx
-      org: "{{ influxdb_org }}"
-      retention_hours: "{{ influxdb_retention }}"
-      create_write_token: true
-    - name: mongodb
-      org: "{{ influxdb_org }}"
-      retention_hours: "{{ influxdb_retention }}"
-      create_write_token: true
-    - name: appliance-metrics
-      org: "{{ influxdb_org }}"
-      retention_hours: "{{ influxdb_retention }}"
-    - name: appliance-logs
-      org: "{{ influxdb_org }}"
-      retention_hours: "{{ influxdb_retention }}"
-    - name: appliance-management
-      org: "{{ influxdb_org }}"
-      retention_hours: "{{ influxdb_retention }}"
-      create_write_token: true
-    - name: memcache
-      org: "{{ influxdb_org }}"
-      retention_hours: "{{ influxdb_retention }}"
-      create_write_token: true
-    - name: varnish
-      org: "{{ influxdb_org }}"
-      retention_hours: "{{ influxdb_retention }}"
-      create_write_token: true
-    - name: jmeter
-      org: "{{ influxdb_org }}"
-      retention_hours: "{{ influxdb_retention }}"
-      create_write_token: true
-    - name: matomo
-      org: "{{ influxdb_org }}"
-      retention_hours: "{{ influxdb_retention }}"
-      create_write_token: true
+- name: haproxy
+  org: '{{ influxdb_org }}'
+  retention_hours: '{{ influxdb_retention }}'
+  create_write_token: true
+- name: traefik
+  org: '{{ influxdb_org }}'
+  retention_hours: '{{ influxdb_retention }}'
+  create_write_token: true
+- name: postgresql
+  org: '{{ influxdb_org }}'
+  retention_hours: '{{ influxdb_retention }}'
+  create_write_token: true
+- name: apache-php
+  org: '{{ influxdb_org }}'
+  retention_hours: '{{ influxdb_retention }}'
+  create_write_token: true
+- name: nginx
+  org: '{{ influxdb_org }}'
+  retention_hours: '{{ influxdb_retention }}'
+  create_write_token: true
+- name: mongodb
+  org: '{{ influxdb_org }}'
+  retention_hours: '{{ influxdb_retention }}'
+  create_write_token: true
+- name: appliance-metrics
+  org: '{{ influxdb_org }}'
+  retention_hours: '{{ influxdb_retention }}'
+- name: appliance-logs
+  org: '{{ influxdb_org }}'
+  retention_hours: '{{ influxdb_retention }}'
+- name: appliance-management
+  org: '{{ influxdb_org }}'
+  retention_hours: '{{ influxdb_retention }}'
+  create_write_token: true
+- name: memcache
+  org: '{{ influxdb_org }}'
+  retention_hours: '{{ influxdb_retention }}'
+  create_write_token: true
+- name: varnish
+  org: '{{ influxdb_org }}'
+  retention_hours: '{{ influxdb_retention }}'
+  create_write_token: true
+- name: jmeter
+  org: '{{ influxdb_org }}'
+  retention_hours: '{{ influxdb_retention }}'
+  create_write_token: true
+- name: matomo
+  org: '{{ influxdb_org }}'
+  retention_hours: '{{ influxdb_retention }}'
+  create_write_token: true
 
 influxdb_scrapers:
-    - name: influxdb
-      org: "{{ influxdb_org }}"
-      bucket: appliance-metrics
-      type: prometheus
-      url: http://127.0.0.1:{{ influxdb_conf.bind.port }}/metrics
+- name: influxdb
+  org: '{{ influxdb_org }}'
+  bucket: appliance-metrics
+  type: prometheus
+  url: http://127.0.0.1:{{ influxdb_conf.bind.port }}/metrics
 
 influxdb_consul_service:
-    - service:
-        name: "influxdb"
-        tags:
-            - "metrics"
-            - "appliance"
-        port: 80
-        enable_tag_override: false
-        checks:
-            - http: "http://0.0.0.0:80"
-              interval: "60s"
+- service:
+    name: influxdb
+    tags:
+    - metrics
+    - appliance
+    port: 80
+    enable_tag_override: false
+    checks:
+    - http: http://0.0.0.0:80
+      interval: 60s
 
 ###############################################################################
 # Telegraf
@@ -281,42 +291,42 @@ influxdb_consul_service:
 telegraf_use_docker: false
 
 telegraf_output_influxdbv2_config:
-    urls: [ "{{ influxdb_api.endpoint }}" ]
-    token: "{{ influx_token }}"
-    bucket: "appliance-metrics"
-    bucket_tag: ""
-    org: "{{ influxdb_org }}"
-    exclude_bucket_tag: false
-    insecure_skip_verify: false
+  urls: ['{{ influxdb_api.endpoint }}']
+  token: '{{ influx_token }}'
+  bucket: appliance-metrics
+  bucket_tag: ''
+  org: '{{ influxdb_org }}'
+  exclude_bucket_tag: false
+  insecure_skip_verify: false
 
 telegraf_custom_inputs:
-    - name: grafana
-      plugin: prometheus
-      options:
-          - urls = ["http://127.0.0.1/grafana/metrics"]
+- name: grafana
+  plugin: prometheus
+  options:
+  - urls = ["http://127.0.0.1/grafana/metrics"]
 
 telegraf_influxdb_listener_config:
-    service_address: ":8086"
-    read_timeout: 10s
-    write_timeout: 10s
-    max_body_size: 0
-    max_line_size: 0
+  service_address: :8086
+  read_timeout: 10s
+  write_timeout: 10s
+  max_body_size: 0
+  max_line_size: 0
 
 telegraf_main_config:
-    global_tags:
-    add_node_type: false
-    agent:
-        interval: "{{ telegraf_metrics_agent_interval_seconds }}"
-        round_interval: false
-        metric_batch_size: 1024
-        metric_buffer_limit: 10240
-        collection_jitter: 8s
-        flush_jitter: 8s
-        precision: ""
-        debug: false
-        quiet: false
-        logfile: ""
-        omit_hostname: false
+  global_tags:
+  add_node_type: false
+  agent:
+    interval: '{{ telegraf_metrics_agent_interval_seconds }}'
+    round_interval: false
+    metric_batch_size: 1024
+    metric_buffer_limit: 10240
+    collection_jitter: 8s
+    flush_jitter: 8s
+    precision: ''
+    debug: false
+    quiet: false
+    logfile: ''
+    omit_hostname: false
 
 
 

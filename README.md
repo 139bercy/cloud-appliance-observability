@@ -57,10 +57,17 @@ No provider.
 | os\_swift\_region\_name | Cloud region name used by objets storage | `string` | n/a | yes |
 | os\_username | loud username for some internal batches | `string` | n/a | yes |
 | static\_hosts | JSON array of host:ip tuples | `string` | `""` | no |
+| syslog\_hostname | Hostname or address of the remote log management endpoint | `string` | n/a | yes |
+| syslog\_log\_format | Log format used to send logs: gelf or syslog | `string` | `"gelf"` | no |
+| syslog\_port | Port number of the remote log management endpoint | `number` | `12201` | no |
+| syslog\_protocol | Protocol used to send logs: udp, tcp or http | `string` | `"udp"` | no |
 
 ## Outputs
 
-No output.
+| Name | Description |
+|------|-------------|
+| logs-back-port | Logs Appliance back-office port |
+| metrics-back-port | Metrics Appliance back-office port |
 
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 

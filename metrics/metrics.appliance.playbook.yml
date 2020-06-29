@@ -6,55 +6,73 @@
   tags: os-ready
 
   handlers:
-    - name: reload consul
-      command: /usr/local/bin/consul reload
+  - name: reload consul
+    command: /usr/local/bin/consul reload
 
-  roles:
-    - role: ansible-bootstrap-system
+  tasks:
+  - name: Bootstrap system using syslog-ng
+    when:
+    - bootstrap_syslog_target_protocol == 'http'
+    include_role:
+      name: ansible-bootstrap-system
+    vars:
+      bootstrap_distro_packages:
+      - syslog-ng
+      bootstrap_distro_remove_packages:
+      - rsyslog
 
-  post_tasks:
-    - name: Check openstack cli
+  - name: Bootstrap system using rsyslog
+    when:
+    - bootstrap_syslog_target_protocol != 'http'
+    include_role:
+      name: ansible-bootstrap-system
+      bootstrap_distro_packages:
+      - rsyslog
+      bootstrap_distro_remove_packages:
+      - syslog-ng
+
+  - name: Check openstack cli
+    ignore_errors: true
+    register: check_openstack
+    command: which openstack
+
+  - name: Deal with Swift
+    when: check_openstack is success
+    block:
+    - name: Check Swift endpoint
       ignore_errors: true
-      register: check_openstack
-      command: which openstack
+      register: check_swift_result
+      command: openstack container list
 
-    - name: Deal with Swift
-      when: check_openstack is success
-      block:
-        - name: Check Swift endpoint
-          ignore_errors: true
-          register: check_swift_result
-          command: openstack container list
+    - name: Get static content from swift
+      when: check_swift_result.stderr | length == 0
+      include_role:
+        name: ansible-get-swift-objects
 
-        - name: Get static content from swift
-          when: check_swift_result.stderr | length == 0
-          include_role:
-              name: ansible-get-swift-objects
+  - name: Install consul agent
+    when:
+    - lookup('env', 'CONSUL_USAGE') | lower == 'true'
+    - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
+    block:
+    - name: Install dnsmasq service
+      when: lookup('env', 'CONSUL_DNS_SERVER') | length > 0
+      include_role:
+        name: ansible-dnsmasq
 
-    - name: Install consul agent
-      when:
-          - lookup('env', 'CONSUL_USAGE') | lower == 'true'
-          - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
-      block:
-        - name: Install dnsmasq service
-          when: lookup('env', 'CONSUL_DNS_SERVER') | length > 0
-          include_role:
-              name: ansible-dnsmasq
+    - name: Start consul role
+      include_role:
+        name: ansible-consul
 
-        - name: Start consul role
-          include_role:
-              name: ansible-consul
-
-        - name: Set consul services
-          notify: reload consul
-          copy:
-              content: "{{ item.content }}"
-              dest: "/etc/consul.d/{{ item.name }}.json"
-          with_items:
-              - name: influxdb
-                content: "{{ influxdb_consul_service[0] | to_nice_json }}"
-              - name: grafana
-                content: "{{ grafana_consul_service[0] | to_nice_json }}"
+    - name: Set consul services
+      notify: reload consul
+      copy:
+        content: '{{ item.content }}'
+        dest: /etc/consul.d/{{ item.name }}.json
+      with_items:
+      - name: influxdb
+        content: '{{ influxdb_consul_service[0] | to_nice_json }}'
+      - name: grafana
+        content: '{{ grafana_consul_service[0] | to_nice_json }}'
 
 ###############################################################################
 # Containers
@@ -71,56 +89,56 @@
     #    sysctl_set: yes
     #    state: present
 
-    - name: Installing XFS and unzip tools
-      when: ansible_os_family | lower == 'debian'
-      apt: name={{ item }} state=present
-      with_items:
-          - xfsprogs
-          - unzip
+  - name: Installing XFS and unzip tools
+    when: ansible_os_family | lower == 'debian'
+    apt: name={{ item }} state=present
+    with_items:
+    - xfsprogs
+    - unzip
 
     # Containers
-    - when:
-        - lookup('env', 'CONTAINERS_VOLUME') is defined
-        - lookup('env', 'CONTAINERS_VOLUME') | length > 0
+  - when:
+    - lookup('env', 'CONTAINERS_VOLUME') is defined
+    - lookup('env', 'CONTAINERS_VOLUME') | length > 0
+    block:
+    - name: VG listing
+      command: vgs --options name
+      register: vg_list
+
+    - when: vg_list.stdout.find('containers') < 0
       block:
-        - name: VG listing
-          command: vgs --options name
-          register: vg_list
+      - name: Detect cinder volume used for containers storage
+        set_fact: containers_device_short_id="{{ lookup('env', 'CONTAINERS_VOLUME')[:20] }}"
 
-        - when: vg_list.stdout.find('containers') < 0
-          block:
-            - name: Detect cinder volume used for containers storage
-              set_fact: containers_device_short_id="{{ lookup('env', 'CONTAINERS_VOLUME')[:20] }}"
+      - name: Get containers device name from /dev/disk/by-id/
+        register: cinder_volume
+        shell: find /dev/disk/by-id/ -name "*{{ containers_device_short_id }}*"
 
-            - name: Get containers device name from /dev/disk/by-id/
-              register: cinder_volume
-              shell: find /dev/disk/by-id/ -name "*{{ containers_device_short_id }}*"
+      - name: Check containers device result
+        when: cinder_volume.stdout_lines | length < 1
+        fail: msg="Cannot find any cinder device with ID {{ containers_device_short_id }}"
 
-            - name: Check containers device result
-              when: cinder_volume.stdout_lines | length < 1
-              fail: msg="Cannot find any cinder device with ID {{ containers_device_short_id }}"
+      - name: Set full disk name (containers_device={{ cinder_volume.stdout }})
+        set_fact: containers_device="{{ cinder_volume.stdout }}"
 
-            - name: Set full disk name (containers_device={{ cinder_volume.stdout }})
-              set_fact: containers_device="{{ cinder_volume.stdout }}"
+      - name: Create VG called "containers"
+        lvg: vg=containers pvs="{{ containers_device }}"
 
-            - name: Create VG called "containers"
-              lvg: vg=containers pvs="{{ containers_device }}"
+    - name: Create LV containers/data
+      lvol: vg=containers lv=data size=80%VG
 
-        - name: Create LV containers/data
-          lvol: vg=containers lv=data size=80%VG
+    - name: Formatting containers-data LV
+      filesystem: dev=/dev/mapper/containers-data fstype=xfs
 
-        - name: Formatting containers-data LV
-          filesystem: dev=/dev/mapper/containers-data fstype=xfs
-
-        - name: Mounting containers-data LV
-          mount:
-            path: /var/run/containers
-            src: /dev/mapper/containers-data
-            state: mounted
-            fstype: xfs
+    - name: Mounting containers-data LV
+      mount:
+        path: /var/run/containers
+        src: /dev/mapper/containers-data
+        state: mounted
+        fstype: xfs
 
   roles:
-    - role: ansible-rclone
+  - role: ansible-rclone
 
 ###############################################################################
 # Grafana / InfluxDB / Traefik deployment
@@ -130,116 +148,116 @@
   tags: metrics
 
   pre_tasks:
-    - name: VG listing
-      command: vgs --options name
-      register: vg_list
+  - name: VG listing
+    command: vgs --options name
+    register: vg_list
 
-    - when: vg_list.stdout.find('metrics') < 0
-      block:
-        - name:  Metrics volume detection
-          set_fact: metrics_device_short_id="{{ lookup('env', 'METRICS_VOLUME')[:20] }}"
+  - when: vg_list.stdout.find('metrics') < 0
+    block:
+    - name: Metrics volume detection
+      set_fact: metrics_device_short_id="{{ lookup('env', 'METRICS_VOLUME')[:20] }}"
 
-        - name: Get metrics device name from /dev/disk/by-id/
-          register: cinder_volume
-          shell: find /dev/disk/by-id/ -name "*{{ metrics_device_short_id }}*"
+    - name: Get metrics device name from /dev/disk/by-id/
+      register: cinder_volume
+      shell: find /dev/disk/by-id/ -name "*{{ metrics_device_short_id }}*"
 
-        - name: Check metrics device result
-          when: cinder_volume.stdout_lines | length < 1
-          fail: msg="Cannot find any cinder device with ID {{ metrics_device_short_id }}"
+    - name: Check metrics device result
+      when: cinder_volume.stdout_lines | length < 1
+      fail: msg="Cannot find any cinder device with ID {{ metrics_device_short_id }}"
 
-        - name: Set full disk name
-          set_fact: metrics_device="{{ cinder_volume.stdout }}"
+    - name: Set full disk name
+      set_fact: metrics_device="{{ cinder_volume.stdout }}"
 
-        - name: VG metrics creation
-          lvg: vg=metrics pvs="{{ metrics_device }}"
+    - name: VG metrics creation
+      lvg: vg=metrics pvs="{{ metrics_device }}"
 
-    - name: LV creation
-      lvol: vg=metrics lv={{ item.lv }} size={{ item.size }}
-      with_items:
-        - lv: influxdb
-          size: "80%VG"
-        - lv: grafana
-          size: "1g"
+  - name: LV creation
+    lvol: vg=metrics lv={{ item.lv }} size={{ item.size }}
+    with_items:
+    - lv: influxdb
+      size: 80%VG
+    - lv: grafana
+      size: 1g
 
-    - name: Formatting
-      filesystem: dev=/dev/mapper/metrics-{{ item }} fstype=xfs
-      with_items:
-        - influxdb
-        - grafana
+  - name: Formatting
+    filesystem: dev=/dev/mapper/metrics-{{ item }} fstype=xfs
+    with_items:
+    - influxdb
+    - grafana
 
-    - name: Volumes mounting
-      mount:
-        path: "{{ item.path }}"
-        src: "{{ item.src }}"
-        state: mounted
-        fstype: xfs
-      with_items:
-        - path: /var/lib/grafana
-          src: /dev/mapper/metrics-grafana
-        - path: /var/lib/influxdb
-          src: /dev/mapper/metrics-influxdb
+  - name: Volumes mounting
+    mount:
+      path: '{{ item.path }}'
+      src: '{{ item.src }}'
+      state: mounted
+      fstype: xfs
+    with_items:
+    - path: /var/lib/grafana
+      src: /dev/mapper/metrics-grafana
+    - path: /var/lib/influxdb
+      src: /dev/mapper/metrics-influxdb
 
-    - name: Setting up permissions
-      file:
-        path: "{{ item.path }}"
-        state: directory
-        owner: "{{ item.owner }}"
-        mode: 0755
-      with_items:
-        - path: /var/lib/grafana
-          state: directory
-          owner: 1100
-        - path: /var/lib/grafana/provisioning
-          state: directory
-          owner: 1100
-        - path: /var/lib/grafana/plugins
-          state: directory
-          owner: 1100
-        - path: /var/lib/influxdb
-          state: directory
-          owner: 1200
-        - path: /var/lib/influxdb/.conf
-          state: directory
-          owner: 1200
-        - path: /etc/traefik
-          state: directory
-          owner: 1300
+  - name: Setting up permissions
+    file:
+      path: '{{ item.path }}'
+      state: directory
+      owner: '{{ item.owner }}'
+      mode: 0755
+    with_items:
+    - path: /var/lib/grafana
+      state: directory
+      owner: 1100
+    - path: /var/lib/grafana/provisioning
+      state: directory
+      owner: 1100
+    - path: /var/lib/grafana/plugins
+      state: directory
+      owner: 1100
+    - path: /var/lib/influxdb
+      state: directory
+      owner: 1200
+    - path: /var/lib/influxdb/.conf
+      state: directory
+      owner: 1200
+    - path: /etc/traefik
+      state: directory
+      owner: 1300
 
-    - name: Grafana | Install custom plugins
-      with_items: "{{ grafana_plugins }}"
-      unarchive:
-          dest: /var/lib/grafana/plugins/
-          src: "{{ item.url }}"
+  - name: Grafana | Install custom plugins
+    with_items: '{{ grafana_plugins }}'
+    unarchive:
+      dest: /var/lib/grafana/plugins/
+      src: '{{ item.url }}'
 
-    - name: Create Traefik file provider
-      copy:
-          content: "{{ traefik_conf | to_nice_yaml }}"
-          dest: /etc/traefik/services.yml
-          mode: 0644
+  - name: Create Traefik file provider
+    copy:
+      content: '{{ traefik_conf | to_nice_yaml }}'
+      dest: /etc/traefik/services.yml
+      mode: 0644
 
-    - name: Configure podman
-      include_role:
-          name: ansible-podman
+  - name: Configure podman
+    include_role:
+      name: ansible-podman
 
-    - name: Pull images and deal with poor internet connection
-      with_items: "{{ podman_containers }}"
-      register: pull_image
-      until: pull_image is success
-      retries: 5
-      delay: 30
-      shell: podman pull {{ item.image }}
-      environment:
-        https_proxy: "{{ podman_https_proxy }}"
-        http_proxy: "{{ podman_http_proxy }}"
-        no_proxy: "{{ podman_no_proxy }}"
+  - name: Pull images and deal with poor internet connection
+    with_items: '{{ podman_containers }}'
+    register: pull_image
+    until: pull_image is success
+    retries: 5
+    delay: 30
+    shell: podman pull {{ item.image }}
+    environment:
+      https_proxy: '{{ podman_https_proxy }}'
+      http_proxy: '{{ podman_http_proxy }}'
+      no_proxy: '{{ podman_no_proxy }}'
 
-    - name: Start the POD
-      with_items: "{{ podman_pods }}"
-      service: name={{ item.name }}.pod.service state=started enabled=yes
+  - name: Start the POD
+    with_items: '{{ podman_pods }}'
+    service: name={{ item.name }}.pod.service state=started enabled=yes
 
-    - name: Start the containers
-      with_items: "{{ podman_containers }}"
-      service: name={{ item.name }}.container.service state=started enabled=yes
+  - name: Start the containers
+    with_items: '{{ podman_containers }}'
+    service: name={{ item.name }}.container.service state=started enabled=yes
 
 ###############################################################################
 # Grafana / InfluxDB configuration
@@ -249,156 +267,156 @@
   tags: configuration
 
   tasks:
-    - name: InfluxDB | Set facts
-      set_fact:
-          influxdb_admin: "{{ lookup('env', 'INFLUXDB_ADMIN_NAME') }}"
-          influxdb_password: "{{ lookup('env', 'INFLUXDB_ADMIN_PASSWORD') }}"
-          influxdb_org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
-          influxdb_retention: "{{ lookup('env', 'INFLUXDB_RETENTION_HOURS') }}"
-          metrics_container: "{{ lookup('env', 'METRICS_CONTAINER') }}"
-          swift_available: false
+  - name: InfluxDB | Set facts
+    set_fact:
+      influxdb_admin: "{{ lookup('env', 'INFLUXDB_ADMIN_NAME') }}"
+      influxdb_password: "{{ lookup('env', 'INFLUXDB_ADMIN_PASSWORD') }}"
+      influxdb_org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
+      influxdb_retention: "{{ lookup('env', 'INFLUXDB_RETENTION_HOURS') }}"
+      metrics_container: "{{ lookup('env', 'METRICS_CONTAINER') }}"
+      swift_available: false
 
-    - name: InfluxDB | Check Swift endpoint
-      ignore_errors: true
-      register: check_swift_result
-      command: openstack container list
+  - name: InfluxDB | Check Swift endpoint
+    ignore_errors: true
+    register: check_swift_result
+    command: openstack container list
 
-    - name: InfluxDB | Set facts
-      when: check_swift_result is success
-      set_fact: swift_available=true
+  - name: InfluxDB | Set facts
+    when: check_swift_result is success
+    set_fact: swift_available=true
 
-    - name: InfluxDB | Wait for InfluxDB to be UP
-      register: ping_result
-      until: ping_result.stdout == "OK"
-      retries: 20
-      delay: 10
-      shell: >
-          podman exec -ti influxdb \
-              influx \
+  - name: InfluxDB | Wait for InfluxDB to be UP
+    register: ping_result
+    until: ping_result.stdout == "OK"
+    retries: 20
+    delay: 10
+    shell: >
+      podman exec -ti influxdb \
+          influx \
+          --host=http://localhost:{{ influxdb_conf.bind.port }} \
+          ping
+
+  - name: InfluxDB | Bootstrap service
+    register: setup_result
+    failed_when:
+    - setup_result.rc == 1
+    - setup_result.stdout.find('already been setup') < 0
+    shell: >
+      podman exec -ti influxdb \
+          influx \
               --host=http://localhost:{{ influxdb_conf.bind.port }} \
-              ping
+              setup -f \
+                  --bucket default \
+                  --org {{ influxdb_org }} \
+                  --password {{ influxdb_password }} \
+                  --retention {{ influxdb_retention }}h \
+                  --username {{ influxdb_admin }}
 
-    - name: InfluxDB | Bootstrap service
-      register: setup_result
-      failed_when:
-          - setup_result.rc == 1
-          - setup_result.stdout.find('already been setup') < 0
-      shell: >
-          podman exec -ti influxdb \
-              influx \
-                  --host=http://localhost:{{ influxdb_conf.bind.port }} \
-                  setup -f \
-                      --bucket default \
-                      --org {{ influxdb_org }} \
-                      --password {{ influxdb_password }} \
-                      --retention {{ influxdb_retention }}h \
-                      --username {{ influxdb_admin }}
+  - name: InfluxDB | Get influxdb_admin_token from CLI
+    register: token_result
+    shell: >
+      podman exec -it influxdb \
+          influx \
+              --host=http://localhost:{{ influxdb_conf.bind.port }} \
+              auth list \
+      | head -n2 \
+      | tail -n1 \
+      | awk '{print $2}'
 
-    - name: InfluxDB | Get influxdb_admin_token from CLI
-      register: token_result
-      shell: >
-          podman exec -it influxdb \
-              influx \
-                  --host=http://localhost:{{ influxdb_conf.bind.port }} \
-                  auth list \
-          | head -n2 \
-          | tail -n1 \
-          | awk '{print $2}'
+  - name: InfluxDB | Update influxdb_admin_token fact
+    set_fact: influxdb_admin_token="{{ token_result.stdout }}"
 
-    - name: InfluxDB | Update influxdb_admin_token fact
-      set_fact: influxdb_admin_token="{{ token_result.stdout }}"
+  - name: InfluxDB | Upload admin token to object storage
+    when: swift_available | bool == true
+    shell: >
+      echo {{ influxdb_admin_token }} | swift upload --object-name admin_token \
+          {{ metrics_container }} -
 
-    - name: InfluxDB | Upload admin token to object storage
-      when: swift_available | bool == true
-      shell: >
-          echo {{ influxdb_admin_token }} | swift upload --object-name admin_token \
-              {{ metrics_container }} -
+  - name: InfluxDB | Create buckets and tokens
+    include_role:
+      name: ansible-influxdb-bucket
 
-    - name: InfluxDB | Create buckets and tokens
-      include_role:
-          name: ansible-influxdb-bucket
+  - name: InfluxDB | Create scrapers
+    include_role:
+      name: ansible-influxdb-scraper
 
-    - name: InfluxDB | Create scrapers
-      include_role:
-          name: ansible-influxdb-scraper
+  - name: InfluxDB | Import packages
+    command: >
+      podman exec -ti influxdb \
+          influx \
+              --host=http://localhost:{{ influxdb_conf.bind.port }} \
+              pkg --recurse --file /etc/influxdb --force true --quiet
 
-    - name: InfluxDB | Import packages
-      command: >
-          podman exec -ti influxdb \
-              influx \
-                  --host=http://localhost:{{ influxdb_conf.bind.port }} \
-                  pkg --recurse --file /etc/influxdb --force true --quiet
+  - name: InfluxDB | Send tokens to Swift
+    when: swift_available | bool == true
+    shell: >
+      for l in $(cat {{ influxdb_api.tokens_output_file }}) ; do \
+          name=$(echo $l | awk -F, '{print $1"."$2"."$3}') ; \
+          value=$(echo $l | awk -F, '{print $4}') ; \
+          echo $value | swift upload --object-name $name \
+              {{ metrics_container }} \
+              - ; \
+      done
 
-    - name: InfluxDB | Send tokens to Swift
-      when: swift_available | bool == true
-      shell: >
-          for l in $(cat {{ influxdb_api.tokens_output_file }}) ; do \
-              name=$(echo $l | awk -F, '{print $1"."$2"."$3}') ; \
-              value=$(echo $l | awk -F, '{print $4}') ; \
-              echo $value | swift upload --object-name $name \
-                  {{ metrics_container }} \
-                  - ; \
-          done
+  - name: InfluxDB | Create token for Grafana
+    register: result_grafana_token
+    shell: >
+      podman exec -ti influxdb \
+          influx \
+              --host=http://localhost:{{ influxdb_conf.bind.port }} \
+              auth create --org {{ influxdb_org }} --read-buckets \
+          | awk '/active/ {print $2}'
 
-    - name: InfluxDB | Create token for Grafana
-      register: result_grafana_token
-      shell: >
-          podman exec -ti influxdb \
-              influx \
-                  --host=http://localhost:{{ influxdb_conf.bind.port }} \
-                  auth create --org {{ influxdb_org }} --read-buckets \
-              | awk '/active/ {print $2}'
+  - name: Grafana | Set facts
+    set_fact:
+      grafana_influxdb_token: '{{ result_grafana_token.stdout }}'
+      grafana_admin: "{{ lookup('env', 'GRAFANA_ADMIN_NAME') }}"
+      grafana_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}"
 
-    - name: Grafana | Set facts
-      set_fact:
-          grafana_influxdb_token: "{{ result_grafana_token.stdout }}"
-          grafana_admin: "{{ lookup('env', 'GRAFANA_ADMIN_NAME') }}"
-          grafana_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}"
+  - name: Grafana | Wait for Grafana to be UP
+    register: ping_result
+    retries: 10
+    delay: 5
+    environment:
+      no_proxy: 127.0.0.1
+    uri:
+      url: http://127.0.0.1/grafana/login
+      method: GET
+      validate_certs: no
+      status_code:
+      - 200
 
-    - name: Grafana | Wait for Grafana to be UP
-      register: ping_result
-      retries: 10
-      delay: 5
-      environment:
-        no_proxy: "127.0.0.1"
-      uri:
-        url: "http://127.0.0.1/grafana/login"
-        method: GET
-        validate_certs: no
-        status_code:
-            - 200
+  - name: Grafana | Get existing datasources
+    register: grafana_existing_datasources
+    uri:
+      url: http://127.0.0.1/grafana/api/datasources
+      method: GET
+      user: '{{ grafana_admin }}'
+      password: '{{ grafana_password }}'
+      force_basic_auth: yes
+      body_format: json
+      validate_certs: no
+      status_code:
+      - 200
 
-    - name: Grafana | Get existing datasources
-      register: grafana_existing_datasources
-      uri:
-        url: "http://127.0.0.1/grafana/api/datasources"
-        method: GET
-        user: "{{ grafana_admin }}"
-        password: "{{ grafana_password }}"
-        force_basic_auth: yes
-        body_format: json
-        validate_certs: no
-        status_code:
-            - 200
-
-    - name: Grafana | Create a datasource per bucket
-      when: >
-        "'{{ influxdb_org }} - {{ item.name }}'
-          not in grafana_existing_datasources.json | json_query('[*].name')"
-      with_items: "{{ influxdb_buckets }}"
-      environment:
-        no_proxy: "127.0.0.1"
-      uri:
-        url: "http://127.0.0.1/grafana/api/datasources"
-        method: POST
-        user: "{{ grafana_admin }}"
-        password: "{{ grafana_password }}"
-        force_basic_auth: yes
-        body_format: json
-        validate_certs: no
-        body: "{{ grafana_datasources.datasources[0] | to_nice_json }}"
-        status_code:
-            - 200
+  - name: Grafana | Create a datasource per bucket
+    when: >
+      "'{{ influxdb_org }} - {{ item.name }}'
+        not in grafana_existing_datasources.json | json_query('[*].name')"
+    with_items: '{{ influxdb_buckets }}'
+    environment:
+      no_proxy: 127.0.0.1
+    uri:
+      url: http://127.0.0.1/grafana/api/datasources
+      method: POST
+      user: '{{ grafana_admin }}'
+      password: '{{ grafana_password }}'
+      force_basic_auth: yes
+      body_format: json
+      validate_certs: no
+      body: '{{ grafana_datasources.datasources[0] | to_nice_json }}'
+      status_code:
+      - 200
 
 ###############################################################################
 # Telegraf configuration
@@ -408,17 +426,17 @@
   tags: telegraf
 
   tasks:
-    - name: Telegraf | Get telegraf token
-      register: awk_result
-      shell: >
-          awk -F, \
-              '/{{ influxdb_org }},appliance-metrics,write/ {print $NF}' \
-              {{ influxdb_api.tokens_output_file }}
+  - name: Telegraf | Get telegraf token
+    register: awk_result
+    shell: >
+      awk -F, \
+          '/{{ influxdb_org }},appliance-metrics,write/ {print $NF}' \
+          {{ influxdb_api.tokens_output_file }}
 
-    - name: Telegraf | Set facts
-      set_fact:
-          influx_token: "{{ awk_result.stdout }}"
+  - name: Telegraf | Set facts
+    set_fact:
+      influx_token: '{{ awk_result.stdout }}'
 
-    - name: Install telegraf client
-      include_role:
-          name: ansible-telegraf
+  - name: Install telegraf client
+    include_role:
+      name: ansible-telegraf

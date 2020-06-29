@@ -52,7 +52,13 @@ export REPO_PATH=/root/appliance
 export ETC_PATH=$REPO_PATH/etc
 export PLAYBOOK=$REPO_PATH/metrics/metrics.appliance.playbook.yml
 
-## Set the Openstack credentials
+# Set log management variables
+export SYSLOG_PROTOCOL="${syslog_protocol}"
+export SYSLOG_LOG_FORMAT="${syslog_log_format}"
+export SYSLOG_HOSTNAME="${syslog_hostname}"
+export SYSLOG_PORT="${syslog_port}"
+
+# Set the Openstack credentials
 export OS_AUTH_URL="${os_auth_url}"
 export OS_PROJECT_ID=$(awk -F'"' '/project_id/ {print $4}' /run/cloud-init/instance-data.json)
 export OS_USER_DOMAIN_NAME="Default"

@@ -26,6 +26,7 @@
     - bootstrap_syslog_target_protocol != 'http'
     include_role:
       name: ansible-bootstrap-system
+    vars:
       bootstrap_distro_packages:
       - rsyslog
       bootstrap_distro_remove_packages:

@@ -103,7 +103,7 @@ appliance_containers:
     --engine-path=/var/lib/influxdb/engine
 
 appliance_container_influxdb_standalone:
-- name: influxdb
+  name: influxdb
   description: Metrics and monitoring manager
   after:
   selinux_sandboxing_paths:

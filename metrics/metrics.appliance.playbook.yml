@@ -272,7 +272,7 @@
       include_role:
         name: ansible-podman
       vars:
-        podman_containers: '{{ appliance_container_influxdb_standalone }}'
+        podman_containers: '[ {{ appliance_container_influxdb_standalone }} ]'
 
     - name: InfluxDB | Pull images and deal with poor internet connection
       register: pull_image

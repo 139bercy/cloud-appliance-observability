@@ -273,21 +273,21 @@
         name: ansible-podman
       vars:
         podman_pods:
-        podman_containers: '{{ podman_container_influxdb_standalone }}'
+        podman_containers: '{{ appliance_container_influxdb_standalone }}'
 
     - name: InfluxDB | Pull images and deal with poor internet connection
       register: pull_image
       until: pull_image is success
       retries: 5
       delay: 30
-      shell: podman pull {{ podman_container_influxdb_standalone.image }}
+      shell: podman pull {{ appliance_container_influxdb_standalone.image }}
       environment:
         https_proxy: '{{ podman_https_proxy }}'
         http_proxy: '{{ podman_http_proxy }}'
         no_proxy: '{{ podman_no_proxy }}'
 
-    - name: InfluxDB | Start the containers
-      service: name={{ podman_container_influxdb_standalone.name }}.container.service state=started enabled=yes
+    - name: InfluxDB | Start the container
+      service: name={{ appliance_container_influxdb_standalone.name }}.container.service state=started enabled=yes
 
   - name: Grafana | Start Grafana + InfluxDB + Traefik services
     when: lookup('env', 'GRAFANA_USAGE' ) | lower == 'true'
@@ -295,9 +295,12 @@
     - name: Configure podman
       include_role:
         name: ansible-podman
+      vars:
+        podman_pods: '{{ appliance_pods }}'
+        podman_containers: '{{ appliance_containers }}'
 
     - name: Grafana | Pull images and deal with poor internet connection
-      with_items: '{{ podman_containers }}'
+      with_items: '{{ appliance_containers }}'
       register: pull_image
       until: pull_image is success
       retries: 5
@@ -309,11 +312,11 @@
         no_proxy: '{{ podman_no_proxy }}'
 
     - name: Grafana | Start the POD
-      with_items: '{{ podman_pods }}'
+      with_items: '{{ appliance_pods }}'
       service: name={{ item.name }}.pod.service state=started enabled=yes
 
     - name: Grafana | Start the containers
-      with_items: '{{ podman_containers }}'
+      with_items: '{{ appliance_containers }}'
       service: name={{ item.name }}.container.service state=started enabled=yes
 
 ###############################################################################

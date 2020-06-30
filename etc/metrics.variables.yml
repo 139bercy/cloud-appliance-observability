@@ -28,14 +28,14 @@ podman_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 podman_https_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 podman_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 
-podman_pods:
+appliance_pods:
 - name: appliance
   description: Metrics appliance POD
   opts: >
     --publish 80:{{ traefik_conf.entryPoints.web.address.split(':')[-1] }}
     --publish 443:{{ traefik_conf.entryPoints.websecure.address.split(':')[-1] }}
 
-podman_containers:
+appliance_containers:
 - name: traefik
   description: Traefik reverse proxy
   after: '{{ podman_pods[0].name }}.pod.service'
@@ -102,7 +102,7 @@ podman_containers:
     --bolt-path=/var/lib/influxdb/influxd.bolt
     --engine-path=/var/lib/influxdb/engine
 
-podman_container_influxdb_standalone:
+appliance_container_influxdb_standalone:
 - name: influxdb
   description: Metrics and monitoring manager
   after:

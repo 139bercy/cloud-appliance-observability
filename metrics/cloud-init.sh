@@ -76,6 +76,7 @@ export CONTAINERS_VOLUME=${cinder_containers_volume}
 export METRICS_VOLUME=${cinder_metrics_volume}
  
 # Set the Grafana credentials
+export GRAFANA_USAGE="${grafana_usage}"
 export GRAFANA_ADMIN_NAME="${grafana_admin_name}"
 export GRAFANA_ADMIN_PASSWORD="${grafana_admin_password}"
 # Set the InfluxDB credentials

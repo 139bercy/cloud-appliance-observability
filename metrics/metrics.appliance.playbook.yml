@@ -171,93 +171,149 @@
     - name: VG metrics creation
       lvg: vg=metrics pvs="{{ metrics_device }}"
 
-  - name: LV creation
-    lvol: vg=metrics lv={{ item.lv }} size={{ item.size }}
-    with_items:
-    - lv: influxdb
-      size: 80%VG
-    - lv: grafana
-      size: 1g
+  - name: InfluxDB | InfluxDB system tasks
+    block:
+    - name: InfluxDB | LV creation
+      lvol: vg=metrics lv={{ item.lv }} size={{ item.size }}
+      with_items:
+      - lv: influxdb
+        size: 80%VG
 
-  - name: Formatting
-    filesystem: dev=/dev/mapper/metrics-{{ item }} fstype=xfs
-    with_items:
-    - influxdb
-    - grafana
+    - name: InfluxDB | Formatting
+      filesystem: dev=/dev/mapper/metrics-{{ item }} fstype=xfs
+      with_items:
+      - influxdb
 
-  - name: Volumes mounting
-    mount:
-      path: '{{ item.path }}'
-      src: '{{ item.src }}'
-      state: mounted
-      fstype: xfs
-    with_items:
-    - path: /var/lib/grafana
-      src: /dev/mapper/metrics-grafana
-    - path: /var/lib/influxdb
-      src: /dev/mapper/metrics-influxdb
+    - name: InfluxDB | Volumes mounting
+      mount:
+        path: '{{ item.path }}'
+        src: '{{ item.src }}'
+        state: mounted
+        fstype: xfs
+      with_items:
+      - path: /var/lib/influxdb
+        src: /dev/mapper/metrics-influxdb
 
-  - name: Setting up permissions
-    file:
-      path: '{{ item.path }}'
-      state: directory
-      owner: '{{ item.owner }}'
-      mode: 0755
-    with_items:
-    - path: /var/lib/grafana
-      state: directory
-      owner: 1100
-    - path: /var/lib/grafana/provisioning
-      state: directory
-      owner: 1100
-    - path: /var/lib/grafana/plugins
-      state: directory
-      owner: 1100
-    - path: /var/lib/influxdb
-      state: directory
-      owner: 1200
-    - path: /var/lib/influxdb/.conf
-      state: directory
-      owner: 1200
-    - path: /etc/traefik
-      state: directory
-      owner: 1300
+    - name: InfluxDB | Setting up permissions
+      file:
+        path: '{{ item.path }}'
+        state: directory
+        owner: '{{ item.owner }}'
+        mode: 0755
+      with_items:
+      - path: /var/lib/influxdb
+        state: directory
+        owner: 1200
+      - path: /var/lib/influxdb/.conf
+        state: directory
+        owner: 1200
 
-  - name: Grafana | Install custom plugins
-    with_items: '{{ grafana_plugins }}'
-    unarchive:
-      dest: /var/lib/grafana/plugins/
-      src: '{{ item.url }}'
+  - name: Grafana | Grafana system tasks
+    when: lookup('env', 'GRAFANA_USAGE' ) | lower == 'true'
+    block:
+    - name: Grafana | LV creation
+      lvol: vg=metrics lv={{ item.lv }} size={{ item.size }}
+      with_items:
+      - lv: grafana
+        size: 1g
 
-  - name: Create Traefik file provider
-    copy:
-      content: '{{ traefik_conf | to_nice_yaml }}'
-      dest: /etc/traefik/services.yml
-      mode: 0644
+    - name: Grafana | Formatting
+      filesystem: dev=/dev/mapper/metrics-{{ item }} fstype=xfs
+      with_items:
+      - grafana
 
-  - name: Configure podman
-    include_role:
-      name: ansible-podman
+    - name: Grafana | Volumes mounting
+      mount:
+        path: '{{ item.path }}'
+        src: '{{ item.src }}'
+        state: mounted
+        fstype: xfs
+      with_items:
+      - path: /var/lib/grafana
+        src: /dev/mapper/metrics-grafana
 
-  - name: Pull images and deal with poor internet connection
-    with_items: '{{ podman_containers }}'
-    register: pull_image
-    until: pull_image is success
-    retries: 5
-    delay: 30
-    shell: podman pull {{ item.image }}
-    environment:
-      https_proxy: '{{ podman_https_proxy }}'
-      http_proxy: '{{ podman_http_proxy }}'
-      no_proxy: '{{ podman_no_proxy }}'
+    - name: Grafana | Setting up permissions
+      file:
+        path: '{{ item.path }}'
+        state: directory
+        owner: '{{ item.owner }}'
+        mode: 0755
+      with_items:
+      - path: /var/lib/grafana
+        state: directory
+        owner: 1100
+      - path: /var/lib/grafana/provisioning
+        state: directory
+        owner: 1100
+      - path: /var/lib/grafana/plugins
+        state: directory
+        owner: 1100
+      - path: /etc/traefik
+        state: directory
+        owner: 1300
 
-  - name: Start the POD
-    with_items: '{{ podman_pods }}'
-    service: name={{ item.name }}.pod.service state=started enabled=yes
+    - name: Grafana | Install custom plugins
+      with_items: '{{ grafana_plugins }}'
+      unarchive:
+        dest: /var/lib/grafana/plugins/
+        src: '{{ item.url }}'
 
-  - name: Start the containers
-    with_items: '{{ podman_containers }}'
-    service: name={{ item.name }}.container.service state=started enabled=yes
+    - name: Grafana | Create Traefik file provider
+      copy:
+        content: '{{ traefik_conf | to_nice_yaml }}'
+        dest: /etc/traefik/services.yml
+        mode: 0644
+
+  - name: InfluxDB | Start InfluxDB service
+    when: lookup('env', 'GRAFANA_USAGE' ) | lower == 'false'
+    block:
+    - name: Configure podman
+      include_role:
+        name: ansible-podman
+      vars:
+        podman_pods:
+        podman_containers: '{{ podman_container_influxdb_standalone }}'
+
+    - name: InfluxDB | Pull images and deal with poor internet connection
+      register: pull_image
+      until: pull_image is success
+      retries: 5
+      delay: 30
+      shell: podman pull {{ podman_container_influxdb_standalone.image }}
+      environment:
+        https_proxy: '{{ podman_https_proxy }}'
+        http_proxy: '{{ podman_http_proxy }}'
+        no_proxy: '{{ podman_no_proxy }}'
+
+    - name: InfluxDB | Start the containers
+      service: name={{ podman_container_influxdb_standalone.name }}.container.service state=started enabled=yes
+
+  - name: Grafana | Start Grafana + InfluxDB + Traefik services
+    when: lookup('env', 'GRAFANA_USAGE' ) | lower == 'true'
+    block:
+    - name: Configure podman
+      include_role:
+        name: ansible-podman
+
+    - name: Grafana | Pull images and deal with poor internet connection
+      with_items: '{{ podman_containers }}'
+      register: pull_image
+      until: pull_image is success
+      retries: 5
+      delay: 30
+      shell: podman pull {{ item.image }}
+      environment:
+        https_proxy: '{{ podman_https_proxy }}'
+        http_proxy: '{{ podman_http_proxy }}'
+        no_proxy: '{{ podman_no_proxy }}'
+
+    - name: Grafana | Start the POD
+      with_items: '{{ podman_pods }}'
+      service: name={{ item.name }}.pod.service state=started enabled=yes
+
+    - name: Grafana | Start the containers
+      with_items: '{{ podman_containers }}'
+      service: name={{ item.name }}.container.service state=started enabled=yes
 
 ###############################################################################
 # Grafana / InfluxDB configuration
@@ -358,65 +414,68 @@
               - ; \
       done
 
-  - name: InfluxDB | Create token for Grafana
-    register: result_grafana_token
-    shell: >
-      podman exec -ti influxdb \
-          influx \
-              --host=http://localhost:{{ influxdb_conf.bind.port }} \
-              auth create --org {{ influxdb_org }} --read-buckets \
-          | awk '/active/ {print $2}'
+  - name: Grafana configuration
+    when: lookup('env', 'GRAFANA_USAGE' ) | lower == 'true'
+    block:
+    - name: InfluxDB | Create token for Grafana
+      register: result_grafana_token
+      shell: >
+        podman exec -ti influxdb \
+            influx \
+                --host=http://localhost:{{ influxdb_conf.bind.port }} \
+                auth create --org {{ influxdb_org }} --read-buckets \
+            | awk '/active/ {print $2}'
 
-  - name: Grafana | Set facts
-    set_fact:
-      grafana_influxdb_token: '{{ result_grafana_token.stdout }}'
-      grafana_admin: "{{ lookup('env', 'GRAFANA_ADMIN_NAME') }}"
-      grafana_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}"
+    - name: Grafana | Set facts
+      set_fact:
+        grafana_influxdb_token: '{{ result_grafana_token.stdout }}'
+        grafana_admin: "{{ lookup('env', 'GRAFANA_ADMIN_NAME') }}"
+        grafana_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') }}"
 
-  - name: Grafana | Wait for Grafana to be UP
-    register: ping_result
-    retries: 10
-    delay: 5
-    environment:
-      no_proxy: 127.0.0.1
-    uri:
-      url: http://127.0.0.1/grafana/login
-      method: GET
-      validate_certs: no
-      status_code:
-      - 200
+    - name: Grafana | Wait for Grafana to be UP
+      register: ping_result
+      retries: 10
+      delay: 5
+      environment:
+        no_proxy: 127.0.0.1
+      uri:
+        url: http://127.0.0.1/grafana/login
+        method: GET
+        validate_certs: no
+        status_code:
+        - 200
 
-  - name: Grafana | Get existing datasources
-    register: grafana_existing_datasources
-    uri:
-      url: http://127.0.0.1/grafana/api/datasources
-      method: GET
-      user: '{{ grafana_admin }}'
-      password: '{{ grafana_password }}'
-      force_basic_auth: yes
-      body_format: json
-      validate_certs: no
-      status_code:
-      - 200
+    - name: Grafana | Get existing datasources
+      register: grafana_existing_datasources
+      uri:
+        url: http://127.0.0.1/grafana/api/datasources
+        method: GET
+        user: '{{ grafana_admin }}'
+        password: '{{ grafana_password }}'
+        force_basic_auth: yes
+        body_format: json
+        validate_certs: no
+        status_code:
+        - 200
 
-  - name: Grafana | Create a datasource per bucket
-    when: >
-      "'{{ influxdb_org }} - {{ item.name }}'
-        not in grafana_existing_datasources.json | json_query('[*].name')"
-    with_items: '{{ influxdb_buckets }}'
-    environment:
-      no_proxy: 127.0.0.1
-    uri:
-      url: http://127.0.0.1/grafana/api/datasources
-      method: POST
-      user: '{{ grafana_admin }}'
-      password: '{{ grafana_password }}'
-      force_basic_auth: yes
-      body_format: json
-      validate_certs: no
-      body: '{{ grafana_datasources.datasources[0] | to_nice_json }}'
-      status_code:
-      - 200
+    - name: Grafana | Create a datasource per bucket
+      when: >
+        "'{{ influxdb_org }} - {{ item.name }}'
+          not in grafana_existing_datasources.json | json_query('[*].name')"
+      with_items: '{{ influxdb_buckets }}'
+      environment:
+        no_proxy: 127.0.0.1
+      uri:
+        url: http://127.0.0.1/grafana/api/datasources
+        method: POST
+        user: '{{ grafana_admin }}'
+        password: '{{ grafana_password }}'
+        force_basic_auth: yes
+        body_format: json
+        validate_certs: no
+        body: '{{ grafana_datasources.datasources[0] | to_nice_json }}'
+        status_code:
+        - 200
 
 ###############################################################################
 # Telegraf configuration

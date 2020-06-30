@@ -29,6 +29,7 @@ No provider.
 | git\_repo\_url | cloud-appliance-observability repo | `string` | `"https://github.com/139bercy/cloud-appliance-observability"` | no |
 | grafana\_admin\_name | Grafana admin username | `string` | n/a | yes |
 | grafana\_admin\_password | Grafana admin password | `string` | n/a | yes |
+| grafana\_usage | Do we use Grafana? | `bool` | `false` | no |
 | graylog\_admin\_name | Graylog admin username | `string` | n/a | yes |
 | graylog\_admin\_password | Grafana admin password | `string` | n/a | yes |
 | graylog\_endpoint\_url | Public hostname used to connect against Graylog | `string` | n/a | yes |

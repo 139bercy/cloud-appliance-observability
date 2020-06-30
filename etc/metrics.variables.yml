@@ -102,6 +102,26 @@ podman_containers:
     --bolt-path=/var/lib/influxdb/influxd.bolt
     --engine-path=/var/lib/influxdb/engine
 
+podman_container_influxdb_standalone:
+- name: influxdb
+  description: Metrics and monitoring manager
+  after:
+  selinux_sandboxing_paths:
+  - /var/lib/influxdb
+  run_opts: >
+    --rm
+    --user 1200
+    --publish 80:{{ influxdb_conf.bind.port }}
+    --mount type=bind,src=/var/lib/influxdb,target=/var/lib/influxdb
+    --mount type=bind,src=/var/lib/influxdb/.conf,target=/.influxdbv2
+    --mount type=bind,src=/root/appliance/files/influxdb,target=/etc/influxdb,ro=true
+  image: quay.io/influxdb/influxdb:2.0.0-beta
+  command: influxd
+  command_opts: >
+    --reporting-disabled
+    --bolt-path=/var/lib/influxdb/influxd.bolt
+    --engine-path=/var/lib/influxdb/engine
+
 ###############################################################################
 # Consul
 #

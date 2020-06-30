@@ -255,6 +255,12 @@ variable "metrics_size_gb" {
 }
 
 # Grafana configuration
+variable "grafana_usage" {
+  type        = bool
+  description = "Do we use Grafana?"
+  default     = false
+}
+
 variable "grafana_admin_name" {
   type        = string
   description = "Grafana admin username"

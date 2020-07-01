@@ -6,10 +6,10 @@ bootstrap_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 bootstrap_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 bootstrap_http_proxy_packages:
 bootstrap_http_proxy_packages_per_repo:
-  - host: download.opensuse.org
-    proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
-  - host: ppa.launchpad.net
-    proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+- host: download.opensuse.org
+  proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+- host: ppa.launchpad.net
+  proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 
 ###############################################################################
 # Podman
@@ -19,63 +19,63 @@ podman_https_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 podman_no_proxy: "{{ lookup('env', 'NO_PROXY') }}"
 
 podman_pods:
-  - name: appliance
-    description: Logs management appliance POD
-    opts: >
-      --publish 80:8080
-      --publish 81:8081
-      --publish 514:5140/tcp
-      --publish 514:5140/udp
-      --publish 12201:12201
+- name: appliance
+  description: Logs management appliance POD
+  opts: >
+    --publish 80:8080
+    --publish 81:8081
+    --publish 514:5140/tcp
+    --publish 514:5140/udp
+    --publish 12201:12201
 
 podman_containers:
-  - name: elasticsearch
-    description: Documents indexer
-    after: "{{ podman_pods[0].name }}.pod.service"
-    image: docker.io/elasticsearch:6.8.5
-    run_opts: >
-      --pod appliance
-      --rm
-      --user 1300
-      --mount type=bind,src=/var/lib/elasticsearch,target=/usr/share/elasticsearch/data
-      --env discovery.type="single-node"
-      --env cluster.name="logs"
-      --env node.name="{{ ansible_hostname }}"
-      --env network.bind_host="0.0.0.0"
-      --env path.data="/usr/share/elasticsearch/data"
-      --env ES_JAVA_OPTS="-Xms{{ (ansible_memtotal_mb * 0.3) | int }}m -Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m"
+- name: elasticsearch
+  description: Documents indexer
+  after: '{{ podman_pods[0].name }}.pod.service'
+  image: docker.io/elasticsearch:6.8.5
+  run_opts: >
+    --pod appliance
+    --rm
+    --user 1300
+    --mount type=bind,src=/var/lib/elasticsearch,target=/usr/share/elasticsearch/data
+    --env discovery.type="single-node"
+    --env cluster.name="logs"
+    --env node.name="{{ ansible_hostname }}"
+    --env network.bind_host="0.0.0.0"
+    --env path.data="/usr/share/elasticsearch/data"
+    --env ES_JAVA_OPTS="-Xms{{ (ansible_memtotal_mb * 0.3) | int }}m -Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m"
 
-  - name: mongodb
-    description: NoSQL database
-    after: "{{ podman_pods[0].name }}.pod.service"
-    image: docker.io/mongo:3
-    run_opts: >
-      --pod appliance
-      --rm
-      --user 1200
-      --mount type=bind,src=/var/lib/mongodb,target=/data/db
+- name: mongodb
+  description: NoSQL database
+  after: '{{ podman_pods[0].name }}.pod.service'
+  image: docker.io/mongo:3
+  run_opts: >
+    --pod appliance
+    --rm
+    --user 1200
+    --mount type=bind,src=/var/lib/mongodb,target=/data/db
 
-  - name: graylog
-    description: Logs management
-    after: "{{ podman_pods[0].name }}.pod.service"
-    image: docker.io/graylog/graylog:3.2
-    run_opts: >
-      --pod appliance
-      --rm
-      --user 1100
-      --mount type=bind,src=/var/lib/graylog,target=/usr/share/graylog/data/journal
-      --env GRAYLOG_IS_MASTER="true"
-      --env GRAYLOG_MESSAGE_JOURNAL_ENABLED="true"
-      --env GRAYLOG_HTTP_EXTERNAL_URI="{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') }}"
-      --env GRAYLOG_HTTP_PUBLISH_URI="http://{{ ansible_default_ipv4.address }}:80"
-      --env GRAYLOG_HTTP_BIND_ADDRESS="0.0.0.0:8080"
-      --env GRAYLOG_PASSWORD_SECRET="{{ graylog_salt.stdout }}"
-      --env GRAYLOG_ROOT_USERNAME="{{ graylog_login_admin_local }}"
-      --env GRAYLOG_ROOT_PASSWORD_SHA2="{{ graylog_root_password | hash('sha256') }}"
-      --env GRAYLOG_ROOT_TIMEZONE="Europe/Paris"
-      --env GRAYLOG_SERVER_JAVA_OPTS="-Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m -Xms{{ (ansible_memtotal_mb * 0.3) | int }}m"
-      --env GRAYLOG_MONGODB_URI="mongodb://127.0.0.1/graylog"
-      --env GRAYLOG_ELASTICSEARCH_HOSTS="http://127.0.0.1:9200"
+- name: graylog
+  description: Logs management
+  after: '{{ podman_pods[0].name }}.pod.service'
+  image: docker.io/graylog/graylog:3.2
+  run_opts: >
+    --pod appliance
+    --rm
+    --user 1100
+    --mount type=bind,src=/var/lib/graylog,target=/usr/share/graylog/data/journal
+    --env GRAYLOG_IS_MASTER="true"
+    --env GRAYLOG_MESSAGE_JOURNAL_ENABLED="true"
+    --env GRAYLOG_HTTP_EXTERNAL_URI="{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') }}"
+    --env GRAYLOG_HTTP_PUBLISH_URI="http://{{ ansible_default_ipv4.address }}:80"
+    --env GRAYLOG_HTTP_BIND_ADDRESS="0.0.0.0:8080"
+    --env GRAYLOG_PASSWORD_SECRET="{{ graylog_salt.stdout }}"
+    --env GRAYLOG_ROOT_USERNAME="{{ graylog_login_admin_local }}"
+    --env GRAYLOG_ROOT_PASSWORD_SHA2="{{ graylog_root_password | hash('sha256') }}"
+    --env GRAYLOG_ROOT_TIMEZONE="Europe/Paris"
+    --env GRAYLOG_SERVER_JAVA_OPTS="-Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m -Xms{{ (ansible_memtotal_mb * 0.3) | int }}m"
+    --env GRAYLOG_MONGODB_URI="mongodb://127.0.0.1/graylog"
+    --env GRAYLOG_ELASTICSEARCH_HOSTS="http://127.0.0.1:9200"
 
 ###############################################################################
 # Consul
@@ -90,26 +90,26 @@ consul_consul_encrypt: "{{ lookup('env', 'CONSUL_ENCRYPT') }}"
 # Dnsmasq
 #
 dnsmasq_main_conf:
-    servers:
-        - "{{ lookup('env', 'CONSUL_DNS_SERVER') }}"
+  servers:
+  - "{{ lookup('env', 'CONSUL_DNS_SERVER') }}"
 
 dnsmasq_forwarding_zones:
-    - name: "{{ consul_dns_domain }}"
-      forwarder:
-          hostname: 127.0.0.1
-          port: 8600
+- name: '{{ consul_dns_domain }}'
+  forwarder:
+    hostname: 127.0.0.1
+    port: 8600
 
 ###############################################################################
 # Telegraf
 #
 telegraf_output_influxdbv2_config:
-    urls: [ "{{ lookup('env', 'INFLUXDB_ENDPOINT') }}" ]
-    token: "{{ lookup('env', 'INFLUXDB_TOKEN') }}"
-    bucket: "{{ lookup('env', 'INFLUXDB_BUCKET') }}"
-    bucket_tag: ""
-    org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
-    exclude_bucket_tag: false
-    insecure_skip_verify: false
+  urls: ["{{ lookup('env', 'INFLUXDB_ENDPOINT') }}"]
+  token: "{{ lookup('env', 'INFLUXDB_TOKEN') }}"
+  bucket: "{{ lookup('env', 'INFLUXDB_BUCKET') }}"
+  bucket_tag: ''
+  org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
+  exclude_bucket_tag: false
+  insecure_skip_verify: false
 
 #telegraf_custom_inputs:
 #    - name: graylog
@@ -118,20 +118,20 @@ telegraf_output_influxdbv2_config:
 #          - urls = ["{{ graylog_api }}/system/metrics"]
 
 telegraf_main_config:
-    global_tags:
-    add_node_type: false
-    agent:
-        interval: "{{ telegraf_metrics_agent_interval_seconds }}"
-        round_interval: false
-        metric_batch_size: 1024
-        metric_buffer_limit: 10240
-        collection_jitter: 8s
-        flush_jitter: 8s
-        precision: ""
-        debug: false
-        quiet: false
-        logfile: ""
-        omit_hostname: false
+  global_tags:
+  add_node_type: false
+  agent:
+    interval: '{{ telegraf_metrics_agent_interval_seconds }}'
+    round_interval: false
+    metric_batch_size: 1024
+    metric_buffer_limit: 10240
+    collection_jitter: 8s
+    flush_jitter: 8s
+    precision: ''
+    debug: false
+    quiet: false
+    logfile: ''
+    omit_hostname: false
 
 ###############################################################################
 # Graylog
@@ -142,163 +142,163 @@ graylog_root_password: "{{ lookup('env', 'GRAYLOG_ADMIN_PASSWORD') }}"
 graylog_api: http://0.0.0.0:80/api
 
 graylog_default_index_set:
-    title: "Default index set"
-    description: "The Graylog default index set"
-    index_prefix: "graylog"
-    shards: 4
-    replicas: 0
-    rotation_strategy_class: "org.graylog2.indexer.rotation.strategies.TimeBasedRotationStrategy"
-    rotation_strategy:
-        type: "org.graylog2.indexer.rotation.strategies.TimeBasedRotationStrategyConfig"
-        rotation_period: "P1D"
-    retention_strategy_class: "org.graylog2.indexer.retention.strategies.DeletionRetentionStrategy"
-    retention_strategy:
-        type: "org.graylog2.indexer.retention.strategies.DeletionRetentionStrategyConfig"
-        max_number_of_indices: 20
-    index_analyzer: standard
-    index_optimization_max_num_segments: 1
-    index_optimization_disabled: false
-    field_type_refresh_interval: 5000
-    writable: true
-    default: true
+  title: Default index set
+  description: The Graylog default index set
+  index_prefix: graylog
+  shards: 4
+  replicas: 0
+  rotation_strategy_class: org.graylog2.indexer.rotation.strategies.TimeBasedRotationStrategy
+  rotation_strategy:
+    type: org.graylog2.indexer.rotation.strategies.TimeBasedRotationStrategyConfig
+    rotation_period: P1D
+  retention_strategy_class: org.graylog2.indexer.retention.strategies.DeletionRetentionStrategy
+  retention_strategy:
+    type: org.graylog2.indexer.retention.strategies.DeletionRetentionStrategyConfig
+    max_number_of_indices: 20
+  index_analyzer: standard
+  index_optimization_max_num_segments: 1
+  index_optimization_disabled: false
+  field_type_refresh_interval: 5000
+  writable: true
+  default: true
 
 graylog_default_extractors:
-    -  title: "JSON messages"
-       cut_or_copy: "cut"
-       extractor_type: "json"
-       converters: {}
-       source_field: "message"
-       target_field: ""
-       condition_type: "regex"
-       condition_value: "^\\{"
-       extractor_config:
-          flatten: false
-          list_separator: ", "
-          kv_separator: "="
-          key_prefix: ""
-          key_separator: "_"
-          replace_key_whitespace: false
-          key_whitespace_replacement: "_"
+- title: JSON messages
+  cut_or_copy: cut
+  extractor_type: json
+  converters: {}
+  source_field: message
+  target_field: ''
+  condition_type: regex
+  condition_value: ^\{
+  extractor_config:
+    flatten: false
+    list_separator: ', '
+    kv_separator: '='
+    key_prefix: ''
+    key_separator: _
+    replace_key_whitespace: false
+    key_whitespace_replacement: _
 
 graylog_rules:
-    - title: "syslog_level"
-      description: "syslog_level"
-      source: "rule \"syslog_level\"\nwhen\n  has_field(\"level\")\nthen\n  set_field(\"level\", syslog_level($message.level));\nend"
+- title: syslog_level
+  description: syslog_level
+  source: "rule \"syslog_level\"\nwhen\n  has_field(\"level\")\nthen\n  set_field(\"level\", syslog_level($message.level));\nend"
 
 graylog_pipelines:
-    - title: "syslog_level"
-      description: "Syslog level to string"
-      source: "pipeline \"syslog_level\"\nstage 0 match either\nrule \"syslog_level\"\nend"
-      stages:
-        - stage: 0
-          match_all: false
-          rules:
-            - "syslog_level"
+- title: syslog_level
+  description: Syslog level to string
+  source: "pipeline \"syslog_level\"\nstage 0 match either\nrule \"syslog_level\"\nend"
+  stages:
+  - stage: 0
+    match_all: false
+    rules:
+    - syslog_level
 
 graylog_inputs:
-    - extractors: "{{ graylog_default_extractors }}"
-      input:
-        title: "GELF - Webservice"
-        global: true
-        type: "org.graylog2.inputs.gelf.http.GELFHttpInput"
-        configuration:
-            idle_writer_timeout: 60
-            recv_buffer_size: 1048576
-            max_chunk_size: 65536
-            tcp_keepalive: false
-            enable_cors: true
-            tls_client_auth_cert_file: ""
-            bind_address: "0.0.0.0"
-            tls_cert_file: ""
-            decompress_size_limit: 8388608
-            port: 8081
-            tls_key_file: ""
-            tls_enable: false
-            tls_key_password: ""
-            tls_client_auth: "disabled"
-            override_source: null
+- extractors: '{{ graylog_default_extractors }}'
+  input:
+    title: GELF - Webservice
+    global: true
+    type: org.graylog2.inputs.gelf.http.GELFHttpInput
+    configuration:
+      idle_writer_timeout: 60
+      recv_buffer_size: 1048576
+      max_chunk_size: 65536
+      tcp_keepalive: false
+      enable_cors: true
+      tls_client_auth_cert_file: ''
+      bind_address: 0.0.0.0
+      tls_cert_file: ''
+      decompress_size_limit: 8388608
+      port: 8081
+      tls_key_file: ''
+      tls_enable: false
+      tls_key_password: ''
+      tls_client_auth: disabled
+      override_source:
 
-    - extractors: "{{ graylog_default_extractors }}"
-      input:
-        title: "GELF - UDP"
-        global: true
-        type: "org.graylog2.inputs.gelf.udp.GELFUDPInput"
-        configuration:
-            override_source: null
-            recv_buffer_size: 262144
-            bind_address: "0.0.0.0"
-            port: 12201
-            decompress_size_limit: 8388608
+- extractors: '{{ graylog_default_extractors }}'
+  input:
+    title: GELF - UDP
+    global: true
+    type: org.graylog2.inputs.gelf.udp.GELFUDPInput
+    configuration:
+      override_source:
+      recv_buffer_size: 262144
+      bind_address: 0.0.0.0
+      port: 12201
+      decompress_size_limit: 8388608
 
-    - extractors: "{{ graylog_default_extractors }}"
-      input:
-        title: "GELF - TCP"
-        global: true
-        type: "org.graylog2.inputs.gelf.tcp.GELFTCPInput"
-        configuration:
-            recv_buffer_size: 1048576
-            tcp_keepalive: true
-            use_null_delimiter: true
-            tls_client_auth_cert_file: ""
-            bind_address: "0.0.0.0"
-            tls_cert_file: ""
-            decompress_size_limit: 8388608
-            port: 12201
-            tls_key_file: ""
-            tls_enable: false
-            tls_key_password: ""
-            max_message_size: 2097152
-            tls_client_auth: "disabled"
-            override_source: null
+- extractors: '{{ graylog_default_extractors }}'
+  input:
+    title: GELF - TCP
+    global: true
+    type: org.graylog2.inputs.gelf.tcp.GELFTCPInput
+    configuration:
+      recv_buffer_size: 1048576
+      tcp_keepalive: true
+      use_null_delimiter: true
+      tls_client_auth_cert_file: ''
+      bind_address: 0.0.0.0
+      tls_cert_file: ''
+      decompress_size_limit: 8388608
+      port: 12201
+      tls_key_file: ''
+      tls_enable: false
+      tls_key_password: ''
+      max_message_size: 2097152
+      tls_client_auth: disabled
+      override_source:
 
-    - extractors: []
-      input:
-        title: "Syslog - UDP"
-        global: true
-        type: "org.graylog2.inputs.syslog.udp.SyslogUDPInput"
-        configuration:
-            expand_structured_data: true
-            recv_buffer_size: 1048576
-            port: 5140
-            override_source: null
-            force_rdns: false
-            allow_override_date: true
-            bind_address: "0.0.0.0"
-            store_full_message: false
+- extractors: []
+  input:
+    title: Syslog - UDP
+    global: true
+    type: org.graylog2.inputs.syslog.udp.SyslogUDPInput
+    configuration:
+      expand_structured_data: true
+      recv_buffer_size: 1048576
+      port: 5140
+      override_source:
+      force_rdns: false
+      allow_override_date: true
+      bind_address: 0.0.0.0
+      store_full_message: false
 
-    - extractors: []
-      input:
-        title: "Syslog - TCP"
-        global: true
-        type: "org.graylog2.inputs.syslog.tcp.SyslogTCPInput"
-        configuration:
-            recv_buffer_size: 1048576
-            tcp_keepalive: false
-            use_null_delimiter: false
-            tls_client_auth_cert_file: ""
-            force_rdns: false
-            bind_address: "0.0.0.0"
-            tls_cert_file: ""
-            store_full_message: false
-            expand_structured_data: true
-            port: 5140
-            tls_key_file: ""
-            tls_enable: false
-            tls_key_password: ""
-            max_message_size: 2097152
-            tls_client_auth: "disabled"
-            override_source: null
-            allow_override_date: true
+- extractors: []
+  input:
+    title: Syslog - TCP
+    global: true
+    type: org.graylog2.inputs.syslog.tcp.SyslogTCPInput
+    configuration:
+      recv_buffer_size: 1048576
+      tcp_keepalive: false
+      use_null_delimiter: false
+      tls_client_auth_cert_file: ''
+      force_rdns: false
+      bind_address: 0.0.0.0
+      tls_cert_file: ''
+      store_full_message: false
+      expand_structured_data: true
+      port: 5140
+      tls_key_file: ''
+      tls_enable: false
+      tls_key_password: ''
+      max_message_size: 2097152
+      tls_client_auth: disabled
+      override_source:
+      allow_override_date: true
 
 graylog_consul_service:
-    - service:
-        name: "logs"
-        tags:
-            - "logs"
-            - "appliance"
-        port: 80
-        enable_tag_override: false
-        checks:
-            - http: "http://0.0.0.0:80"
-              interval: "60s"
+- service:
+    name: logs
+    tags:
+    - logs
+    - appliance
+    port: 80
+    enable_tag_override: false
+    checks:
+    - http: http://0.0.0.0:80
+      interval: 60s
 

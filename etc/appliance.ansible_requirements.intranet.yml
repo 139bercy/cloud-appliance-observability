@@ -1,5 +1,3 @@
----
-
 - name: ansible-bootstrap-system
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-bootstrap-system
   version: v1.0
@@ -15,7 +13,7 @@
 - name: ansible-rclone
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-rclone
   version: v1.0
- 
+
 - name: ansible-telegraf
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-telegraf
   version: v1.0

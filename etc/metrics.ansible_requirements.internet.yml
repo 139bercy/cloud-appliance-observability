@@ -1,5 +1,3 @@
----
-
 - name: ansible-influxdb-bucket
   src: git+https://github.com/mgrzybek/ansible-influxdb-bucket
   version: v1.0

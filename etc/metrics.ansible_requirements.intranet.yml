@@ -1,5 +1,3 @@
----
-
 - name: ansible-influxdb-bucket
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-influxdb-bucket
   version: v1.0

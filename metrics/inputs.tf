@@ -147,9 +147,9 @@ variable "metrics_size_gb" {
 
 # Grafana configuration
 variable "grafana_usage" {
-  type = bool
+  type        = bool
   description = "Do we use Grafana?"
-  default = false
+  default     = false
 }
 
 variable "grafana_admin_name" {

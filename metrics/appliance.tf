@@ -35,6 +35,7 @@ resource "openstack_compute_instance_v2" "appliance-metrics" {
 
       metrics_container = openstack_objectstorage_container_v1.appliance-metrics-objects-metrics.id,
 
+      grafana_usage = var.grafana_usage
       grafana_admin_name     = var.grafana_admin_name,
       grafana_admin_password = var.grafana_admin_password,
 
@@ -55,6 +56,12 @@ resource "openstack_compute_instance_v2" "appliance-metrics" {
 
       git_repo_checkout = var.git_repo_checkout,
       git_repo_url      = var.git_repo_url
+
+
+     syslog_hostname = var.syslog_hostname
+     syslog_port = var.syslog_port
+     syslog_protocol = var.syslog_protocol
+     syslog_log_format = var.syslog_log_format
     }
   )
 }

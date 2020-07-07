@@ -93,6 +93,8 @@ export CONSUL_DNS_DOMAIN="${consul_dns_domain}"
 export CONSUL_DATACENTER="${consul_datacenter}"
 export CONSUL_ENCRYPT="${consul_encrypt}"
 export CONSUL_DNS_SERVER="${consul_dns_server}"
+export CONSUL_SERVERS="${consul_servers}"
+export BACK_IP="${backoffice_ip_address}"
 
 # Test proxy and Openstack endpoint
 test -z $HTTP_PROXY || curl -m1 -vks $HTTP_PROXY > /dev/null

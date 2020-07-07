@@ -196,10 +196,17 @@ variable "metrics_container" {
 ################################################################################
 # Consul
 #
+
 variable "consul_usage" {
   type        = bool
   description = "Do we use consul?"
   default     = false
+}
+
+variable "consul_servers" {
+  type        = string
+  description = "List of consul servers"
+  default     = ""
 }
 
 variable "consul_dns_domain" {

@@ -134,8 +134,7 @@ consul_datacenter: "{{ lookup('env', 'CONSUL_DATACENTER') }}"
 consul_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 consul_consul_encrypt: "{{ lookup('env', 'CONSUL_ENCRYPT') }}"
 
-consul_retry_join:
-- provider=os tag_key=group tag_value=management user_name={{ lookup('env', 'OS_USERNAME') }} password={{ lookup('env', 'OS_PASSWORD') }} auth_url={{ lookup('env', 'OS_AUTH_URL') }} project_id={{ lookup('env', 'OS_PROJECT_ID') }} domain_name={{ lookup('env', 'OS_USER_DOMAIN_NAME') }} insecure=true
+consul_retry_join: ["{{ lookup('env', 'CONSUL_SERVER') }}"]
 
 ###############################################################################
 # Dnsmasq

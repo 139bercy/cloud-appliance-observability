@@ -21,42 +21,44 @@ resource "openstack_compute_instance_v2" "appliance-metrics" {
   user_data = templatefile(
     "${path.module}/cloud-init.sh",
     {
-      internet_http_proxy_url = var.internet_http_proxy_url,
-      internet_http_no_proxy  = var.internet_http_no_proxy,
-      static_hosts            = var.static_hosts,
+      internet_http_proxy_url = var.internet_http_proxy_url
+      internet_http_no_proxy  = var.internet_http_no_proxy
+      static_hosts            = var.static_hosts
 
-      os_auth_url    = var.os_auth_url,
-      os_username    = var.os_username,
-      os_password    = var.os_password,
-      os_region_name = var.os_region_name,
+      os_auth_url    = var.os_auth_url
+      os_username    = var.os_username
+      os_password    = var.os_password
+      os_region_name = var.os_region_name
 
-      cinder_containers_volume = openstack_blockstorage_volume_v2.appliance-metrics-containers.id,
-      cinder_metrics_volume    = openstack_blockstorage_volume_v2.appliance-metrics-metrics.id,
+      cinder_containers_volume = openstack_blockstorage_volume_v2.appliance-metrics-containers.id
+      cinder_metrics_volume    = openstack_blockstorage_volume_v2.appliance-metrics-metrics.id
 
-      metrics_container = openstack_objectstorage_container_v1.appliance-metrics-objects-metrics.id,
+      metrics_container = openstack_objectstorage_container_v1.appliance-metrics-objects-metrics.id
 
       grafana_usage          = var.grafana_usage
-      grafana_admin_name     = var.grafana_admin_name,
-      grafana_admin_password = var.grafana_admin_password,
+      grafana_admin_name     = var.grafana_admin_name
+      grafana_admin_password = var.grafana_admin_password
 
-      influxdb_admin_name      = var.influxdb_admin_name,
-      influxdb_admin_password  = var.influxdb_admin_password,
-      influxdb_organisation    = var.influxdb_organisation,
-      influxdb_retention_hours = var.influxdb_retention_hours,
+      influxdb_admin_name      = var.influxdb_admin_name
+      influxdb_admin_password  = var.influxdb_admin_password
+      influxdb_organisation    = var.influxdb_organisation
+      influxdb_retention_hours = var.influxdb_retention_hours
 
-      metrics_endpoint_url = var.metrics_endpoint_url,
+      metrics_endpoint_url = var.metrics_endpoint_url
 
-      consul_usage      = var.consul_usage,
-      consul_dns_domain = var.consul_dns_domain,
-      consul_datacenter = var.consul_datacenter,
-      consul_encrypt    = var.consul_encrypt,
-      consul_dns_server = var.consul_dns_server,
+      consul_usage      = var.consul_usage
+      consul_dns_domain = var.consul_dns_domain
+      consul_datacenter = var.consul_datacenter
+      consul_encrypt    = var.consul_encrypt
+      consul_dns_server = var.consul_dns_server
+      consul_servers    = var.consul_servers
 
-      ntp_server = var.ntp_server,
+      backoffice_ip_address = openstack_networking_port_v2.appliance-metrics-back-port.all_fixed_ips[0]
 
-      git_repo_checkout = var.git_repo_checkout,
+      ntp_server = var.ntp_server
+
+      git_repo_checkout = var.git_repo_checkout
       git_repo_url      = var.git_repo_url
-
 
       syslog_hostname   = var.syslog_hostname
       syslog_port       = var.syslog_port

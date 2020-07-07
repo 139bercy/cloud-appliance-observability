@@ -22,41 +22,44 @@ resource "openstack_compute_instance_v2" "appliance-logs" {
   user_data = templatefile(
     "${path.module}/cloud-init.sh",
     {
-      internet_http_proxy_url = var.internet_http_proxy_url,
-      internet_http_no_proxy  = var.internet_http_no_proxy,
-      static_hosts            = var.static_hosts,
+      internet_http_proxy_url = var.internet_http_proxy_url
+      internet_http_no_proxy  = var.internet_http_no_proxy
+      static_hosts            = var.static_hosts
 
-      os_auth_url    = var.os_auth_url,
-      os_username    = var.os_username,
-      os_password    = var.os_password,
-      os_region_name = var.os_region_name,
+      os_auth_url    = var.os_auth_url
+      os_username    = var.os_username
+      os_password    = var.os_password
+      os_region_name = var.os_region_name
 
-      cinder_containers_volume    = openstack_blockstorage_volume_v2.appliance-logs-containers.id,
-      cinder_elasticsearch_volume = openstack_blockstorage_volume_v2.appliance-logs-elasticsearch.id,
-      cinder_graylog_volume       = openstack_blockstorage_volume_v2.appliance-logs-graylog.id,
+      cinder_containers_volume    = openstack_blockstorage_volume_v2.appliance-logs-containers.id
+      cinder_elasticsearch_volume = openstack_blockstorage_volume_v2.appliance-logs-elasticsearch.id
+      cinder_graylog_volume       = openstack_blockstorage_volume_v2.appliance-logs-graylog.id
 
-      logs_container = openstack_objectstorage_container_v1.appliance-logs-objects-logs.id,
+      logs_container = openstack_objectstorage_container_v1.appliance-logs-objects-logs.id
 
-      graylog_admin_name     = var.graylog_admin_name,
-      graylog_admin_password = var.graylog_admin_password,
+      graylog_admin_name     = var.graylog_admin_name
+      graylog_admin_password = var.graylog_admin_password
 
-      graylog_endpoint_url = var.graylog_endpoint_url,
+      graylog_endpoint_url = var.graylog_endpoint_url
 
-      consul_usage      = var.consul_usage,
-      consul_dns_domain = var.consul_dns_domain,
-      consul_datacenter = var.consul_datacenter,
-      consul_encrypt    = var.consul_encrypt,
-      consul_dns_server = var.consul_dns_server,
+      consul_usage      = var.consul_usage
+      consul_dns_domain = var.consul_dns_domain
+      consul_datacenter = var.consul_datacenter
+      consul_encrypt    = var.consul_encrypt
+      consul_dns_server = var.consul_dns_server
+      consul_servers    = var.consul_servers
 
-      influxdb_usage    = var.influxdb_usage,
-      influxdb_endpoint = var.influxdb_endpoint,
-      influxdb_token    = var.influxdb_token,
-      influxdb_org      = var.influxdb_org,
-      influxdb_bucket   = var.influxdb_bucket,
+      backoffice_ip_address = openstack_networking_port_v2.appliance-logs-back-port.all_fixed_ips[0]
 
-      ntp_server = var.ntp_server,
+      influxdb_usage    = var.influxdb_usage
+      influxdb_endpoint = var.influxdb_endpoint
+      influxdb_token    = var.influxdb_token
+      influxdb_org      = var.influxdb_org
+      influxdb_bucket   = var.influxdb_bucket
 
-      git_repo_checkout = var.git_repo_checkout,
+      ntp_server = var.ntp_server
+
+      git_repo_checkout = var.git_repo_checkout
       git_repo_url      = var.git_repo_url
     }
   )

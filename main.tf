@@ -33,6 +33,7 @@ module logs_appliance {
   consul_datacenter = var.consul_datacenter
   consul_encrypt    = var.consul_encrypt
   consul_dns_server = var.consul_dns_server
+  consul_servers    = var.consul_servers
 }
 
 module metrics_appliance {
@@ -70,6 +71,7 @@ module metrics_appliance {
   consul_datacenter = var.consul_datacenter
   consul_encrypt    = var.consul_encrypt
   consul_dns_server = var.consul_dns_server
+  consul_servers    = var.consul_servers
 
   syslog_hostname = var.syslog_hostname
 }

@@ -134,7 +134,7 @@ consul_datacenter: "{{ lookup('env', 'CONSUL_DATACENTER') }}"
 consul_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 consul_consul_encrypt: "{{ lookup('env', 'CONSUL_ENCRYPT') }}"
 
-consul_retry_join: ["{{ lookup('env', 'CONSUL_SERVER') }}"]
+consul_retry_join: ["{{ lookup('env', 'CONSUL_SERVERS') }}"]
 
 ###############################################################################
 # Dnsmasq

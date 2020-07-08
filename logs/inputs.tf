@@ -203,3 +203,8 @@ variable "consul_dns_server" {
   default     = ""
 }
 
+variable "traefik_consul_prefix" {
+  type        = string
+  description = "Consul catalog prefix used to configure Traefik"
+  default     = "admin"
+}

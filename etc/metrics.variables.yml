@@ -182,6 +182,8 @@ grafana_consul_service:
     tags:
     - metrics
     - appliance
+    - traefik.enable=true
+    - "{{ lookup('env', 'TRAEFIK_CONSUL_PREFIX' }}.http.routers.influxdb.rule=Host(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('hostname') }}`) && PathPrefix(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') }}`)"
     port: 80
     enable_tag_override: false
     checks:
@@ -298,6 +300,8 @@ influxdb_consul_service:
     tags:
     - metrics
     - appliance
+    - traefik.enable=true
+    - "{{ lookup('env', 'TRAEFIK_CONSUL_PREFIX' }}.http.routers.influxdb.rule=Host(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('hostname') }}`) && PathPrefix(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') }}`)"
     port: 80
     enable_tag_override: false
     checks:

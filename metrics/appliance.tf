@@ -53,6 +53,8 @@ resource "openstack_compute_instance_v2" "appliance-metrics" {
       consul_dns_server = var.consul_dns_server
       consul_servers    = var.consul_servers
 
+      traefik_consul_prefix = var.traefik_consul_prefix
+
       backoffice_ip_address = openstack_networking_port_v2.appliance-metrics-back-port.all_fixed_ips[0]
 
       ntp_server = var.ntp_server

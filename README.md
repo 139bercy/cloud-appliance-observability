@@ -181,6 +181,7 @@ No provider.
 | syslog\_log\_format | Log format used to send logs: gelf or syslog | `string` | `"gelf"` | no |
 | syslog\_port | Port number of the remote log management endpoint | `number` | `12201` | no |
 | syslog\_protocol | Protocol used to send logs: udp, tcp or http | `string` | `"udp"` | no |
+| traefik\_consul\_prefix | Consul catalog prefix used to configure Traefik | `string` | `"admin"` | no |
 
 ## Outputs
 

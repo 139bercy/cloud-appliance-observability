@@ -84,6 +84,7 @@ export CONSUL_ENCRYPT="${consul_encrypt}"
 export CONSUL_DNS_SERVER="${consul_dns_server}"
 export CONSUL_SERVERS="${consul_servers}"
 export BACK_IP="${backoffice_ip_address}"
+export TRAEFIK_CONSUL_PREFIX="${traefik_consul_prefix}"
 
 # Set InfluxDB variables
 export INFLUXDB_USAGE="${influxdb_usage}"

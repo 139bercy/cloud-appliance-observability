@@ -80,6 +80,8 @@ podman_containers:
 ###############################################################################
 # Consul
 #
+consul_consul_version: 1.8.0
+
 consul_bind: "{{ lookup('env', 'BACK_IP') }}"
 consul_advertise_addr: "{{ lookup('env', 'BACK_IP') }}"
 consul_serf_lan_bind: "{{ lookup('env', 'BACK_IP') }}"

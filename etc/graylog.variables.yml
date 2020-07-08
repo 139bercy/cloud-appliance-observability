@@ -297,7 +297,7 @@ graylog_consul_service:
     - logs
     - appliance
     - traefik.enable=true
-    - "{{ lookup('env', 'TRAEFIK_CONSUL_PREFIX') }}.http.routers.influxdb.rule=Host(`{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') | urlsplit('hostname') }}`) && PathPrefix(`{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') | urlsplit('path') }}`)"
+    - "{{ lookup('env', 'TRAEFIK_CONSUL_PREFIX') }}.http.routers.graylog.rule=Host(`{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') | urlsplit('hostname') }}`) && PathPrefix(`{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') | urlsplit('path') }}`)"
     port: 80
     enable_tag_override: false
     checks:

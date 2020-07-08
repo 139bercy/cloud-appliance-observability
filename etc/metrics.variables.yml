@@ -183,7 +183,7 @@ grafana_consul_service:
     - metrics
     - appliance
     - "{{ lookup('env', 'TRAEFIK_CONSUL_PREFIX') }}.enable=true"
-    - "{{ lookup('env', 'TRAEFIK_CONSUL_PREFIX') }}.http.routers.influxdb.rule=Host(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('hostname') }}`) && PathPrefix(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') }}`)"
+    - "{{ lookup('env', 'TRAEFIK_CONSUL_PREFIX') }}.http.routers.grafana.rule=Host(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('hostname') }}`) && PathPrefix(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') }}`)"
     port: 80
     enable_tag_override: false
     checks:

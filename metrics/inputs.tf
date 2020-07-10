@@ -6,12 +6,14 @@
 variable "flavor_name" {
   type        = string
   description = "Cloud flavor to use"
+  default     = "CO1.1"
 }
 
 # Image
 variable "image_name" {
   type        = string
   description = "Operating system image to use"
+  default     = "ubuntu18.04_server"
 }
 
 # Networking

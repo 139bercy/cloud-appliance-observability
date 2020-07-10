@@ -6,6 +6,7 @@
 variable "image_name" {
   type        = string
   description = "Operating system image to use"
+  default     = "ubuntu18.04_server"
 }
 
 # Networking
@@ -212,6 +213,7 @@ variable "traefik_consul_prefix" {
 variable "logs_flavor_name" {
   type        = string
   description = "Cloud flavor to use"
+  default     = "CO1.2"
 }
 
 # Storage sizing
@@ -251,6 +253,7 @@ variable "graylog_endpoint_url" {
 variable "metrics_flavor_name" {
   type        = string
   description = "Cloud flavor to use"
+  default     = "CO1.1"
 }
 
 # Storage sizing

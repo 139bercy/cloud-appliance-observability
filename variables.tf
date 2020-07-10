@@ -3,7 +3,7 @@
 #
 
 # Image
-variable "image_id" {
+variable "image_name" {
   type        = string
   description = "Operating system image to use"
 }
@@ -209,7 +209,7 @@ variable "traefik_consul_prefix" {
 #
 
 # System sizing
-variable "logs_flavor_id" {
+variable "logs_flavor_name" {
   type        = string
   description = "Cloud flavor to use"
 }
@@ -248,7 +248,7 @@ variable "graylog_endpoint_url" {
 #
 
 # System sizing
-variable "metrics_flavor_id" {
+variable "metrics_flavor_name" {
   type        = string
   description = "Cloud flavor to use"
 }

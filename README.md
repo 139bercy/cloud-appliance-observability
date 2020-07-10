@@ -45,7 +45,7 @@ module observability {
   #############################################################################
   # Common variables
 
-  image_id            = var.image_id
+  image_name            = var.image_name
   
   # The front net is the "public" network. The services are not published there.
   # They can be used to connect against standard resources (internet, repositories…).
@@ -82,7 +82,7 @@ module observability {
   #############################################################################
   # Logs variables
 
-  logs_flavor_id        = var.logs_flavor_id
+  logs_flavor_name        = var.logs_flavor_name
   elasticsearch_size_gb = var.elasticsearch_size_gb
   graylog_size_gb       = var.graylog_size_gb
 
@@ -99,7 +99,7 @@ module observability {
   #############################################################################
   # Metrics variables
 
-  metrics_flavor_id = var.metrics_flavor_id
+  metrics_flavor_name = var.metrics_flavor_name
   metrics_size_gb   = var.metrics_size_gb
 
   grafana_admin_name     = var.grafana_admin_name

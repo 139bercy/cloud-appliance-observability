@@ -3,13 +3,13 @@
 #
 
 # System sizing
-variable "flavor_id" {
+variable "flavor_name" {
   type        = string
   description = "Cloud flavor to use"
 }
 
 # Image
-variable "image_id" {
+variable "image_name" {
   type        = string
   description = "Operating system image to use"
 }

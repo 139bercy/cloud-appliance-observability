@@ -6,7 +6,7 @@ module logs_appliance {
   source = "./logs"
 
   back_net_id             = var.back_net_id
-  image_id                = var.image_id
+  image_name                = var.image_name
   front_net_id            = var.front_net_id
   os_username             = var.os_username
   os_password             = var.os_password
@@ -20,7 +20,7 @@ module logs_appliance {
   internet_http_no_proxy  = var.internet_http_no_proxy
   ntp_server              = var.ntp_server
   static_hosts            = var.static_hosts
-  flavor_id               = var.logs_flavor_id
+  flavor_name               = var.logs_flavor_name
 
   elasticsearch_size_gb  = var.elasticsearch_size_gb
   graylog_size_gb        = var.graylog_size_gb
@@ -40,7 +40,7 @@ module metrics_appliance {
   source = "./metrics"
 
   back_net_id             = var.back_net_id
-  image_id                = var.image_id
+  image_name                = var.image_name
   front_net_id            = var.front_net_id
   os_username             = var.os_username
   os_password             = var.os_password
@@ -54,7 +54,7 @@ module metrics_appliance {
   internet_http_no_proxy  = var.internet_http_no_proxy
   ntp_server              = var.ntp_server
   static_hosts            = var.static_hosts
-  flavor_id               = var.metrics_flavor_id
+  flavor_name               = var.metrics_flavor_name
 
   metrics_size_gb          = var.metrics_size_gb
   grafana_admin_name       = var.grafana_admin_name

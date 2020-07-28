@@ -20,6 +20,8 @@ bootstrap_http_proxy_packages_per_repo:
   proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 - host: ppa.launchpad.net
   proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+- host: apt.releases.hashicorp.com
+  proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
 
 ###############################################################################
 # Podman

@@ -34,6 +34,7 @@ appliance_pods:
 - name: appliance
   description: Metrics appliance POD
   opts: >
+    --replace=true
     --publish 80:{{ traefik_conf.entryPoints.web.address.split(':')[-1] }}
     --publish 443:{{ traefik_conf.entryPoints.websecure.address.split(':')[-1] }}
 
@@ -44,6 +45,7 @@ appliance_containers:
   run_opts: >
     --pod appliance
     --rm
+    --replace=true
     --user 1300 --mount type=bind,src=/etc/traefik,target=/etc/traefik
     --http-proxy=false
   image: docker.io/library/traefik
@@ -67,6 +69,7 @@ appliance_containers:
   run_opts: >
     --pod appliance
     --rm
+    --replace=true
     --user 1100
     --name grafana
     --mount type=bind,src=/var/lib/grafana,target=/var/lib/grafana
@@ -92,6 +95,7 @@ appliance_containers:
   run_opts: >
     --pod appliance
     --rm
+    --replace=true
     --user 1200
     --mount type=bind,src=/var/lib/influxdb,target=/var/lib/influxdb
     --mount type=bind,src=/var/lib/influxdb/.conf,target=/.influxdbv2

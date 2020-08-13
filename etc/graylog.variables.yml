@@ -24,7 +24,6 @@ podman_pods:
 - name: appliance
   description: Logs management appliance POD
   opts: >
-    --replace=true
     --publish 80:8080
     --publish 81:8081
     --publish 514:5140/tcp
@@ -39,7 +38,6 @@ podman_containers:
   run_opts: >
     --pod appliance
     --rm
-    --replace=true
     --user 1300
     --mount type=bind,src=/var/lib/elasticsearch,target=/usr/share/elasticsearch/data
     --env discovery.type="single-node"
@@ -56,7 +54,6 @@ podman_containers:
   run_opts: >
     --pod appliance
     --rm
-    --replace=true
     --user 1200
     --mount type=bind,src=/var/lib/mongodb,target=/data/db
 
@@ -67,7 +64,6 @@ podman_containers:
   run_opts: >
     --pod appliance
     --rm
-    --replace=true
     --user 1100
     --mount type=bind,src=/var/lib/graylog,target=/usr/share/graylog/data/journal
     --env GRAYLOG_IS_MASTER="true"

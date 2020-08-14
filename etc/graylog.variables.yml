@@ -68,8 +68,7 @@ podman_containers:
     --mount type=bind,src=/var/lib/graylog,target=/usr/share/graylog/data/journal
     --env GRAYLOG_IS_MASTER="true"
     --env GRAYLOG_MESSAGE_JOURNAL_ENABLED="true"
-    --env GRAYLOG_HTTP_EXTERNAL_URI="{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') }}"
-    --env GRAYLOG_HTTP_PUBLISH_URI="http://{{ ansible_default_ipv4.address }}:80"
+    --env GRAYLOG_HTTP_PUBLISH_URI="{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') }}"
     --env GRAYLOG_HTTP_BIND_ADDRESS="0.0.0.0:8080"
     --env GRAYLOG_PASSWORD_SECRET="{{ graylog_salt.stdout }}"
     --env GRAYLOG_ROOT_USERNAME="{{ graylog_login_admin_local }}"

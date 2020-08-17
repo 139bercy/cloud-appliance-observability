@@ -404,7 +404,7 @@
       podman exec -ti influxdb \
           influx \
               --host=http://localhost:{{ influxdb_conf.bind.port }} \
-              pkg --recurse --file /etc/influxdb --force true --quiet
+              apply --recurse --file /etc/influxdb --force true --quiet
 
   - name: InfluxDB | Send tokens to Swift
     when: swift_available | bool == true

@@ -16,7 +16,7 @@
 
 - name: ansible-telegraf
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-telegraf
-  version: v1.0
+  version: ba0b18e97bb5e5f9d871ba7c362ed55809167da3
 
 - name: ansible-podman
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-podman

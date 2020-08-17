@@ -2,7 +2,7 @@
 # OS-Ready
 #
 - name: Nodes configuration
-  hosts: localhost
+  hosts: all
   tags: os-ready
 
   handlers:
@@ -79,7 +79,7 @@
 # Containers
 #
 - name: Containers runtime configuration
-  hosts: localhost
+  hosts: all
   tags: containers
 
   pre_tasks:
@@ -91,11 +91,11 @@
     #    state: present
 
   - name: Installing XFS and unzip tools
-    when: ansible_os_family | lower == 'debian'
-    apt: name={{ item }} state=present
-    with_items:
-    - xfsprogs
-    - unzip
+    package:
+      state: present
+      name:
+      - xfsprogs
+      - unzip
 
     # Containers
   - when:
@@ -145,85 +145,95 @@
 # Grafana / InfluxDB / Traefik deployment
 #
 - name: Grafana, InfluxDB and Traefik deployment
-  hosts: localhost
+  hosts: all
   tags: metrics
 
   pre_tasks:
-  - name: VG listing
-    command: vgs --options name
-    register: vg_list
-
-  - when: vg_list.stdout.find('metrics') < 0
-    block:
-    - name: Metrics volume detection
-      set_fact: metrics_device_short_id="{{ lookup('env', 'METRICS_VOLUME')[:20] }}"
-
-    - name: Get metrics device name from /dev/disk/by-id/
-      register: cinder_volume
-      shell: find /dev/disk/by-id/ -name "*{{ metrics_device_short_id }}*"
-
-    - name: Check metrics device result
-      when: cinder_volume.stdout_lines | length < 1
-      fail: msg="Cannot find any cinder device with ID {{ metrics_device_short_id }}"
-
-    - name: Set full disk name
-      set_fact: metrics_device="{{ cinder_volume.stdout }}"
-
-    - name: VG metrics creation
-      lvg: vg=metrics pvs="{{ metrics_device }}"
-
   - name: InfluxDB | InfluxDB system tasks
+    when:
+    - lookup('env', 'CONTAINERS_VOLUME') is defined
+    - lookup('env', 'CONTAINERS_VOLUME') | length > 0
     block:
-    - name: InfluxDB | LV creation
-      lvol: vg=metrics lv={{ item.lv }} size={{ item.size }}
-      with_items:
-      - lv: influxdb
-        size: 80%VG
+      - name: VG listing
+        command: vgs --options name
+        register: vg_list
 
-    - name: InfluxDB | Formatting
-      filesystem: dev=/dev/mapper/metrics-{{ item }} fstype=xfs
-      with_items:
-      - influxdb
+      - name: Metrics volume detection
+        set_fact: metrics_device_short_id="{{ lookup('env', 'METRICS_VOLUME')[:20] }}"
 
-    - name: InfluxDB | Volumes mounting
-      mount:
-        path: '{{ item.path }}'
-        src: '{{ item.src }}'
-        state: mounted
-        fstype: xfs
-      with_items:
-      - path: /var/lib/influxdb
-        src: /dev/mapper/metrics-influxdb
+      - name: Get metrics device name from /dev/disk/by-id/
+        register: cinder_volume
+        shell: find /dev/disk/by-id/ -name "*{{ metrics_device_short_id }}*"
 
-    - name: InfluxDB | Setting up permissions
-      file:
-        path: '{{ item.path }}'
-        state: directory
-        owner: '{{ item.owner }}'
-        mode: 0755
-      with_items:
-      - path: /var/lib/influxdb
-        state: directory
-        owner: 1200
-      - path: /var/lib/influxdb/.conf
-        state: directory
-        owner: 1200
+      - name: Check metrics device result
+        when: cinder_volume.stdout_lines | length < 1
+        fail: msg="Cannot find any cinder device with ID {{ metrics_device_short_id }}"
+
+      - name: Set full disk name
+        set_fact: metrics_device="{{ cinder_volume.stdout }}"
+
+      - name: VG metrics creation
+        lvg: vg=metrics pvs="{{ metrics_device }}"
+
+      - name: InfluxDB | LV creation
+        lvol: vg=metrics lv={{ item.lv }} size={{ item.size }}
+        with_items:
+        - lv: influxdb
+          size: 80%VG
+
+      - name: InfluxDB | Formatting
+        filesystem: dev=/dev/mapper/metrics-{{ item }} fstype=xfs
+        with_items:
+        - influxdb
+
+      - name: InfluxDB | Volumes mounting
+        mount:
+          path: '{{ item.path }}'
+          src: '{{ item.src }}'
+          state: mounted
+          fstype: xfs
+        with_items:
+        - path: /var/lib/influxdb
+          src: /dev/mapper/metrics-influxdb
+ 
+  - name: InfluxDB | Setting up permissions
+    file:
+      path: '{{ item.path }}'
+      state: directory
+      owner: '{{ item.owner }}'
+      mode: 0755
+    with_items:
+    - path: /var/lib/influxdb
+      state: directory
+      owner: 1200
+    - path: /var/lib/influxdb/.conf
+      state: directory
+      owner: 1200
 
   - name: Grafana | Grafana system tasks
     when: lookup('env', 'GRAFANA_USAGE' ) | lower == 'true'
     block:
     - name: Grafana | LV creation
+      when:
+      - lookup('env', 'CONTAINERS_VOLUME') is defined
+      - lookup('env', 'CONTAINERS_VOLUME') | length > 0
       lvol: vg=metrics lv={{ item.lv }} size={{ item.size }}
       with_items:
       - lv: grafana
         size: 1g
 
     - name: Grafana | Formatting
+      when:
+      - lookup('env', 'CONTAINERS_VOLUME') is defined
+      - lookup('env', 'CONTAINERS_VOLUME') | length > 0
       filesystem: dev=/dev/mapper/metrics-{{ item }} fstype=xfs
       with_items:
       - grafana
 
     - name: Grafana | Volumes mounting
+      when:
+      - lookup('env', 'CONTAINERS_VOLUME') is defined
+      - lookup('env', 'CONTAINERS_VOLUME') | length > 0
       mount:
         path: '{{ item.path }}'
         src: '{{ item.src }}'
@@ -258,6 +268,7 @@
       unarchive:
         dest: /var/lib/grafana/plugins/
         src: '{{ item.url }}'
+        remote_src: yes
 
     - name: Grafana | Create Traefik file provider
       copy:
@@ -284,6 +295,8 @@
         https_proxy: '{{ podman_https_proxy }}'
         http_proxy: '{{ podman_http_proxy }}'
         no_proxy: '{{ podman_no_proxy }}'
+      vars:
+        podman_containers: '[ {{ appliance_container_influxdb_standalone }} ]'
 
     - name: InfluxDB | Start the container
       service: name={{ appliance_container_influxdb_standalone.name }}.container.service state=started enabled=yes
@@ -309,20 +322,29 @@
         https_proxy: '{{ podman_https_proxy }}'
         http_proxy: '{{ podman_http_proxy }}'
         no_proxy: '{{ podman_no_proxy }}'
+      vars:
+        podman_pods: '{{ appliance_pods }}'
+        podman_containers: '{{ appliance_containers }}'
 
     - name: Grafana | Start the POD
       with_items: '{{ appliance_pods }}'
       service: name={{ item.name }}.pod.service state=started enabled=yes
+      vars:
+        podman_pods: '{{ appliance_pods }}'
+        podman_containers: '{{ appliance_containers }}'
 
     - name: Grafana | Start the containers
       with_items: '{{ appliance_containers }}'
       service: name={{ item.name }}.container.service state=started enabled=yes
+      vars:
+        podman_pods: '{{ appliance_pods }}'
+        podman_containers: '{{ appliance_containers }}'
 
 ###############################################################################
 # Grafana / InfluxDB configuration
 #
 - name: Grafana and InfluxDB configuration
-  hosts: localhost
+  hosts: all
   tags: configuration
 
   tasks:
@@ -448,18 +470,18 @@
         status_code:
         - 200
 
-    - name: Grafana | Get existing datasources
-      register: grafana_existing_datasources
-      uri:
-        url: http://127.0.0.1/grafana/api/datasources
-        method: GET
-        user: '{{ grafana_admin }}'
-        password: '{{ grafana_password }}'
-        force_basic_auth: yes
-        body_format: json
-        validate_certs: no
-        status_code:
-        - 200
+#    - name: Grafana | Get existing datasources
+#      register: grafana_existing_datasources
+#      uri:
+#        url: http://127.0.0.1/grafana/api/datasources
+#        method: GET
+#        user: '{{ grafana_admin }}'
+#        password: '{{ grafana_password }}'
+#        force_basic_auth: yes
+#        body_format: json
+#        validate_certs: no
+#        status_code:
+#        - 200
 
     - name: Grafana | Create a datasource per bucket
       when: >
@@ -479,12 +501,13 @@
         body: '{{ grafana_datasources.datasources[0] | to_nice_json }}'
         status_code:
         - 200
+        - 409
 
 ###############################################################################
 # Telegraf configuration
 #
 - name: Telegraf configuration
-  hosts: localhost
+  hosts: all
   tags: telegraf
 
   tasks:

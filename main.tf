@@ -34,6 +34,8 @@ module logs_appliance {
   consul_encrypt    = var.consul_encrypt
   consul_dns_server = var.consul_dns_server
   consul_servers    = var.consul_servers
+
+traefik_consul_prefix = var.traefik_consul_prefix
 }
 
 module metrics_appliance {
@@ -74,4 +76,6 @@ module metrics_appliance {
   consul_servers    = var.consul_servers
 
   syslog_hostname = var.syslog_hostname
+
+traefik_consul_prefix = var.traefik_consul_prefix
 }

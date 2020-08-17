@@ -315,6 +315,8 @@ influxdb_consul_service:
 ###############################################################################
 # Telegraf
 #
+telegraf_http_proxy: "{{ lookup('env', 'HTTP_PROXY') }}"
+
 telegraf_use_docker: false
 
 telegraf_output_influxdbv2_config:

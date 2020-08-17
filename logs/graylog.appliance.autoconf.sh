@@ -64,6 +64,8 @@ fi
 ansible-galaxy install -r $ETC_PATH/appliance.ansible_requirements.${remote_repo}.yml
 ansible-galaxy install -r $ETC_PATH/graylog.ansible_requirements.${remote_repo}.yml
 
+sed -i 's/hosts: all/hosts: localhost/' $PLAYBOOK
+
 ansible-playbook $PLAYBOOK \
 	-e @$ETC_PATH/graylog.variables.yml \
 	-e dnsmasq_listening_interfaces="{{['lo']|from_yaml}}" \

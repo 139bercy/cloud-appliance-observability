@@ -1,0 +1,16 @@
+- name: Verify
+  hosts: all
+  tasks:
+  - name: Test consul members
+    shell: consul members | grep server
+
+  - name: Test consul catalog
+    register: catalog
+    command: consul catalog services
+
+  - name: Check consul services
+    fail: msg="services consul and consul-ui must be present"
+    when:
+    - catalog.stdout_lines[0] != "consul"
+    - catalog.stdout_lines[1] != "consul-ui"
+

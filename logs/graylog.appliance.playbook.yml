@@ -2,7 +2,7 @@
 # OS-Ready
 #
 - name: Nodes configuration
-  hosts: localhost
+  hosts: all
   tags: os-ready
 
   handlers:
@@ -54,7 +54,7 @@
 # Containers
 #
 - name: Containers runtime configuration
-  hosts: localhost
+  hosts: all
   tags: containers
 
   pre_tasks:
@@ -66,8 +66,7 @@
       state: present
 
   - name: Installing XFS tools
-    when: ansible_os_family | lower == 'debian'
-    apt: name=xfsprogs state=present
+    package: name=xfsprogs state=present
 
     # Containers
   - when:
@@ -97,18 +96,18 @@
       - name: Create VG called "containers"
         lvg: vg=containers pvs="{{ containers_device }}"
 
-    - name: Create LV containers/data
-      lvol: vg=containers lv=data size=80%VG
+      - name: Create LV containers/data
+        lvol: vg=containers lv=data size=80%VG
 
-    - name: Formatting containers-data LV
-      filesystem: dev=/dev/mapper/containers-data fstype=xfs
+      - name: Formatting containers-data LV
+        filesystem: dev=/dev/mapper/containers-data fstype=xfs
 
-    - name: Mounting containers-data LV
-      mount:
-        path: /var/run/containers
-        src: /dev/mapper/containers-data
-        state: mounted
-        fstype: xfs
+      - name: Mounting containers-data LV
+        mount:
+          path: /var/run/containers
+          src: /dev/mapper/containers-data
+          state: mounted
+          fstype: xfs
 
   roles:
   - role: ansible-rclone
@@ -117,45 +116,50 @@
 # Elasticsearch configuration
 #
 - name: Elasticsearch configuration
-  hosts: localhost
+  hosts: all
   tags: elasticsearch
 
   tasks:
-  - name: VG listing
-    command: vgs --options name
-    register: vg_list
-
-  - when: vg_list.stdout.find('elasticsearch') < 0
+  - name: Elasticsearch | Volume management
+    when:
+    - lookup('env', 'ELASTICSEARCH_VOLUME') is defined
+    - lookup('env', 'ELASTICSEARCH_VOLUME') | length > 0
     block:
-    - name: Elasticsearch volume detection
-      set_fact: elasticsearch_device_short_id="{{ lookup('env', 'ELASTICSEARCH_VOLUME')[:20] }}"
+      - name: VG listing
+        command: vgs --options name
+        register: vg_list
 
-    - name: Get elasticsearch device name from /dev/disk/by-id/
-      register: cinder_volume
-      shell: find /dev/disk/by-id/ -name "*{{ elasticsearch_device_short_id }}*"
+      - when: vg_list.stdout.find('elasticsearch') < 0
+        block:
+        - name: Elasticsearch volume detection
+          set_fact: elasticsearch_device_short_id="{{ lookup('env', 'ELASTICSEARCH_VOLUME')[:20] }}"
 
-    - name: Check elasticsearch device result
-      when: cinder_volume.stdout_lines | length < 1
-      fail: msg="Cannot find any cinder device with ID {{ elasticsearch_device_short_id }}"
+        - name: Get elasticsearch device name from /dev/disk/by-id/
+          register: cinder_volume
+          shell: find /dev/disk/by-id/ -name "*{{ elasticsearch_device_short_id }}*"
 
-    - name: Set full disk name
-      set_fact: elasticsearch_device="{{ cinder_volume.stdout }}"
+        - name: Check elasticsearch device result
+          when: cinder_volume.stdout_lines | length < 1
+          fail: msg="Cannot find any cinder device with ID {{ elasticsearch_device_short_id }}"
 
-    - name: VG elasticsearch creation
-      lvg: vg=elasticsearch pvs="{{ elasticsearch_device }}"
+        - name: Set full disk name
+          set_fact: elasticsearch_device="{{ cinder_volume.stdout }}"
 
-  - name: LV creation
-    lvol: vg=elasticsearch lv=data size=80%VG
+        - name: VG elasticsearch creation
+          lvg: vg=elasticsearch pvs="{{ elasticsearch_device }}"
 
-  - name: Formatting
-    filesystem: dev=/dev/mapper/elasticsearch-data fstype=xfs
+      - name: LV creation
+        lvol: vg=elasticsearch lv=data size=80%VG
 
-  - name: Mounting
-    mount:
-      path: /var/lib/elasticsearch
-      src: /dev/mapper/elasticsearch-data
-      state: mounted
-      fstype: xfs
+      - name: Formatting
+        filesystem: dev=/dev/mapper/elasticsearch-data fstype=xfs
+
+      - name: Mounting
+        mount:
+          path: /var/lib/elasticsearch
+          src: /dev/mapper/elasticsearch-data
+          state: mounted
+          fstype: xfs
 
   - name: Setting up permissions
     file:
@@ -168,58 +172,63 @@
 # Graylog configuration
 #
 - name: Graylog configuration
-  hosts: localhost
+  hosts: all
   tags: graylog
 
   tasks:
-  - name: VG listing
-    command: vgs --options name
-    register: vg_list
-
-  - when: vg_list.stdout.find('graylog') < 0
+  - name: Graylog$ | Volume management
+    when:
+    - lookup('env', 'ELASTICSEARCH_VOLUME') is defined
+    - lookup('env', 'ELASTICSEARCH_VOLUME') | length > 0
     block:
-    - name: Graylog volume detection
-      set_fact: graylog_device_short_id="{{ lookup('env', 'GRAYLOG_VOLUME')[:20] }}"
+      - name: VG listing
+        command: vgs --options name
+        register: vg_list
 
-    - name: Get graylog device name from /dev/disk/by-id/
-      register: cinder_volume
-      shell: find /dev/disk/by-id/ -name "*{{ graylog_device_short_id }}*"
+      - when: vg_list.stdout.find('graylog') < 0
+        block:
+        - name: Graylog volume detection
+          set_fact: graylog_device_short_id="{{ lookup('env', 'GRAYLOG_VOLUME')[:20] }}"
 
-    - name: Check graylog device result
-      when: cinder_volume.stdout_lines | length < 1
-      fail: msg="Cannot find any cinder device with ID {{ graylog_device_short_id }}"
+        - name: Get graylog device name from /dev/disk/by-id/
+          register: cinder_volume
+          shell: find /dev/disk/by-id/ -name "*{{ graylog_device_short_id }}*"
 
-    - name: Set full disk name
-      set_fact: graylog_device="{{ cinder_volume.stdout }}"
+        - name: Check graylog device result
+          when: cinder_volume.stdout_lines | length < 1
+          fail: msg="Cannot find any cinder device with ID {{ graylog_device_short_id }}"
 
-    - name: VG graylog creation
-      lvg: vg=graylog pvs="{{ graylog_device }}"
+        - name: Set full disk name
+          set_fact: graylog_device="{{ cinder_volume.stdout }}"
 
-  - name: LV creation
-    lvol: vg=graylog lv={{ item.lv }} size={{ item.size }}%VG
-    with_items:
-    - lv: data
-      size: 80
-    - lv: mongodb
-      size: 10
+        - name: VG graylog creation
+          lvg: vg=graylog pvs="{{ graylog_device }}"
 
-  - name: Formatting
-    filesystem: dev=/dev/mapper/graylog-{{ item }} fstype=xfs
-    with_items:
-    - data
-    - mongodb
+      - name: LV creation
+        lvol: vg=graylog lv={{ item.lv }} size={{ item.size }}%VG
+        with_items:
+        - lv: data
+          size: 80
+        - lv: mongodb
+          size: 10
 
-  - name: Volumes mounting
-    mount:
-      path: '{{ item.path }}'
-      src: '{{ item.src }}'
-      state: mounted
-      fstype: xfs
-    with_items:
-    - path: /var/lib/graylog
-      src: /dev/mapper/graylog-data
-    - path: /var/lib/mongodb
-      src: /dev/mapper/graylog-mongodb
+      - name: Formatting
+        filesystem: dev=/dev/mapper/graylog-{{ item }} fstype=xfs
+        with_items:
+        - data
+        - mongodb
+
+      - name: Volumes mounting
+        mount:
+          path: '{{ item.path }}'
+          src: '{{ item.src }}'
+          state: mounted
+          fstype: xfs
+        with_items:
+        - path: /var/lib/graylog
+          src: /dev/mapper/graylog-data
+        - path: /var/lib/mongodb
+          src: /dev/mapper/graylog-mongodb
 
   - name: Setting up permissions
     file:
@@ -254,7 +263,10 @@
     command: openstack container list
 
   - name: Get containers from swift
-    when: check_swift_result.stderr | length == 0
+    when:
+    - check_swift_result is defined
+    - check_swift_result.stderr is defined
+    - check_swift_result.stderr | length == 0
     include_role:
       name: ansible-get-swift-objects
     vars:
@@ -274,7 +286,7 @@
 # Post-configuration graylog
 #
 - name: Make Graylog ready to use
-  hosts: localhost
+  hosts: all
   tags: graylog
   gather_facts: no
   become: no

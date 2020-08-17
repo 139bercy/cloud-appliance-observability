@@ -1,0 +1,101 @@
+driver:
+  name: docker
+
+platforms:
+- name: centos8
+  registry:
+    url: docker.io/library
+  image: centos:8
+  privileged: true
+  dockerfile: Dockerfile.centos.j2
+  override_command: false
+  volumes:
+  - /sys/fs/cgroup:/sys/fs/cgroup:ro
+  - ${PWD}/..:/root/appliance:ro
+  tty: true
+  buildargs:
+    container: docker
+    http_proxy: ${http_proxy}
+    https_proxy: ${https_proxy}
+    no_proxy: 127.0.0.1,localhost,0.0.0.0
+  environment:
+    container: docker
+    http_proxy: ${http_proxy}
+    https_proxy: ${https_proxy}
+    no_proxy: 127.0.0.1,localhost,0.0.0.0
+- name: ubuntu18.04
+  registry:
+    url: docker.io/library
+  image: ubuntu:18.04
+  privileged: true
+  dockerfile: Dockerfile.ubuntu.j2
+  override_command: false
+  volumes:
+  - /sys/fs/cgroup:/sys/fs/cgroup:ro
+  - ${PWD}/..:/root/appliance:ro
+  tty: true
+  buildargs:
+    container: docker
+    http_proxy: ${http_proxy}
+    https_proxy: ${https_proxy}
+    no_proxy: 127.0.0.1,localhost,0.0.0.0
+  environment:
+    container: docker
+    http_proxy: ${http_proxy}
+    https_proxy: ${https_proxy}
+    no_proxy: 127.0.0.1,localhost,0.0.0.0
+
+provisioner:
+  name: ansible
+  options:
+    vvv: False
+  playbooks:
+    converge: ../../graylog.appliance.playbook.yml
+  ansible_args:
+  - -e@${PWD}/../etc/graylog.variables.yml
+  - -e bootstrap_http_proxy_packages=${HTTP_PROXY}
+  env:
+    #BACK_IP:
+    #CONSUL_DATACENTER:
+    #CONSUL_DNS_DOMAIN:
+    #CONSUL_ENCRYPT:
+    #CONSUL_SERVERS:
+    CONSUL_USAGE: false
+    #CONTAINERS_VOLUME:
+    #ETC_PATH:
+    GRAYLOG_ADMIN_NAME: molecule
+    GRAYLOG_ADMIN_PASSWORD: molecule
+    GRAYLOG_ENDPOINT_URL: http://molecule.local/
+    #GRAYLOG_VOLUME:
+    #http_proxy: ${http_proxy}
+    HTTP_PROXY: ${HTTP_PROXY}
+    #INFLUXDB_BUCKET:
+    #INFLUXDB_ENDPOINT:
+    #INFLUXDB_ORG:
+    #INFLUXDB_TOKEN:
+    #no_proxy: localhost,127.0.0.1,0.0.0.0
+    NO_PROXY: localhost,127.0.0.1,0.0.0.0
+    #OS_AUTH_URL:
+    #OS_IDENTITY_API_VERSION:
+    #OS_INTERFACE:
+    #OS_PASSWORD:
+    #OS_PROJECT_DOMAIN_ID:
+    #OS_PROJECT_ID:
+    #OS_PROJECT_NAME:
+    #OS_REGION_NAME:
+    #OS_USER_DOMAIN_NAME:
+    #OS_USERNAME:
+    #PLAYBOOK:
+    REPO_PATH: /root/appliance
+    #SYSLOG_HOSTNAME:
+    #SYSLOG_LOG_FORMAT:
+    #SYSLOG_PORT:
+    #SYSLOG_PROTOCOL:
+
+#lint: |
+#  set -e
+#  yamllint .
+#  ansible-lint
+#  flake8
+
+

@@ -7,7 +7,7 @@
 
   handlers:
   - name: reload consul
-    command: /usr/local/bin/consul reload
+    command: consul reload
 
   tasks:
   - name: Bootstrap system using syslog-ng

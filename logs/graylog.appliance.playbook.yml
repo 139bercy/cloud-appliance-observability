@@ -274,6 +274,18 @@
       swift_objects_packages_container:
       swift_objects_binaries_container:
 
+  - name: Pull images and deal with poor internet connection
+    with_items: '{{ podman_containers }}'
+    register: pull_image
+    until: pull_image is success
+    retries: 5
+    delay: 30
+    shell: podman pull {{ item.image }}
+    environment:
+      https_proxy: '{{ podman_https_proxy }}'
+      http_proxy: '{{ podman_http_proxy }}'
+      no_proxy: '{{ podman_http_no_proxy }}'
+
   - name: Start the POD
     with_items: '{{ podman_pods }}'
     service: name={{ item.name }}.pod.service state=started enabled=yes

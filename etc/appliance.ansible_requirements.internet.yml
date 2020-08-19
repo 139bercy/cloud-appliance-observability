@@ -4,7 +4,7 @@
 
 - name: ansible-consul
   src: git+https://github.com/mgrzybek/ansible-consul
-  version: v1.0
+  version: 724922ddfb6a666bd6e6bea6ee7299e3c0f97502
 
 - name: ansible-dnsmasq
   src: git+https://github.com/mgrzybek/ansible-dnsmasq

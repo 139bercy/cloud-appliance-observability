@@ -104,6 +104,10 @@ curl -m1 -vks ${git_repo_url} > /dev/null
 git clone -b ${git_repo_checkout} ${git_repo_url} $REPO_PATH || exit 1
 
 which setenforce && setenforce 0
+
+# Wait for udev to complete pending events (populating /dev/disk/ for example)
+time udevadm settle
+
 . $REPO_PATH/logs/graylog.appliance.autoconf.sh
 
 # Stop secure shell

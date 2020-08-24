@@ -20,7 +20,7 @@
 
 - name: ansible-podman
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-podman
-  version: v1.0
+  version: 0fdd76cccea21f37e5a2f0a16daba58a67042806
 
 - name: ansible-get-swift-objects
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-get-swift-objects

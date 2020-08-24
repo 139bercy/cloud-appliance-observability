@@ -148,7 +148,7 @@ telegraf_main_config:
 graylog_login_admin_local: "{{ lookup('env', 'GRAYLOG_ADMIN_NAME') }}"
 graylog_root_password: "{{ lookup('env', 'GRAYLOG_ADMIN_PASSWORD') }}"
 
-graylog_api: "http://0.0.0.0:80{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') | urlsplit('path') }}/api"
+graylog_api: "http://0.0.0.0:80{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') | urlsplit('path') | regex_replace('/$', '') }}/api"
 
 graylog_default_index_set:
   title: Default index set

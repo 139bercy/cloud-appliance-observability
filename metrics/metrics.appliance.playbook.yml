@@ -5,10 +5,6 @@
   hosts: all
   tags: os-ready
 
-  handlers:
-  - name: reload consul
-    command: consul reload
-
   tasks:
   - name: Bootstrap system using syslog-ng
     when:
@@ -63,17 +59,6 @@
     - name: Start consul role
       include_role:
         name: ansible-consul
-
-    - name: Set consul services
-      notify: reload consul
-      copy:
-        content: '{{ item.content }}'
-        dest: /etc/consul.d/{{ item.name }}.json
-      with_items:
-      - name: influxdb
-        content: '{{ influxdb_consul_service[0] | to_nice_json }}'
-      - name: grafana
-        content: '{{ grafana_consul_service[0] | to_nice_json }}'
 
 ###############################################################################
 # Containers
@@ -147,6 +132,10 @@
 - name: Grafana, InfluxDB and Traefik deployment
   hosts: all
   tags: metrics
+
+  handlers:
+  - name: reload consul
+    command: consul reload
 
   pre_tasks:
   - name: InfluxDB | InfluxDB system tasks
@@ -301,6 +290,15 @@
     - name: InfluxDB | Start the container
       service: name={{ appliance_container_influxdb_standalone.name }}.container.service state=started enabled=yes
 
+    - name: InfluxDB | Set consul service
+      notify: reload consul
+      copy:
+        content: '{{ item.content }}'
+        dest: /etc/consul.d/{{ item.name }}.json
+      with_items:
+      - name: influxdb
+        content: '{{ influxdb_consul_service[0] | to_nice_json }}'
+
   - name: Grafana | Start Grafana + InfluxDB + Traefik services
     when: lookup('env', 'GRAFANA_USAGE' ) | lower == 'true'
     block:
@@ -339,6 +337,15 @@
       vars:
         podman_pods: '{{ appliance_pods }}'
         podman_containers: '{{ appliance_containers }}'
+
+    - name: Grafana | Set consul service
+      notify: reload consul
+      copy:
+        content: '{{ item.content }}'
+        dest: /etc/consul.d/{{ item.name }}.json
+      with_items:     
+      - name: grafana
+        content: '{{ grafana_consul_service[0] | to_nice_json }}'
 
 ###############################################################################
 # Grafana / InfluxDB configuration

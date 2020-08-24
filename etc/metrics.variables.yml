@@ -306,6 +306,8 @@ influxdb_consul_service:
     - appliance
     - "{{ lookup('env', 'TRAEFIK_CONSUL_PREFIX') }}.enable=true"
     - "{{ lookup('env', 'TRAEFIK_CONSUL_PREFIX') }}.http.routers.influxdb.rule=Host(`{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('hostname') }}`) && PathPrefix(`{% if lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') | length == 0 %}/{% else %}{{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') }}{% endif %}`)"
+    - "{{ lookup('env', 'TRAEFIK_CONSUL_PREFIX') }}.http.middlewares.influxdb.stripprefix.prefixes={{ lookup('env', 'METRICS_ENDPOINT_URL') | urlsplit('path') }}"
+    - "{{ lookup('env', 'TRAEFIK_CONSUL_PREFIX') }}.http.routers.influxdb.middlewares=influxdb"
     port: 80
     enable_tag_override: false
     checks:

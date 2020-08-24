@@ -310,6 +310,6 @@ graylog_consul_service:
     port: 80
     enable_tag_override: false
     checks:
-    - http: "{{ graylog_api }}/system/lbstatus
+    - http: "{{ graylog_api }}/system/lbstatus"
       interval: 60s
 

@@ -529,6 +529,18 @@
     set_fact:
       influx_token: '{{ awk_result.stdout }}'
 
-  - name: Install telegraf client
+  - name: Telegraf | Install telegraf client (with grafana metrics)
+    when: lookup('env', 'GRAFANA_USAGE' ) | lower == 'true'
+    include_role:
+      name: ansible-telegraf
+    vars:
+      telegraf_custom_inputs:
+        - name: grafana
+          plugin: prometheus
+          options:
+              - urls = ["http://127.0.0.1/grafana/metrics"]
+
+  - name: Telegraf | Install telegraf client (without grafana metrics)
+    when: lookup('env', 'GRAFANA_USAGE' ) | lower == 'false'
     include_role:
       name: ansible-telegraf

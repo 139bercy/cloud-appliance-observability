@@ -328,11 +328,6 @@ telegraf_output_influxdbv2_config:
   exclude_bucket_tag: false
   insecure_skip_verify: false
 
-telegraf_custom_inputs:
-- name: grafana
-  plugin: prometheus
-  options:
-  - urls = ["http://127.0.0.1/grafana/metrics"]
 
 telegraf_influxdb_listener_config:
   service_address: :8086

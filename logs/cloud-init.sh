@@ -106,10 +106,22 @@ git clone -b ${git_repo_checkout} ${git_repo_url} $REPO_PATH || exit 1
 which setenforce && setenforce 0
 
 # Wait for udev to complete pending events (populating /dev/disk/ for example)
+time udevadm trigger
+ls -l /dev/disk/by-id | awk '/virtio/'
 time udevadm settle
+ls -l /dev/disk/by-id | awk '/virtio/'
 
 . $REPO_PATH/logs/graylog.appliance.autoconf.sh
 
 # Stop secure shell
 systemctl stop ssh
 systemctl disable ssh
+
+# Sending logs to swift
+swift upload \
+	--object-name "$HOSTNAME.cloud-init.$(date -u +"%Y-%m-%dT%H:%M:%SZ").log" \
+	$LOGS_CONTAINER /var/log/cloud-init-output.log
+journalctl | swift upload \
+	--object-name "$HOSTNAME.journal.$(date -u +"%Y-%m-%dT%H:%M:%SZ").log" \
+	$LOGS_CONTAINER -
+

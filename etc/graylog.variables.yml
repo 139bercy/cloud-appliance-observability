@@ -312,4 +312,5 @@ graylog_consul_service:
     checks:
     - http: "{{ graylog_api }}/system/lbstatus"
       interval: 60s
+      timeout: 30s
 

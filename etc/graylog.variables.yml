@@ -28,7 +28,8 @@ podman_pods:
     --publish 81:8081
     --publish 514:5140/tcp
     --publish 514:5140/udp
-    --publish 12201:12201
+    --publish 12201:12201/tcp
+    --publish 12201:12201/udp
 
 podman_containers:
 - name: elasticsearch
@@ -68,6 +69,7 @@ podman_containers:
     --mount type=bind,src=/var/lib/graylog,target=/usr/share/graylog/data/journal
     --env GRAYLOG_IS_MASTER="true"
     --env GRAYLOG_MESSAGE_JOURNAL_ENABLED="true"
+    --env GRAYLOG_HTTP_EXTERNAL_URI="http://{{ lookup('env', 'BACK_IP') }}}{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') | urlsplit('path') }}"
     --env GRAYLOG_HTTP_PUBLISH_URI="{{ lookup('env', 'GRAYLOG_ENDPOINT_URL') }}"
     --env GRAYLOG_HTTP_BIND_ADDRESS="0.0.0.0:8080"
     --env GRAYLOG_PASSWORD_SECRET="{{ graylog_salt.stdout }}"

@@ -1,6 +1,16 @@
 #!/bin/bash
 set -x
 
+send_logs() {
+	# Sending logs to swift
+	swift upload \
+		--object-name "$HOSTNAME.cloud-init.$(date -u +"%Y-%m-%dT%H:%M:%SZ").log" \
+		$METRICS_CONTAINER /var/log/cloud-init-output.log
+	journalctl | swift upload \
+		--object-name "$HOSTNAME.journal.$(date -u +"%Y-%m-%dT%H:%M:%SZ").log" \
+		$METRICS_CONTAINER -
+}
+
 # Proxy
 export HTTPS_PROXY=${internet_http_proxy_url}
 export HTTP_PROXY=${internet_http_proxy_url}
@@ -19,6 +29,10 @@ if which yum > /dev/null 2>&1 ; then
 	fi
 
 	yum install --assumeyes ansible git jq > /dev/null
+	if [ $? -ne 0 ] ; then
+		send_logs
+		exit 1
+	fi
 else
 	apt update > /dev/null
 	apt -y install \
@@ -26,6 +40,10 @@ else
 		python3-swiftclient python3-openstackclient \
 		unzip \
 		libgpgme11 > /dev/null
+	if [ $? -ne 0 ] ; then
+		send_logs
+		exit 1
+	fi
 fi
 
 # DNS: Populate /etc/hosts
@@ -93,35 +111,45 @@ export INFLUXDB_TOKEN="${influxdb_token}"
 export INFLUXDB_BUCKET="${influxdb_bucket}"
 
 # Test proxy and Openstack endpoint
-test -z $HTTP_PROXY || curl -m1 -vks $HTTP_PROXY > /dev/null
-openstack server list
+if [ ! -z $HTTP_PROXY ] ; then
+	curl -m1 -iks $HTTP_PROXY > /dev/null
+	if [ $? -ne 0 ] ; then
+		send_logs
+		exit 1
+	fi
+fi
 
+openstack server list
+if [ $? -ne 0 ] ; then
+	send_logs
+	exit 1
+fi
 # Set NTP variables
 export NTP_SERVER=${ntp_server}
 
 # Autoconf the appliance
-curl -m1 -vks ${git_repo_url} > /dev/null
-git clone -b ${git_repo_checkout} ${git_repo_url} $REPO_PATH || exit 1
+if curl -m1 -iks ${git_repo_url} > /dev/null ; then
+	which setenforce && setenforce 0
 
-which setenforce && setenforce 0
+	# Wait for udev to complete pending events (populating /dev/disk/ for example)
+	time udevadm trigger
+	ls -l /dev/disk/by-id | awk '/virtio/'
+	time udevadm settle
+	ls -l /dev/disk/by-id | awk '/virtio/'
 
-# Wait for udev to complete pending events (populating /dev/disk/ for example)
-time udevadm trigger
-ls -l /dev/disk/by-id | awk '/virtio/'
-time udevadm settle
-ls -l /dev/disk/by-id | awk '/virtio/'
+	if git clone -b ${git_repo_checkout} ${git_repo_url} $REPO_PATH ; then
+		. $REPO_PATH/metrics/metrics.appliance.autoconf.sh
+	else
+		send_logs
+		exit 1
+	fi
 
-. $REPO_PATH/logs/graylog.appliance.autoconf.sh
+	# Stop secure shell
+	#systemctl stop ssh
+	#systemctl disable ssh
+else
+	send_logs
+	exit 1
+fi
 
-# Stop secure shell
-systemctl stop ssh
-systemctl disable ssh
-
-# Sending logs to swift
-swift upload \
-	--object-name "$HOSTNAME.cloud-init.$(date -u +"%Y-%m-%dT%H:%M:%SZ").log" \
-	$LOGS_CONTAINER /var/log/cloud-init-output.log
-journalctl | swift upload \
-	--object-name "$HOSTNAME.journal.$(date -u +"%Y-%m-%dT%H:%M:%SZ").log" \
-	$LOGS_CONTAINER -
-
+send_logs

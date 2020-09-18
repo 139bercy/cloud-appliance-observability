@@ -138,7 +138,7 @@ telegraf_output_influxdbv2_config:
   token: "{{ lookup('env', 'INFLUXDB_TOKEN') }}"
   bucket: "{{ lookup('env', 'INFLUXDB_BUCKET') }}"
   bucket_tag: ''
-  org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
+  org: "{{ lookup('env', 'INFLUXDB_ORGANISATION') }}"
   exclude_bucket_tag: false
   insecure_skip_verify: false
 

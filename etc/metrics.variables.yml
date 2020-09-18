@@ -159,7 +159,7 @@ dnsmasq_forwarding_zones:
 grafana_datasources:
   apiVersion: 1
   datasources:
-  - name: '{{ influxdb_org }} - {{ item.name }}'
+  - name: '{{ influxdb_organisation }} - {{ item.name }}'
     type: grafana-influxdb-flux-datasource
     typeLogoUrl: public/plugins/grafana-influxdb-flux-datasource/img/influxdb_logo.svg
     access: proxy
@@ -171,7 +171,7 @@ grafana_datasources:
     isDefault: false
     jsonData:
       bucket: '{{ item.name }}'
-      organization: '{{ influxdb_org }}'
+      organization: '{{ influxdb_organisation }}'
       url: http://127.0.0.1:{{ influxdb_conf.bind.port }}
     secureJsonData:
       token: '{{ grafana_influxdb_token }}'
@@ -241,59 +241,59 @@ influxdb_api:
 
 influxdb_buckets:
 - name: haproxy
-  org: '{{ influxdb_org }}'
+  org: '{{ influxdb_organisation }}'
   retention_hours: '{{ influxdb_retention }}'
   create_write_token: true
 - name: traefik
-  org: '{{ influxdb_org }}'
+  org: '{{ influxdb_organisation }}'
   retention_hours: '{{ influxdb_retention }}'
   create_write_token: true
 - name: postgresql
-  org: '{{ influxdb_org }}'
+  org: '{{ influxdb_organisation }}'
   retention_hours: '{{ influxdb_retention }}'
   create_write_token: true
 - name: apache-php
-  org: '{{ influxdb_org }}'
+  org: '{{ influxdb_organisation }}'
   retention_hours: '{{ influxdb_retention }}'
   create_write_token: true
 - name: nginx
-  org: '{{ influxdb_org }}'
+  org: '{{ influxdb_organisation }}'
   retention_hours: '{{ influxdb_retention }}'
   create_write_token: true
 - name: mongodb
-  org: '{{ influxdb_org }}'
+  org: '{{ influxdb_organisation }}'
   retention_hours: '{{ influxdb_retention }}'
   create_write_token: true
 - name: appliance-metrics
-  org: '{{ influxdb_org }}'
+  org: '{{ influxdb_organisation }}'
   retention_hours: '{{ influxdb_retention }}'
 - name: appliance-logs
-  org: '{{ influxdb_org }}'
+  org: '{{ influxdb_organisation }}'
   retention_hours: '{{ influxdb_retention }}'
 - name: appliance-management
-  org: '{{ influxdb_org }}'
+  org: '{{ influxdb_organisation }}'
   retention_hours: '{{ influxdb_retention }}'
   create_write_token: true
 - name: memcache
-  org: '{{ influxdb_org }}'
+  org: '{{ influxdb_organisation }}'
   retention_hours: '{{ influxdb_retention }}'
   create_write_token: true
 - name: varnish
-  org: '{{ influxdb_org }}'
+  org: '{{ influxdb_organisation }}'
   retention_hours: '{{ influxdb_retention }}'
   create_write_token: true
 - name: jmeter
-  org: '{{ influxdb_org }}'
+  org: '{{ influxdb_organisation }}'
   retention_hours: '{{ influxdb_retention }}'
   create_write_token: true
 - name: matomo
-  org: '{{ influxdb_org }}'
+  org: '{{ influxdb_organisation }}'
   retention_hours: '{{ influxdb_retention }}'
   create_write_token: true
 
 influxdb_scrapers:
 - name: influxdb
-  org: '{{ influxdb_org }}'
+  org: '{{ influxdb_organisation }}'
   bucket: appliance-metrics
   type: prometheus
   url: http://127.0.0.1:{{ influxdb_conf.bind.port }}/metrics
@@ -326,7 +326,7 @@ telegraf_output_influxdbv2_config:
   token: '{{ influx_token }}'
   bucket: appliance-metrics
   bucket_tag: ''
-  org: '{{ influxdb_org }}'
+  org: '{{ influxdb_organisation }}'
   exclude_bucket_tag: false
   insecure_skip_verify: false
 

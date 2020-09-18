@@ -115,7 +115,7 @@ variable "influxdb_endpoint" {
   default     = ""
 }
 
-variable "influxdb_org" {
+variable "influxdb_organisation" {
   type        = string
   description = "InfluxDB organization to use"
   default     = ""

@@ -365,7 +365,7 @@
     set_fact:
       influxdb_admin: "{{ lookup('env', 'INFLUXDB_ADMIN_NAME') }}"
       influxdb_password: "{{ lookup('env', 'INFLUXDB_ADMIN_PASSWORD') }}"
-      influxdb_org: "{{ lookup('env', 'INFLUXDB_ORG') }}"
+      influxdb_organisation: "{{ lookup('env', 'INFLUXDB_ORGANISATION') }}"
       influxdb_retention: "{{ lookup('env', 'INFLUXDB_RETENTION_HOURS') }}"
       metrics_container: "{{ lookup('env', 'METRICS_CONTAINER') }}"
       swift_available: false
@@ -401,7 +401,7 @@
               --host=http://localhost:{{ influxdb_conf.bind.port }} \
               setup -f \
                   --bucket default \
-                  --org {{ influxdb_org }} \
+                  --org {{ influxdb_organisation }} \
                   --password {{ influxdb_password }} \
                   --retention {{ influxdb_retention }}h \
                   --username {{ influxdb_admin }}
@@ -461,7 +461,7 @@
         podman exec -ti influxdb \
             influx \
                 --host=http://localhost:{{ influxdb_conf.bind.port }} \
-                auth create --org {{ influxdb_org }} --read-buckets \
+                auth create --org {{ influxdb_organisation }} --read-buckets \
             | awk '/active/ {print $2}'
 
     - name: Grafana | Set facts
@@ -498,7 +498,7 @@
 
     - name: Grafana | Create a datasource per bucket
       when: >
-        "'{{ influxdb_org }} - {{ item.name }}'
+        "'{{ influxdb_organisation }} - {{ item.name }}'
           not in grafana_existing_datasources.json | json_query('[*].name')"
       with_items: '{{ influxdb_buckets }}'
       environment:
@@ -528,7 +528,7 @@
     register: awk_result
     shell: >
       awk -F, \
-          '/{{ influxdb_org }},appliance-metrics,write/ {print $NF}' \
+          '/{{ influxdb_organisation }},appliance-metrics,write/ {print $NF}' \
           {{ influxdb_api.tokens_output_file }}
 
   - name: Telegraf | Set facts

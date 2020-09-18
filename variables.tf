@@ -108,12 +108,6 @@ variable "influxdb_endpoint" {
   default     = ""
 }
 
-variable "influxdb_org" {
-  type        = string
-  description = "InfluxDB organization to use"
-  default     = ""
-}
-
 variable "influxdb_token" {
   type        = string
   description = "InfluxDB token to use to send metics"

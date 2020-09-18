@@ -70,7 +70,7 @@ provisioner:
     HTTP_PROXY: ${HTTP_PROXY}
     INFLUXDB_ADMIN_NAME: admin
     INFLUXDB_ADMIN_PASSWORD: admin
-    INFLUXDB_ORG: molecule
+    INFLUXDB_ORGANISATION: molecule
     INFLUXDB_RETENTION_HOURS: 24
     #METRICS_CONTAINER:
     METRICS_ENDPOINT_URL: http://molecule.local

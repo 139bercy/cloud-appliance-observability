@@ -71,7 +71,7 @@ provisioner:
     HTTP_PROXY: ${HTTP_PROXY}
     #INFLUXDB_BUCKET:
     #INFLUXDB_ENDPOINT:
-    #INFLUXDB_ORG:
+    #INFLUXDB_ORGANISATION:
     #INFLUXDB_TOKEN:
     #no_proxy: localhost,127.0.0.1,0.0.0.0
     NO_PROXY: localhost,127.0.0.1,0.0.0.0

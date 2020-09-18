@@ -56,7 +56,7 @@ resource "openstack_compute_instance_v2" "appliance-logs" {
       influxdb_usage    = var.influxdb_usage
       influxdb_endpoint = var.influxdb_endpoint
       influxdb_token    = var.influxdb_token
-      influxdb_org      = var.influxdb_org
+      influxdb_organisation      = var.influxdb_organisation
       influxdb_bucket   = var.influxdb_bucket
 
       ntp_server = var.ntp_server

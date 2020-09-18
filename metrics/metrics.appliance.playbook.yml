@@ -292,6 +292,9 @@
 
     - name: InfluxDB | Set consul service
       notify: reload consul
+      when:
+      - lookup('env', 'CONSUL_USAGE') | lower == 'true'
+      - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
       copy:
         content: '{{ item.content }}'
         dest: /etc/consul.d/{{ item.name }}.json
@@ -340,6 +343,9 @@
 
     - name: Grafana | Set consul service
       notify: reload consul
+      when:
+      - lookup('env', 'CONSUL_USAGE') | lower == 'true'
+      - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
       copy:
         content: '{{ item.content }}'
         dest: /etc/consul.d/{{ item.name }}.json

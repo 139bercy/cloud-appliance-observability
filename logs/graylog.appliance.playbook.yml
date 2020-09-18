@@ -48,6 +48,9 @@
 
     - name: Set consul services
       notify: reload consul
+      when:
+      - lookup('env', 'CONSUL_USAGE') | lower == 'true'
+      - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
       copy:
         content: '{{ item.content }}'
         dest: /etc/consul.d/{{ item.name }}.json

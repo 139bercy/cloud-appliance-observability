@@ -28,7 +28,19 @@ if which yum > /dev/null 2>&1 ; then
 		grep -q proxy= /etc/yum.conf || echo "proxy=$HTTP_PROXY" >> /etc/yum.conf
 	fi
 
-	yum install --assumeyes ansible git jq unzip > /dev/null
+	test -f /etc/yum.repos.d/centos.repo && sed -i 's/enabled=0/enabled=1/' /etc/yum.repos.d/centos.repo
+
+	yum install --assumeyes \
+		$(yum search centos-release-openstack- | awk '/centos-release-openstack-/ {print $1}' | sort | tail -n1)
+	if [ $? -ne 0 ] ; then
+		send_logs
+		exit 1
+	fi
+
+	yum install --assumeyes \
+		ansible git jq \
+		python3-swift python3-openstackclient \
+		unzip > /dev/null
 	if [ $? -ne 0 ] ; then
 		send_logs
 		exit 1
@@ -100,7 +112,7 @@ export GRAFANA_ADMIN_PASSWORD="${grafana_admin_password}"
 # Set the InfluxDB credentials
 export INFLUXDB_ADMIN_NAME="${influxdb_admin_name}"
 export INFLUXDB_ADMIN_PASSWORD="${influxdb_admin_password}"
-export INFLUXDB_ORG="${influxdb_organisation}"
+export INFLUXDB_ORGANISATION="${influxdb_organisation}"
 export INFLUXDB_RETENTION_HOURS="${influxdb_retention_hours}"
 # Set metrics endpoint
 export METRICS_ENDPOINT_URL="${metrics_endpoint_url}"

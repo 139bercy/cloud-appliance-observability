@@ -196,6 +196,9 @@
           state: mounted
           fstype: xfs
 
+  - name: Creating user
+    user: name=elasticsearch shell=/usr/sbin/nologin uid=1300
+
   - name: Setting up permissions
     file:
       path: /var/lib/elasticsearch
@@ -211,7 +214,7 @@
   tags: graylog
 
   tasks:
-  - name: Graylog$ | Volume management
+  - name: Graylog | Volume management
     when:
     - lookup('env', 'ELASTICSEARCH_VOLUME') is defined
     - lookup('env', 'ELASTICSEARCH_VOLUME') | length > 0
@@ -264,6 +267,14 @@
           src: /dev/mapper/graylog-data
         - path: /var/lib/mongodb
           src: /dev/mapper/graylog-mongodb
+
+  - name: Creating users
+    user: name={{ item.name }} uid={{ item.uid }} shell=/usr/sbin/nologin
+    with_items:
+      - name: graylog
+        uid: 1100
+      - name: mongodb
+        uid: 1200
 
   - name: Setting up permissions
     file:

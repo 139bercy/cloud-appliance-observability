@@ -184,7 +184,10 @@
         with_items:
         - path: /var/lib/influxdb
           src: /dev/mapper/metrics-influxdb
- 
+
+  - name: Creating user
+    user: name=influxdb uid=1200 shell=/usr/sbin/nologin
+
   - name: InfluxDB | Setting up permissions
     file:
       path: '{{ item.path }}'
@@ -231,6 +234,14 @@
       with_items:
       - path: /var/lib/grafana
         src: /dev/mapper/metrics-grafana
+
+  - name: Creating users
+    user: name={{ item.name }} uid={{ item.uid }} shell=/usr/sbin/nologin
+    with_items:
+      - name: grafana
+        uid: 1100
+      - name: traefik
+        uid: 1300
 
     - name: Grafana | Setting up permissions
       file:

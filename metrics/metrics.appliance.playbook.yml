@@ -235,9 +235,9 @@
       - path: /var/lib/grafana
         src: /dev/mapper/metrics-grafana
 
-  - name: Creating users
-    user: name={{ item.name }} uid={{ item.uid }} shell=/usr/sbin/nologin
-    with_items:
+    - name: Creating users
+      user: name={{ item.name }} uid={{ item.uid }} shell=/usr/sbin/nologin
+      with_items:
       - name: grafana
         uid: 1100
       - name: traefik
@@ -259,9 +259,9 @@
       - path: /var/lib/grafana/plugins
         state: directory
         owner: 1100
-      - path: /etc/traefik
-        state: directory
-        owner: 1300
+        - path: /etc/traefik
+          state: directory
+          owner: 1300
 
     - name: Grafana | Install custom plugins
       with_items: '{{ grafana_plugins }}'

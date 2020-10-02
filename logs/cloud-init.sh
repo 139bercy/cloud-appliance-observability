@@ -138,7 +138,7 @@ if curl -m1 -iks ${git_repo_url} > /dev/null ; then
 	ls -l /dev/disk/by-id | awk '/virtio/'
 
 	if git clone -b ${git_repo_checkout} ${git_repo_url} $REPO_PATH ; then
-		. $REPO_PATH/metrics/metrics.appliance.autoconf.sh
+		. $REPO_PATH/logs/graylog.appliance.autoconf.sh
 	else
 		send_logs
 		exit 1

@@ -259,9 +259,9 @@
       - path: /var/lib/grafana/plugins
         state: directory
         owner: 1100
-        - path: /etc/traefik
-          state: directory
-          owner: 1300
+      - path: /etc/traefik
+        state: directory
+        owner: 1300
 
     - name: Grafana | Install custom plugins
       with_items: '{{ grafana_plugins }}'

@@ -5,10 +5,10 @@ send_logs() {
 	# Sending logs to swift
 	swift upload \
 		--object-name "$HOSTNAME.cloud-init.$(date -u +"%Y-%m-%dT%H:%M:%SZ").log" \
-		$METRICS_CONTAINER /var/log/cloud-init-output.log
+		$LOGS_CONTAINER /var/log/cloud-init-output.log
 	journalctl | swift upload \
 		--object-name "$HOSTNAME.journal.$(date -u +"%Y-%m-%dT%H:%M:%SZ").log" \
-		$METRICS_CONTAINER -
+		$LOGS_CONTAINER -
 }
 
 # Proxy

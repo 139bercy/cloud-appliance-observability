@@ -8,4 +8,3 @@ for b in $(egrep -v "^#" etc/binaries.txt) ; do
 	swift upload --object-name $_name $SWIFT_BINARIES /tmp/$_name
 	rm -f /tmp/$_name
 done
-

@@ -97,14 +97,14 @@ export OS_PASSWORD="${os_password}"
 export OS_REGION_NAME="${os_region_name}"
 export OS_INTERFACE=public
 export OS_IDENTITY_API_VERSION=3
- 
+
 # Swift container
 export METRICS_CONTAINER=${metrics_container}
 
 # Set the volumes' IDs
 export CONTAINERS_VOLUME=${cinder_containers_volume}
 export METRICS_VOLUME=${cinder_metrics_volume}
- 
+
 # Set the Grafana credentials
 export GRAFANA_USAGE="${grafana_usage}"
 export GRAFANA_ADMIN_NAME="${grafana_admin_name}"
@@ -116,7 +116,7 @@ export INFLUXDB_ORGANISATION="${influxdb_organisation}"
 export INFLUXDB_RETENTION_HOURS="${influxdb_retention_hours}"
 # Set metrics endpoint
 export METRICS_ENDPOINT_URL="${metrics_endpoint_url}"
- 
+
 # Set Consul variables
 export CONSUL_USAGE="${consul_usage}"
 export CONSUL_DNS_DOMAIN="${consul_dns_domain}"

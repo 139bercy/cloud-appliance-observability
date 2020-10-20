@@ -2,117 +2,170 @@
 # OS-Ready
 #
 - name: Nodes configuration
-  hosts: localhost
+  hosts: all
   tags: os-ready
 
   handlers:
-    - name: reload consul
-      command: /usr/local/bin/consul reload
+  - name: reload consul
+    command: consul reload
+
+  - name: restart netdata
+    service:
+      name: netdata
+      state: restarted
 
   roles:
-    - role: ansible-bootstrap-system
+  - role: ansible-bootstrap-system
 
   post_tasks:
-    - name: Install consul agent
+  - name: Install consul agent
+    when:
+    - lookup('env', 'CONSUL_USAGE') | lower == 'true'
+    - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
+    block:
+    - name: Check Swift endpoint
+      ignore_errors: true
+      register: check_swift_result
+      command: openstack container list
+
+    - name: Get binaries from swift
+      when: check_swift_result.stderr | length == 0
+      include_role:
+        name: ansible-get-swift-objects
+      vars:
+        swift_objects_oci_repo_container:
+        swift_objects_packages_container:
+        swift_objects_binaries_container: binaries
+
+    - name: Install dnsmasq service
+      when: lookup('env', 'CONSUL_DNS_SERVER') | length > 0
+      include_role:
+        name: ansible-dnsmasq
+
+    - name: Start consul role
+      include_role:
+        name: ansible-consul
+
+    - name: Set consul services
+      notify: reload consul
       when:
-          - lookup('env', 'CONSUL_USAGE') | lower == 'true'
-          - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
-      block:
-        - name: Install dnsmasq service
-          when: lookup('env', 'CONSUL_DNS_SERVER') | length > 0
-          include_role:
-              name: ansible-dnsmasq
+      - lookup('env', 'CONSUL_USAGE') | lower == 'true'
+      - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
+      copy:
+        content: '{{ item.content }}'
+        dest: /etc/consul.d/{{ item.name }}.json
+      with_items:
+      - name: graylog
+        content: '{{ graylog_consul_service[0] | to_nice_json }}'
 
-        - name: Start consul role
-          include_role:
-              name: ansible-consul
+  - name: Netdata
+    when: ansible_pkg_mgr | lower == 'apt'
+    block:
+    - name: Netdata | Install package
+      package:
+        name: netdata
+        state: present
 
-        - name: Set consul services
-          notify: reload consul
-          copy:
-              content: "{{ item.content }}"
-              dest: "/etc/consul.d/{{ item.name }}.json"
-          with_items:
-              - name: graylog
-                content: "{{ graylog_consul_service[0] | to_nice_json }}"
+    - name: Netdata | Configure service
+      notify: restart netdata
+      lineinfile:
+        path: /etc/netdata/netdata.conf
+        regexp: ^(\s+)bind socket to IP =
+        line: \1bind socket to IP = {{ consul_bind }}
+
+    - name: Netdata | Configure consul service
+      when:
+      - lookup('env', 'CONSUL_USAGE') | lower == 'true'
+      - lookup('env', 'CONSUL_SERVERS').split(',') | length > 0
+      notify: reload consul
+      copy:
+        content: '{{ item.content }}'
+        dest: /etc/consul.d/{{ item.name }}.json
+      with_items:
+      - name: netdata
+        content: '{{ netdata_consul_service[0] | to_nice_json }}'
 
 ###############################################################################
 # Containers
 #
 - name: Containers runtime configuration
-  hosts: localhost
+  hosts: all
   tags: containers
 
   pre_tasks:
-    - name: Tuning mémoire
-      sysctl:
-        name: vm.max_map_count
-        value: 262144
-        sysctl_set: yes
-        state: present
+  - name: Tuning mémoire
+    sysctl:
+      name: vm.max_map_count
+      value: 262144
+      sysctl_set: yes
+      state: present
 
-    - name: Installing XFS tools
-      when: ansible_os_family | lower == 'debian'
-      apt: name=xfsprogs state=present
+  - name: Installing XFS tools
+    package: name=xfsprogs state=present
 
     # Containers
-    - when:
-        - lookup('env', 'CONTAINERS_VOLUME') is defined
-        - lookup('env', 'CONTAINERS_VOLUME') | length > 0
+  - when:
+    - lookup('env', 'CONTAINERS_VOLUME') is defined
+    - lookup('env', 'CONTAINERS_VOLUME') | length > 0
+    block:
+    - name: VG listing
+      command: vgs --options name
+      register: vg_list
+
+    - when: vg_list.stdout.find('containers') < 0
       block:
-        - name: VG listing
-          command: vgs --options name
-          register: vg_list
+      - name: Detect cinder volume used for containers storage
+        set_fact: containers_device_short_id="{{ lookup('env', 'CONTAINERS_VOLUME')[:20] }}"
 
-        - when: vg_list.stdout.find('containers') < 0
-          block:
-            - name: Detect cinder volume used for containers storage
-              set_fact: containers_device_short_id="{{ lookup('env', 'CONTAINERS_VOLUME')[:20] }}"
+      - name: Get containers device name from /dev/disk/by-id/
+        register: cinder_volume
+        shell: find /dev/disk/by-id/ -name "*{{ containers_device_short_id }}*"
 
-            - name: Get containers device name from /dev/disk/by-id/
-              register: cinder_volume
-              shell: find /dev/disk/by-id/ -name "*{{ containers_device_short_id }}*"
+      - name: Check containers device result
+        when: cinder_volume.stdout_lines | length < 1
+        fail: msg="Cannot find any cinder device with ID {{ containers_device_short_id }}"
 
-            - name: Check containers device result
-              when: cinder_volume.stdout_lines | length < 1
-              fail: msg="Cannot find any cinder device with ID {{ containers_device_short_id }}"
+      - name: Set full disk name (containers_device={{ cinder_volume.stdout }})
+        set_fact: containers_device="{{ cinder_volume.stdout }}"
 
-            - name: Set full disk name (containers_device={{ cinder_volume.stdout }})
-              set_fact: containers_device="{{ cinder_volume.stdout }}"
+      - name: Create VG called "containers"
+        lvg: vg=containers pvs="{{ containers_device }}"
 
-            - name: Create VG called "containers"
-              lvg: vg=containers pvs="{{ containers_device }}"
+      - name: Create LV containers/data
+        lvol: vg=containers lv=data size=80%VG
 
-        - name: Create LV containers/data
-          lvol: vg=containers lv=data size=80%VG
+      - name: Formatting containers-data LV
+        filesystem: dev=/dev/mapper/containers-data fstype=xfs
 
-        - name: Formatting containers-data LV
-          filesystem: dev=/dev/mapper/containers-data fstype=xfs
-
-        - name: Mounting containers-data LV
-          mount:
-            path: /var/run/containers
-            src: /dev/mapper/containers-data
-            state: mounted
-            fstype: xfs
+      - name: Mounting containers-data LV
+        mount:
+          path: /var/run/containers
+          src: /dev/mapper/containers-data
+          state: mounted
+          fstype: xfs
 
   roles:
-    - role: ansible-rclone
+  - role: ansible-rclone
 
 ###############################################################################
 # Elasticsearch configuration
 #
 - name: Elasticsearch configuration
-  hosts: localhost
+  hosts: all
   tags: elasticsearch
 
   tasks:
-    - name: VG listing
-      command: vgs --options name
-      register: vg_list
+  - name: Elasticsearch | Volume management
+    when:
+    - lookup('env', 'ELASTICSEARCH_VOLUME') is defined
+    - lookup('env', 'ELASTICSEARCH_VOLUME') | length > 0
+    block:
+      - name: VG listing
+        command: vgs --options name
+        register: vg_list
 
-    - when: vg_list.stdout.find('elasticsearch') < 0
-      block:
+      - when: vg_list.stdout.find('elasticsearch') < 0
+        block:
         - name: Elasticsearch volume detection
           set_fact: elasticsearch_device_short_id="{{ lookup('env', 'ELASTICSEARCH_VOLUME')[:20] }}"
 
@@ -130,40 +183,48 @@
         - name: VG elasticsearch creation
           lvg: vg=elasticsearch pvs="{{ elasticsearch_device }}"
 
-    - name: LV creation
-      lvol: vg=elasticsearch lv=data size=80%VG
+      - name: LV creation
+        lvol: vg=elasticsearch lv=data size=80%VG
 
-    - name: Formatting
-      filesystem: dev=/dev/mapper/elasticsearch-data fstype=xfs
+      - name: Formatting
+        filesystem: dev=/dev/mapper/elasticsearch-data fstype=xfs
 
-    - name: Mounting
-      mount:
-        path: /var/lib/elasticsearch
-        src: /dev/mapper/elasticsearch-data
-        state: mounted
-        fstype: xfs
+      - name: Mounting
+        mount:
+          path: /var/lib/elasticsearch
+          src: /dev/mapper/elasticsearch-data
+          state: mounted
+          fstype: xfs
 
-    - name: Setting up permissions
-      file:
-        path: /var/lib/elasticsearch
-        state: directory
-        owner: 1300
-        mode: 0755
+  - name: Creating user
+    user: name=elasticsearch shell=/usr/sbin/nologin uid=1300
+
+  - name: Setting up permissions
+    file:
+      path: /var/lib/elasticsearch
+      state: directory
+      owner: 1300
+      mode: 0755
 
 ###############################################################################
 # Graylog configuration
 #
 - name: Graylog configuration
-  hosts: localhost
+  hosts: all
   tags: graylog
 
   tasks:
-    - name: VG listing
-      command: vgs --options name
-      register: vg_list
+  - name: Graylog | Volume management
+    when:
+    - lookup('env', 'ELASTICSEARCH_VOLUME') is defined
+    - lookup('env', 'ELASTICSEARCH_VOLUME') | length > 0
+    block:
+      - name: VG listing
+        command: vgs --options name
+        register: vg_list
 
-    - when: vg_list.stdout.find('graylog') < 0
-      block:
+      - when: vg_list.stdout.find('graylog') < 0
+        block:
         - name: Graylog volume detection
           set_fact: graylog_device_short_id="{{ lookup('env', 'GRAYLOG_VOLUME')[:20] }}"
 
@@ -181,273 +242,315 @@
         - name: VG graylog creation
           lvg: vg=graylog pvs="{{ graylog_device }}"
 
-    - name: LV creation
-      lvol: vg=graylog lv={{ item.lv }} size={{ item.size }}%VG
-      with_items:
+      - name: LV creation
+        lvol: vg=graylog lv={{ item.lv }} size={{ item.size }}%VG
+        with_items:
         - lv: data
           size: 80
         - lv: mongodb
           size: 10
 
-    - name: Formatting
-      filesystem: dev=/dev/mapper/graylog-{{ item }} fstype=xfs
-      with_items:
+      - name: Formatting
+        filesystem: dev=/dev/mapper/graylog-{{ item }} fstype=xfs
+        with_items:
         - data
         - mongodb
 
-    - name: Volumes mounting
-      mount:
-        path: "{{ item.path }}"
-        src: "{{ item.src }}"
-        state: mounted
-        fstype: xfs
-      with_items:
+      - name: Volumes mounting
+        mount:
+          path: '{{ item.path }}'
+          src: '{{ item.src }}'
+          state: mounted
+          fstype: xfs
+        with_items:
         - path: /var/lib/graylog
           src: /dev/mapper/graylog-data
         - path: /var/lib/mongodb
           src: /dev/mapper/graylog-mongodb
 
-    - name: Setting up permissions
-      file:
-        path: "{{ item.path }}"
-        state: directory
-        owner: "{{ item.owner }}"
-        mode: 0755
-      with_items:
-        - path: /var/lib/graylog
-          state: directory
-          owner: 1100
-        - path: /var/lib/mongodb
-          state: directory
-          owner: 1200
+  - name: Creating users
+    user: name={{ item.name }} uid={{ item.uid }} shell=/usr/sbin/nologin
+    with_items:
+      - name: graylog
+        uid: 1100
+      - name: mongodb
+        uid: 1200
 
-    - name: Salt generation
-      register: graylog_salt
-      shell: head /dev/urandom | tr -dc A-Za-z0-9 | head -c 64
+  - name: Setting up permissions
+    file:
+      path: '{{ item.path }}'
+      state: directory
+      owner: '{{ item.owner }}'
+      mode: 0755
+    with_items:
+    - path: /var/lib/graylog
+      state: directory
+      owner: 1100
+    - path: /var/lib/mongodb
+      state: directory
+      owner: 1200
 
-    - name: Configure podman
-      include_role:
-        name: ansible-podman
+  - name: Salt generation
+    register: graylog_salt
+    shell: head /dev/urandom | tr -dc A-Za-z0-9 | head -c 64
 
-    - name: Start the POD
-      with_items: "{{ podman_pods }}"
-      service: name={{ item.name }}.pod.service state=started enabled=yes
+  - name: Configure podman
+    include_role:
+      name: ansible-podman
 
-    - name: Start the containers
-      with_items: "{{ podman_containers }}"
-      service: name={{ item.name }}.container.service state=started enabled=yes
+  - name: Install skopeo
+    package:
+      name: skopeo
+      state: present
+
+  - name: Check Swift endpoint
+    ignore_errors: true
+    register: check_swift_result
+    command: openstack container list
+
+  - name: Get containers from swift
+    when:
+    - check_swift_result is defined
+    - check_swift_result.stderr is defined
+    - check_swift_result.stderr | length == 0
+    include_role:
+      name: ansible-get-swift-objects
+    vars:
+      swift_objects_oci_repo_container: containers
+      swift_objects_packages_container:
+      swift_objects_binaries_container:
+
+  - name: Pull images and deal with poor internet connection
+    with_items: '{{ podman_containers }}'
+    register: pull_image
+    until: pull_image is success
+    retries: 5
+    delay: 30
+    shell: podman pull {{ item.image }}
+    environment:
+      https_proxy: '{{ podman_https_proxy }}'
+      http_proxy: '{{ podman_http_proxy }}'
+      no_proxy: '{{ podman_http_no_proxy }}'
+
+  - name: Start the POD
+    with_items: '{{ podman_pods }}'
+    service: name={{ item.name }}.pod.service state=started enabled=yes
+
+  - name: Start the containers
+    with_items: '{{ podman_containers }}'
+    service: name={{ item.name }}.container.service state=started enabled=yes
 
 ###############################################################################
 # Post-configuration graylog
 #
 - name: Make Graylog ready to use
-  hosts: localhost
+  hosts: all
   tags: graylog
   gather_facts: no
   become: no
 
   tasks:
-    - name: Wait for Graylog availability
-      register: graylog_health
-      until: graylog_health.json is defined and graylog_health.status == 200
-      retries: 100
+  - name: Wait for Graylog availability
+    register: graylog_health
+    until: graylog_health.json is defined and graylog_health.status == 200
+    retries: 100
+    delay: 5
+    uri:
+      url: '{{ graylog_api }}/cluster'
+      method: GET
+      user: '{{ graylog_login_admin_local }}'
+      password: '{{ graylog_root_password }}'
+      validate_certs: no
+      status_code:
+      - 200
+      - 503
+      headers:
+        X-Requested-By: ansible
+
+    ###########################################################################
+
+  - name: Indexes management
+    block:
+    - name: Get default index
+      register: graylog_index_sets
+      retries: 10
+      delay: 30
+      uri:
+        url: '{{ graylog_api }}/system/indices/index_sets'
+        method: GET
+        user: '{{ graylog_login_admin_local }}'
+        password: '{{ graylog_root_password }}'
+        validate_certs: no
+        timeout: 60
+        status_code:
+        - 200
+        headers:
+          X-Requested-By: ansible
+
+    - name: Set default retention policy
+      with_items: '{{ graylog_index_sets.json.index_sets }}'
+      when: item.title == "Default index set"
+      register: default_index_set_result
+      retries: 10
+      delay: 30
+      uri:
+        url: '{{ graylog_api }}/system/indices/index_sets/{{ item.id }}'
+        method: PUT
+        user: '{{ graylog_login_admin_local }}'
+        password: '{{ graylog_root_password }}'
+        body_format: json
+        body: '{{ graylog_default_index_set | to_json }}'
+        validate_certs: no
+        timeout: 60
+        status_code:
+        - 201
+        - 200
+        headers:
+          X-Requested-By: ansible
+
+    ###########################################################################
+
+  - name: Pipelines configuration
+    block:
+    - name: Retrieving configured rules
+      register: graylog_running_rules
+      retries: 10
+      delay: 30
+      uri:
+        url: '{{ graylog_api }}/system/pipelines/rule'
+        method: GET
+        user: '{{ graylog_login_admin_local }}'
+        password: '{{ graylog_root_password }}'
+        validate_certs: no
+        timeout: 60
+        status_code:
+        - 200
+        headers:
+          X-Requested-By: ansible
+
+    - name: Generate rule's name
+      set_fact:
+        graylog_rule_titles: "{{ graylog_running_rules.json | json_query('[*].title') }}"
+
+    - name: Rules creation
+      with_items: '{{ graylog_rules }}'
+      when: item.title not in graylog_rule_titles
+      retries: 10
+      delay: 30
+      uri:
+        url: '{{ graylog_api }}/system/pipelines/rule'
+        method: POST
+        user: '{{ graylog_login_admin_local }}'
+        password: '{{ graylog_root_password }}'
+        body_format: json
+        body: '{{ item | to_json }}'
+        validate_certs: no
+        timeout: 60
+        status_code:
+        - 201
+        - 200
+        headers:
+          X-Requested-By: ansible
+
+    - name: Get already configured pipelines
+      register: graylog_running_pipelines
+      retries: 10
+      delay: 30
+      uri:
+        url: '{{ graylog_api }}/system/pipelines/pipeline'
+        method: GET
+        user: '{{ graylog_login_admin_local }}'
+        password: '{{ graylog_root_password }}'
+        validate_certs: no
+        timeout: 60
+        status_code:
+        - 200
+        headers:
+          X-Requested-By: ansible
+
+    - name: Generate rule's name
+      set_fact:
+        graylog_pipeline_titles: "{{ graylog_running_pipelines.json | json_query('[*].title') }}"
+
+    - name: Create pipelines
+      with_items: '{{ graylog_pipelines }}'
+      when: item.title not in graylog_pipeline_titles
+      retries: 10
+      delay: 30
+      uri:
+        url: '{{ graylog_api }}/system/pipelines/pipeline'
+        method: POST
+        user: '{{ graylog_login_admin_local }}'
+        password: '{{ graylog_root_password }}'
+        body_format: json
+        body: '{{ item | to_json }}'
+        validate_certs: no
+        timeout: 60
+        status_code:
+        - 200
+        - 201
+        headers:
+          X-Requested-By: ansible
+
+    ###########################################################################
+
+  - name: Pipelines management
+    block:
+    - name: Get existing pipelines
+      register: graylog_running_pipelines
+      retries: 10
+      delay: 30
+      uri:
+        url: '{{ graylog_api }}/system/pipelines/pipeline'
+        method: GET
+        user: '{{ graylog_login_admin_local }}'
+        password: '{{ graylog_root_password }}'
+        validate_certs: no
+        timeout: 60
+        status_code:
+        - 200
+        headers:
+          X-Requested-By: ansible
+
+    - name: Set default rules
+      set_fact:
+        graylog_default_stream_to_pipeline:
+          stream_id: '000000000000000000000001'
+          pipeline_ids: "{{ graylog_running_pipelines.json | json_query('[*].id') }}"
+
+    - name: Attach pipelines to the default stream (all messages)
+      register: existing_streams
+      retries: 10
       delay: 5
       uri:
-        url: "{{ graylog_api }}/cluster"
-        method: GET
-        user: "{{ graylog_login_admin_local }}"
-        password: "{{ graylog_root_password }}"
+        url: '{{ graylog_api }}/system/pipelines/connections/to_stream'
+        method: POST
+        user: '{{ graylog_login_admin_local }}'
+        password: '{{ graylog_root_password }}'
+        body_format: json
+        body: '{{ graylog_default_stream_to_pipeline | to_json }}'
         validate_certs: no
         status_code:
-            - 200
-            - 503
+        - 200
         headers:
-            X-Requested-By: ansible
+          Content-Type: application/json
+          X-Requested-By: ansible
+
+  - name: Create inputs
+    include_role:
+      name: ansible-graylog-input
+    vars:
+      graylog_login: '{{ graylog_login_admin_local }}'
+      graylog_password: '{{ graylog_root_password }}'
 
     ###########################################################################
 
-    - name: Indexes management
-      block:
-        - name: Get default index
-          register: graylog_index_sets
-          retries: 10
-          delay: 30
-          uri:
-            url: "{{ graylog_api }}/system/indices/index_sets"
-            method: GET
-            user: "{{ graylog_login_admin_local }}"
-            password: "{{ graylog_root_password }}"
-            validate_certs: no
-            timeout: 60
-            status_code:
-                - 200
-            headers:
-                X-Requested-By: ansible
+  - name: Configure telegraf
+    when:
+    - lookup('env', 'INFLUXDB_USAGE') | lower == 'true'
+    - lookup('env', 'INFLUXDB_ENDPOINT') | urlsplit != None
+    - lookup('env', 'INFLUXDB_TOKEN') | length > 0
+    - lookup('env', 'INFLUXDB_BUCKET') | length > 0
 
-        - name: Set default retention policy
-          with_items: "{{ graylog_index_sets.json.index_sets }}"
-          when: item.title == "Default index set"
-          register: default_index_set_result
-          retries: 10
-          delay: 30
-          uri:
-            url: "{{ graylog_api }}/system/indices/index_sets/{{ item.id }}"
-            method: PUT
-            user: "{{ graylog_login_admin_local }}"
-            password: "{{ graylog_root_password }}"
-            body_format: json
-            body: "{{ graylog_default_index_set | to_json }}"
-            validate_certs: no
-            timeout: 60
-            status_code:
-                - 201
-                - 200
-            headers:
-                X-Requested-By: ansible
-
-    ###########################################################################
-
-    - name: Pipelines configuration
-      block:
-        - name: Retrieving configured rules
-          register: graylog_running_rules
-          retries: 10
-          delay: 30
-          uri:
-            url: "{{ graylog_api }}/system/pipelines/rule"
-            method: GET
-            user: "{{ graylog_login_admin_local }}"
-            password: "{{ graylog_root_password }}"
-            validate_certs: no
-            timeout: 60
-            status_code:
-                - 200
-            headers:
-                X-Requested-By: ansible
-
-        - name: Generate rule's name
-          set_fact:
-            graylog_rule_titles: "{{ graylog_running_rules.json | json_query('[*].title') }}"
-
-        - name: Rules creation
-          with_items: "{{ graylog_rules }}"
-          when: "item.title not in graylog_rule_titles"
-          retries: 10
-          delay: 30
-          uri:
-            url: "{{ graylog_api }}/system/pipelines/rule"
-            method: POST
-            user: "{{ graylog_login_admin_local }}"
-            password: "{{ graylog_root_password }}"
-            body_format: json
-            body: "{{ item | to_json }}"
-            validate_certs: no
-            timeout: 60
-            status_code:
-                - 201
-                - 200
-            headers:
-                X-Requested-By: ansible
-
-        - name: Get already configured pipelines
-          register: graylog_running_pipelines
-          retries: 10
-          delay: 30
-          uri:
-            url: "{{ graylog_api }}/system/pipelines/pipeline"
-            method: GET
-            user: "{{ graylog_login_admin_local }}"
-            password: "{{ graylog_root_password }}"
-            validate_certs: no
-            timeout: 60
-            status_code:
-                - 200
-            headers:
-                X-Requested-By: ansible
-
-        - name: Generate rule's name
-          set_fact:
-            graylog_pipeline_titles: "{{ graylog_running_pipelines.json | json_query('[*].title') }}"
-
-        - name: Create pipelines
-          with_items: "{{ graylog_pipelines }}"
-          when: "item.title not in graylog_pipeline_titles"
-          retries: 10
-          delay: 30
-          uri:
-            url: "{{ graylog_api }}/system/pipelines/pipeline"
-            method: POST
-            user: "{{ graylog_login_admin_local }}"
-            password: "{{ graylog_root_password }}"
-            body_format: json
-            body: "{{ item | to_json }}"
-            validate_certs: no
-            timeout: 60
-            status_code:
-                - 200
-                - 201
-            headers:
-                X-Requested-By: ansible
-
-    ###########################################################################
-
-    - name: Pipelines management
-      block:
-        - name: Get existing pipelines
-          register: graylog_running_pipelines
-          retries: 10
-          delay: 30
-          uri:
-            url: "{{ graylog_api }}/system/pipelines/pipeline"
-            method: GET
-            user: "{{ graylog_login_admin_local }}"
-            password: "{{ graylog_root_password }}"
-            validate_certs: no
-            timeout: 60
-            status_code:
-                - 200
-            headers:
-                X-Requested-By: ansible
-
-        - name: Set default rules
-          set_fact:
-            graylog_default_stream_to_pipeline:
-                stream_id: "000000000000000000000001"
-                pipeline_ids: "{{ graylog_running_pipelines.json | json_query('[*].id') }}"
-
-        - name: Attach pipelines to the default stream (all messages)
-          register: existing_streams
-          retries: 10
-          delay: 5
-          uri:
-            url: "{{ graylog_api }}/system/pipelines/connections/to_stream"
-            method: POST
-            user: "{{ graylog_login_admin_local }}"
-            password: "{{ graylog_root_password }}"
-            body_format: json
-            body: "{{ graylog_default_stream_to_pipeline | to_json }}"
-            validate_certs: no
-            status_code:
-                - 200
-            headers:
-                Content-Type: "application/json"
-                X-Requested-By: ansible
-
-    - name: Create inputs
-      include_role:
-        name: ansible-graylog-input
-      vars:
-        graylog_login: "{{ graylog_login_admin_local }}"
-        graylog_password: "{{ graylog_root_password }}"
-
-    ###########################################################################
-
-    - name: Configure telegraf
-      when:
-          - lookup('env', 'INFLUXDB_USAGE') | lower == 'true'
-          - lookup('env', 'INFLUXDB_ENDPOINT') | urlsplit != None
-          - lookup('env', 'INFLUXDB_TOKEN') | length > 0
-          - lookup('env', 'INFLUXDB_BUCKET') | length > 0
-
-      include_role:
-          name: ansible-telegraf
+    include_role:
+      name: ansible-telegraf

@@ -34,29 +34,39 @@ export OS_USER_DOMAIN_NAME=$OS_USER_DOMAIN_NAME
 export CONSUL_USAGE=$CONSUL_USAGE
 export CONSUL_SERVERS=$CONSUL_SERVERS
 export CONSUL_DNS_DOMAIN=$CONSUL_DNS_DOMAIN
+export CONSUL_DNS_SERVER=$CONSUL_DNS_SERVER
 export CONSUL_DATACENTER=$CONSUL_DATACENTER
 export CONSUL_ENCRYPT=$CONSUL_ENCRYPT
+
+export BACK_IP=$BACK_IP
+
+export INFLUXDB_BUCKET=$INFLUXDB_BUCKET
+export INFLUXDB_ENDPOINT=$INFLUXDB_ENDPOINT
+export INFLUXDB_ORGANISATION=$INFLUXDB_ORGANISATION
+export INFLUXDB_TOKEN=$INFLUXDB_TOKEN
+
+export SYSLOG_HOSTNAME=$SYSLOG_HOSTNAME
+export SYSLOG_LOG_FORMAT=$SYSLOG_LOG_FORMAT
+export SYSLOG_PORT=$SYSLOG_PORT
+export SYSLOG_PROTOCOL=$SYSLOG_PROTOCOL
 
 sed -i 's/exit 1/false/' $REPO_PATH/logs/graylog.appliance.autoconf.sh
 
 . $REPO_PATH/logs/graylog.appliance.autoconf.sh
 EOF
 
-ansible-galaxy install -r $ETC_PATH/appliance.ansible_requirements.yml
-ansible-galaxy install -r $ETC_PATH/graylog.ansible_requirements.yml
+if curl -qs https://github.com 2>&1 > /dev/null ; then
+	export remote_repo=internet
+else
+	export remote_repo=intranet
+fi
 
-ansible-playbook -t os-ready $PLAYBOOK \
+ansible-galaxy install -r $ETC_PATH/appliance.ansible_requirements.${remote_repo}.yml
+ansible-galaxy install -r $ETC_PATH/graylog.ansible_requirements.${remote_repo}.yml
+
+sed -i 's/hosts: all/hosts: localhost/' $PLAYBOOK
+
+ansible-playbook $PLAYBOOK \
+	-e @$ETC_PATH/graylog.variables.yml \
 	-e dnsmasq_listening_interfaces="{{['lo']|from_yaml}}" \
-	-e @$ETC_PATH/graylog.variables.yml \
-	|| exit 1
-
-ansible-playbook -t containers $PLAYBOOK \
-	-e @$ETC_PATH/graylog.variables.yml \
-	|| exit 1
-
-ansible-playbook -t elasticsearch $PLAYBOOK \
-	|| exit 1
-
-ansible-playbook -t graylog $PLAYBOOK \
-	-e @$ETC_PATH/graylog.variables.yml \
 	|| exit 1

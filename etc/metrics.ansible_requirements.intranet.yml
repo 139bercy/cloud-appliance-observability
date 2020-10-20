@@ -1,0 +1,7 @@
+- name: ansible-influxdb-bucket
+  src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-influxdb-bucket
+  version: v1.0
+
+- name: ansible-influxdb-scraper
+  src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-influxdb-scraper
+  version: v1.0

@@ -21,12 +21,13 @@ export METRICS_VOLUME=$METRICS_VOLUME
 export METRICS_ENDPOINT_URL=$METRICS_ENDPOINT_URL
 export METRICS_CONTAINER=$METRICS_CONTAINER
 
+export GRAFANA_USAGE=$GRAFANA_USAGE
 export GRAFANA_ADMIN_NAME=$GRAFANA_ADMIN_NAME
 export GRAFANA_ADMIN_PASSWORD=$GRAFANA_ADMIN_PASSWORD
 
 export INFLUXDB_ADMIN_NAME=$INFLUXDB_ADMIN_NAME
 export INFLUXDB_ADMIN_PASSWORD=$INFLUXDB_ADMIN_PASSWORD
-export INFLUXDB_ORG=$INFLUXDB_ORG
+export INFLUXDB_ORGANISATION=$INFLUXDB_ORGANISATION
 export INFLUXDB_RETENTION_HOURS=$INFLUXDB_RETENTION_HOURS
 
 export OS_AUTH_URL=$OS_AUTH_URL
@@ -46,22 +47,29 @@ export CONSUL_DNS_DOMAIN=$CONSUL_DNS_DOMAIN
 export CONSUL_DATACENTER=$CONSUL_DATACENTER
 export CONSUL_ENCRYPT=$CONSUL_ENCRYPT
 
+export BACK_IP=$BACK_IP
+
+export SYSLOG_HOSTNAME=$SYSLOG_HOSTNAME
+export SYSLOG_LOG_FORMAT=$SYSLOG_LOG_FORMAT
+export SYSLOG_PORT=$SYSLOG_PORT
+export SYSLOG_PROTOCOL=$SYSLOG_PROTOCOL
+
 sed -i 's/exit 1/false/' $REPO_PATH/metrics/metrics.appliance.autoconf.sh
 
 . $REPO_PATH/metrics/metrics.appliance.autoconf.sh
 EOF
 
-ansible-galaxy install -r $ETC_PATH/appliance.ansible_requirements.yml
-ansible-galaxy install -r $ETC_PATH/metrics.ansible_requirements.yml
+if curl -qs https://github.com 2>&1 > /dev/null ; then
+	export remote_repo=internet
+else
+	export remote_repo=intranet
+fi
 
-ansible-playbook -t os-ready $PLAYBOOK \
+ansible-galaxy install -r $ETC_PATH/appliance.ansible_requirements.${remote_repo}.yml
+ansible-galaxy install -r $ETC_PATH/metrics.ansible_requirements.${remote_repo}.yml
+
+sed -i 's/hosts: all/hosts: localhost/' $PLAYBOOK
+
+ansible-playbook $PLAYBOOK \
 	-e@$ETC_PATH/metrics.variables.yml \
-	-e dnsmasq_listening_interfaces="{{['lo']|from_yaml}}" \
-	|| exit 1
-
-ansible-playbook -t containers $PLAYBOOK \
-	|| exit 1
-
-ansible-playbook -t metrics,configuration,telegraf $PLAYBOOK \
-	-e@$ETC_PATH/metrics.variables.yml \
-	|| exit 1
+	-e dnsmasq_listening_interfaces="{{['lo']|from_yaml}}"

@@ -2,131 +2,201 @@
 
 ## Description
 
-Deploy logs and metrics management appliances using Hashicorp Terraform.
+This module deploys a pair of instances to provide:
 
-## Prerequisites
+* Graylog log manager ;
+* InfluxDB / Grafana metrics management solutions.
 
-You need to install consul locally in order to fix a value for
-`GRAYLOG_CONSUL_ENCRYPT` and `METRICS_CONSUL_ENCRYPT` if consul is enabled using
-`GRAYLOG_CONSUL_USAGE=true` or `METRICS_CONSUL_USAGE=true`.
-
-Then, you can get a value:
-
-```bash
-export METRICS_CONSUL_USAGE=false
-export GRAYLOG_CONSUL_USAGE=false
-export GRAYLOG_CONSUL_ENCRYPT=$(consul keygen) # fake value
-export METRICS_CONSUL_ENCRYPT=$(consul keygen) # fake value
-```
-
-If you want to connect against an existing `consul` service you should use your
-existing secret.
-
-```bash
-export GRAYLOG_CONSUL_ENCRYPT=$CONSUL_SERVICE_ENCRYPT
-export METRICS_CONSUL_ENCRYPT=$CONSUL_SERVICE_ENCRYPT
-```
+The deployment is `cloud-init`-based. The instances need to clone this 
+repository (use `git_repo_url` and `git_repo_checkout` for customisation).
 
 ## Usage
 
-### Resources management
+### Standalone
 
-You must add a Terraform-provider file on the right directory:
-
-* `logs/single-network` : one network interface
-* `logs/dual-network` : two network interfaces
-* `metrics/single-network` : one network interface
-* `metrics/dual-network` : two network interfaces
-
-Then, some variables need to be set.
-
-```bash
-export GIT_REPO_URL=$(git remote show github -n| awk '/Fetch/ {print $NF}')
-
-# Logs management
-export GRAYLOG_SIZE_GB=
-export ELASTECSEARCH_SIZE_GB=
-export GRAYLOG_FLAVOR=
-export GRAYLOG_IMAGE_ID=
-export GRAYLOG_FRONT_NET_ID=
-export GRAYLOG_BACK_NET_ID= # dual network
-export GRAYLOG_SECGROUP_ID=
-
-export GRAYLOG_ADMIN=
-export GRAYLOG_PASSWORD=
-export GRAYLOG_ENDPOINT=
-
-export GRAYLOG_HTTP_PROXY=
-export GRAYLOG_NO_PROXY=
-
-export GRAYLOG_CONSUL_USAGE=false
-export GRAYLOG_CONSUL_DNS_DOMAIN=
-export GRAYLOG_CONSUL_DATACENTER=
-export GRAYLOG_CONSUL_ENCRYPT=$(consul keygen)
-export GRAYLOG_CONSUL_DNS_SERVER=
-export GRAYLOG_CONSUL_SERVER=
-
-export GRAYLOG_OS_USERNAME=
-export GRAYLOG_OS_PASSWORD=
-export GRAYLOG_OS_AUTH_URL=
-
-# Metrics management
-export GRAFANA_ADMIN=
-export GRAFANA_PASSWORD=
-export INFLUXDB_ADMIN=
-export INFLUXDB_ORG=
-export INFLUXDB_PASSWORD=
-export INFLUXDB_RETENTION_HOURS=
-
-export METRICS_CONSUL_ENCRYPT=$(consul keygen)
-export METRICS_CONSUL_USAGE=false
-
-export METRICS_ENDPOINT=
-export METRICS_FLAVOR=
-export METRICS_FRONT_NET_ID=
-export METRICS_BACK_NET_ID= # dual network
-export METRICS_IMAGE_ID=
-
-export METRICS_OS_AUTH_URL=
-export METRICS_OS_PASSWORD=
-export METRICS_OS_USERNAME=
-export METRICS_OS_REGIONS_NAME=
-
-export METRICS_SECGROUP_ID=
-export METRICS_SIZE_GB=
-```
-
-Control the deployments
+The deployment is managed by `make` and `terraform`.
 
 ```bash
 # Get help
 make help
-
-clean-logs-single-network # Destroy logs service
-clean-metrics-single      # Destroy the logs appliance
-
-help                      # This help message
-
-logs-check                # Check graylog env variables
-logs-single-network       # Configure logs service
-
-metrics-check             # Check metrics env variables
-metrics-single-network    # Configure metrics service
-
-prepare           # Download atifacts from internet to Swift
-
-rebuild           # Rebuild all the servers at once
-rebuild-logs      # Rebuild the logs appliance
-rebuild-metrics   # Rebuild the metrics appliance
-
-status            # Get some information about what is running
-syntax            # Testing YAML syntax
-test              # Test pre-requisites
+all                 Deploy the appliances at once
+apply               Terraform apply
+clean-containers    Remove objects from containers
+clean               Destroy the appliances
+destroy             Destroy terraform deployment
+dist-clean          Remove terraform distributions files (plugins, modules...)
+force-destroy       Destroy terraform deployment
+graph               Generate an SVG deployment graph
+help                This help message
+reinit              Download terraform artifacts again
+status              Get some information about what is running
+taint               Terraform taint appliances
 ```
 
-### Getting resources info
+### As a module
 
-First, go to the right directory. Then, `terraform show` can be used.
+The module creates two instances (log management and metrics management). It 
+can use invoqued like this:
+
+```hcl
+module observability {
+  source = "git::https://github.com/139bercy/cloud-appliance-observability.git?ref=terraform-modules"
+
+  #############################################################################
+  # Common variables
+
+  image_name            = var.image_name
+  
+  # The front net is the "public" network. The services are not published there.
+  # They can be used to connect against standard resources (internet, repositories…).
+  front_net_id        = 
+  # The back net is used to publish services.
+  back_net_id         = 
+  
+  # The default security group is usually "allow out, deny in"
+  default_secgroup_id = 
+ 
+  os_username          = var.os_username
+  os_password          = var.os_password
+  os_auth_url          = var.os_auth_url
+  os_region_name       = var.os_region_name
+  os_swift_region_name = var.os_swift_region_name
+
+  #git_repo_url      = var.observability_git_repo_url
+  git_repo_checkout = "terraform-modules"
+
+  internet_http_proxy_url = var.internet_http_proxy_url
+  internet_http_no_proxy  = var.internet_http_no_proxy
+  ntp_server              = var.ntp_server
+  static_hosts            = var.static_hosts
+
+  consul_usage      = var.consul_usage
+  consul_servers    = var.consul_servers
+  consul_dns_domain = var.consul_dns_domain
+  consul_datacenter = var.consul_datacenter
+  consul_encrypt    = var.consul_encrypt
+  consul_dns_server = var.consul_dns_server
+
+  syslog_hostname = tostring(module.observability.logs-back-port.all_fixed_ips[0])
+
+  #############################################################################
+  # Logs variables
+
+  logs_flavor_name        = var.logs_flavor_name
+  elasticsearch_size_gb = var.elasticsearch_size_gb
+  graylog_size_gb       = var.graylog_size_gb
+
+  graylog_admin_name     = var.graylog_admin_name
+  graylog_admin_password = var.grafana_admin_password
+  graylog_endpoint_url   = var.graylog_endpoint_url
+
+  influxdb_usage    = var.logs_influxdb_usage
+  influxdb_endpoint = var.logs_influxdb_endpoint
+  influxdb_org      = var.logs_influxdb_org
+  influxdb_token    = var.logs_influxdb_token
+  influxdb_bucket   = var.logs_influxdb_bucket
+  
+  #############################################################################
+  # Metrics variables
+
+  metrics_flavor_name = var.metrics_flavor_name
+  metrics_size_gb   = var.metrics_size_gb
+
+  grafana_admin_name     = var.grafana_admin_name
+  grafana_admin_password = var.grafana_admin_password
+
+  influxdb_admin_name      = var.influxdb_admin_name
+  influxdb_admin_password  = var.influxdb_admin_password
+  influxdb_organisation    = var.influxdb_organisation
+  influxdb_retention_hours = var.influxdb_retention_hours
+
+  metrics_endpoint_url = var.metrics_endpoint_url
+  metrics_container    = var.metrics_container
+}
+```
+
+Each submodule can be used separately too.
+
+# Terraform details
+
+<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+## Requirements
+
+| Name | Version |
+|------|---------|
+| terraform | >= 0.12 |
+
+## Providers
+
+No provider.
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| back\_net\_id | Backoffice network ID to use for the appliance | `string` | n/a | yes |
+| consul\_datacenter | Datacenter name used by Consul agent | `string` | `""` | no |
+| consul\_dns\_domain | DNS domain used by Consul agent | `string` | `""` | no |
+| consul\_dns\_server | IP address to use for non-consul-managed domains | `string` | `""` | no |
+| consul\_encrypt | Consul shared secret for cluster communication | `string` | n/a | yes |
+| consul\_servers | List of consul servers | `string` | `""` | no |
+| consul\_usage | Do we use consul? | `bool` | `false` | no |
+| default\_secgroup\_id | Default security group to use | `string` | n/a | yes |
+| elasticsearch\_size\_gb | Elasticsearch data size (Gb) | `number` | `100` | no |
+| front\_net\_id | Network ID to use for the appliance | `string` | n/a | yes |
+| git\_repo\_checkout | branch/tag/commit to use | `string` | `"master"` | no |
+| git\_repo\_url | cloud-appliance-observability repo | `string` | `"https://github.com/139bercy/cloud-appliance-observability"` | no |
+| grafana\_admin\_name | Grafana admin username | `string` | n/a | yes |
+| grafana\_admin\_password | Grafana admin password | `string` | n/a | yes |
+| grafana\_usage | Do we use Grafana? | `bool` | `false` | no |
+| graylog\_admin\_name | Graylog admin username | `string` | n/a | yes |
+| graylog\_admin\_password | Grafana admin password | `string` | n/a | yes |
+| graylog\_endpoint\_url | Public hostname used to connect against Graylog | `string` | n/a | yes |
+| graylog\_size\_gb | Graylog data size (Gb) | `number` | `10` | no |
+| image\_id | Operating system image to use | `string` | n/a | yes |
+| influxdb\_admin\_name | InfluxDB admin username | `string` | n/a | yes |
+| influxdb\_admin\_password | InfluxDB admin password | `string` | n/a | yes |
+| influxdb\_bucket | InfluxDB bucket to use to send metrics | `string` | `""` | no |
+| influxdb\_endpoint | Remote InfluxDB service to use to send metrics | `string` | `""` | no |
+| influxdb\_org | InfluxDB organization to use | `string` | `""` | no |
+| influxdb\_organisation | InfluxDB Org name | `string` | n/a | yes |
+| influxdb\_retention\_hours | InfluxDB default retention (hours) | `number` | n/a | yes |
+| influxdb\_token | InfluxDB token to use to send metics | `string` | `""` | no |
+| influxdb\_usage | Do we send metrics to InfluxDB? | `bool` | `false` | no |
+| internet\_http\_no\_proxy | Proxy skiplist | `string` | `""` | no |
+| internet\_http\_proxy\_url | HTTP proxy | `string` | `""` | no |
+| logs\_flavor\_id | Cloud flavor to use | `string` | n/a | yes |
+| metrics\_container | Swift container to use for backups | `string` | n/a | yes |
+| metrics\_endpoint\_url | Public hostname used to connect against the tools | `string` | n/a | yes |
+| metrics\_flavor\_id | Cloud flavor to use | `string` | n/a | yes |
+| metrics\_size\_gb | InfluxDB and Grafana data size (Gb) | `number` | `100` | no |
+| ntp\_server | Remote NTP to use for sync | `string` | `""` | no |
+| os\_auth\_url | Cloud auth URL | `string` | n/a | yes |
+| os\_password | Cloud password for some internal batches | `string` | n/a | yes |
+| os\_region\_name | Cloud region name | `string` | n/a | yes |
+| os\_swift\_region\_name | Cloud region name used by objets storage | `string` | n/a | yes |
+| os\_username | loud username for some internal batches | `string` | n/a | yes |
+| static\_hosts | JSON array of host:ip tuples | `string` | `""` | no |
+| syslog\_hostname | Hostname or address of the remote log management endpoint | `string` | n/a | yes |
+| syslog\_log\_format | Log format used to send logs: gelf or syslog | `string` | `"gelf"` | no |
+| syslog\_port | Port number of the remote log management endpoint | `number` | `12201` | no |
+| syslog\_protocol | Protocol used to send logs: udp, tcp or http | `string` | `"udp"` | no |
+| traefik\_consul\_prefix | Consul catalog prefix used to configure Traefik | `string` | `"admin"` | no |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| logs-back-port | Logs Appliance back-office port |
+| metrics-back-port | Metrics Appliance back-office port |
+
+<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+
+# Post-install tasks
+
+## Getting resousces' info
+
+First, go to the deployment root directory. Then, `terraform show` can be used.
 
 ```bash
 # Get appliance attributes

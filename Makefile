@@ -3,40 +3,12 @@
 # Configuration
 #
 
-GIT_REPO_CHECKOUT=$(shell git rev-parse --abbrev-ref HEAD)
-
-.PHONY: test # Test terraform pre-requisites
-test:
-	@which terraform
-
-.PHONY: syntax # Testing Ansible and HCL syntaxes (ansible-lint + terraform fmt)
-syntax:
-	@which ansible-lint
-	@ansible-lint \
-		etc/graylog.variables.yml \
-		logs/graylog.appliance.playbook.yml
-	@ansible-lint \
-		etc/metrics.variables.yml \
-		metrics/metrics.appliance.playbook.yml
-	@terraform fmt -check=true -recursive=true
-
 .PHONY: status # Get some information about what is running
-status:
-	@test -d logs/single-network/.terraform \
-		&& cd logs/single-network/ \
-		&& terraform show \
-		|| true
-	@test -d logs/dual-network/.terraform \
-		&& cd logs/dual-network/ \
-		&& terraform show \
-		|| true
-	@test -d metrics/single-network/.terraform \
-		&& cd metrics/single-network/ \
-		&& terraform show
-	@test -d metrics/dual-network/.terraform \
-		&& cd metrics/dual-network/ \
-		&& terraform show \
-		|| true
+status: .terraform/
+	@echo "Projet: ${OS_PROJECT_NAME}"
+	@echo "Cloud: ${OS_AUTH_URL}"
+	@echo "#######################################################"
+	@terraform show
 
 .PHONY: help # This help message
 help:
@@ -47,330 +19,63 @@ help:
 
 ###############################################################################
 #
-# Hosted services
-#
-.PHONY: metrics-check # Check metrics env variables
-metrics-check:
-	@test ! -z ${METRICS_SIZE_GB} \
-		|| (echo METRICS_SIZE_GB is empty ; exit 1)
-
-	@test ! -z ${METRICS_OS_USERNAME} \
-		|| (echo METRICS_OS_USERNAME is empty ; exit 1)
-	@test ! -z ${METRICS_OS_PASSWORD} \
-		|| (echo METRICS_OS_PASSWORD is empty ; exit 1)
-	@test ! -z ${METRICS_OS_AUTH_URL} \
-		|| (echo METRICS_OS_AUTH_URL is empty ; exit 1)
-
-	@test ! -z ${METRICS_FLAVOR} \
-		|| (echo METRICS_FLAVOR is empty ; exit 1)
-	@test ! -z ${METRICS_IMAGE_ID} \
-		|| (echo METRICS_IMAGE_ID is empty ; exit 1)
-	@test ! -z ${METRICS_FRONT_NET_ID} \
-		|| (echo METRICS_FRONT_NET_ID is empty ; exit 1)
-	@test ! -z ${METRICS_SECGROUP_ID} \
-		|| (echo METRICS_SECGROUP_ID is empty ; exit 1)
-
-	@test ! -z ${GRAFANA_ADMIN} \
-		|| (echo GRAFANA_ADMIN is empty ; exit 1)
-	@test ! -z ${GRAFANA_PASSWORD} \
-		|| (echo GRAFANA_PASSWORD is empty ; exit 1)
-	@test ! -z ${INFLUXDB_ADMIN} \
-		|| (echo INFLUXDB_ADMIN is empty ; exit 1)
-	@test ! -z ${INFLUXDB_PASSWORD} \
-		|| (echo INFLUXDB_PASSWORD is empty ; exit 1)
-	@test ! -z ${INFLUXDB_ORG} \
-		|| (echo INFLUXDB_ORG is empty ; exit 1)
-	@test ! -z ${INFLUXDB_RETENTION_HOURS} \
-		|| (echo INFLUXDB_RETENTION_HOURS is empty ; exit 1)
-
-	@test ! -z ${METRICS_ENDPOINT} \
-		|| (echo METRICS_ENDPOINT is empty ; exit 1)
-
-	@echo ${METRICS_CONSUL_USAGE} | egrep -q "^(true|false)$$" \
-		|| ( echo METRICS_CONSUL_USAGE must be set to true or false ; \
-			exit 1)
-	@(test -z ${METRICS_CONSUL_DNS_DOMAIN} && echo ${METRICS_CONSUL_USAGE} \
-		| fgrep true ) \
-		&& ( echo METRICS_CONSUL_DNS_DOMAIN is empty ; exit 1) \
-		|| true
-	@(test -z ${METRICS_CONSUL_DATACENTER} && echo ${METRICS_CONSUL_USAGE} \
-		| fgrep true ) \
-		&& ( echo METRICS_CONSUL_DATACENTER is empty ; exit 1) \
-		|| true
-	@(test -z ${METRICS_CONSUL_ENCRYPT} && echo ${METRICS_CONSUL_USAGE} \
-		| fgrep true ) \
-		&& ( echo METRICS_CONSUL_ENCRYPT is empty ; exit 1) \
-		|| true
-	@(test -z ${METRICS_CONSUL_DNS_SERVER} && echo ${METRICS_CONSUL_USAGE} \
-		| fgrep true ) \
-		&& ( echo METRICS_CONSUL_DNS_SERVER is empty ; exit 1) \
-		|| true
-
-.PHONY: logs-check # Check graylog env variables
-logs-check:
-	@test ! -z ${GRAYLOG_SIZE_GB} \
-		|| (echo GRAYLOG_SIZE_GB is empty ; exit 1)
-	@test ! -z ${ELASTECSEARCH_SIZE_GB} \
-		|| (echo ELASTECSEARCH_SIZE_GB is empty ; exit 1)
-
-	@test ! -z ${GRAYLOG_OS_USERNAME} \
-		|| (echo OS_USERNAME is empty ; exit 1)
-	@test ! -z ${GRAYLOG_OS_PASSWORD} \
-		|| (echo OS_PASSWORD is empty ; exit 1)
-	@test ! -z ${GRAYLOG_OS_AUTH_URL} \
-		|| (echo OS_AUTH_URL is empty ; exit 1)
-
-	@test ! -z ${GRAYLOG_FLAVOR} \
-		|| (echo GRAYLOG_FLAVOR is empty ; exit 1)
-	@test ! -z ${GRAYLOG_IMAGE_ID} \
-		|| (echo GRAYLOG_IMAGE_ID is empty ; exit 1)
-	@test ! -z ${GRAYLOG_FRONT_NET_ID} \
-		|| (echo GRAYLOG_FRONT_NET_ID is empty ; exit 1)
-	@test ! -z ${GRAYLOG_SECGROUP_ID} \
-		|| (echo GRAYLOG_SECGROUP_ID is empty ; exit 1)
-
-	@test ! -z ${GRAYLOG_ADMIN} \
-		|| (echo GRAYLOG_ADMIN is empty ; exit 1)
-	@test ! -z ${GRAYLOG_PASSWORD} \
-		|| (echo GRAYLOG_PASSWORD is empty ; exit 1)
-	@test ! -z ${GRAYLOG_ENDPOINT} \
-		|| (echo GRAYLOG_ENDPOINT is empty ; exit 1)
-	@echo ${GRAYLOG_ENDPOINT} | grep -q /$$ \
-		|| (echo GRAYLOG_ENDPOINT must end with a / ; exit 1)
-	@echo ${GRAYLOG_ENDPOINT} | egrep -q "^(https|http)://" \
-		|| (echo GRAYLOG_ENDPOINT must begin with http(s):// ; exit 1)
-
-#	@test ! -z ${GRAYLOG_HTTP_PROXY} \
-#		|| (echo GRAYLOG_HTTP_PROXY is empty ; exit 1)
-#	@test ! -z ${GRAYLOG_NO_PROXY} \
-#		|| (echo GRAYLOG_NO_PROXY is empty ; exit 1)
-
-	@echo ${GRAYLOG_CONSUL_USAGE} | egrep -q "^(true|false)$$" \
-		|| ( echo GRAYLOG_CONSUL_USAGE must be set to true or false ; \
-		exit 1)
-	@(test -z ${GRAYLOG_CONSUL_DNS_DOMAIN} && echo ${GRAYLOG_CONSUL_USAGE} \
-		| fgrep true ) \
-		&& ( echo GRAYLOG_CONSUL_DNS_DOMAIN is empty ; exit 1) \
-		|| true
-	@(test -z ${GRAYLOG_CONSUL_DATACENTER} && echo ${GRAYLOG_CONSUL_USAGE} \
-		| fgrep true ) \
-		&& ( echo GRAYLOG_CONSUL_DATACENTER is empty ; exit 1) \
-		|| true
-	@(test -z ${GRAYLOG_CONSUL_ENCRYPT} && echo ${GRAYLOG_CONSUL_USAGE} \
-		| fgrep true ) \
-		&& ( echo GRAYLOG_CONSUL_ENCRYPT is empty ; exit 1) \
-		|| true
-	@(test -z ${GRAYLOG_CONSUL_DNS_SERVER} && echo ${GRAYLOG_CONSUL_USAGE} \
-		| fgrep true ) \
-		&& ( echo GRAYLOG_CONSUL_DNS_SERVER is empty ; exit 1) \
-		|| true
-
-logs/single-network/.terraform:
-	cd logs/single-network/ && terraform init
-
-logs/dual-network/.terraform:
-	cd logs/dual-network/ && terraform init
-
-.PHONY: logs-single-network # Configure logs service
-#logs-single-network: logs-check logs/single-network/.terraform
-logs-single-network: logs/single-network/.terraform
-	@cd logs/single-network && terraform plan -input=false -out=logs.tfplan \
-		\
-		-var graylog_size_gb=${GRAYLOG_SIZE_GB} \
-		-var elasticsearch_size_gb=${ELASTECSEARCH_SIZE_GB} \
-		\
-		-var flavor=${GRAYLOG_FLAVOR} \
-		-var image_id=${GRAYLOG_IMAGE_ID} \
-		-var front_net_id=${GRAYLOG_FRONT_NET_ID} \
-		-var default_secgroup_id=${GRAYLOG_SECGROUP_ID} \
-		-var os_username=${GRAYLOG_OS_USERNAME} \
-		-var os_password=${GRAYLOG_OS_PASSWORD} \
-		-var os_auth_url=${GRAYLOG_OS_AUTH_URL} \
-		-var os_region_name=${GRAYLOG_OS_REGION_NAME} \
-		-var os_swift_region_name=${GRAYLOG_OS_SWIFT_REGION_NAME} \
-		\
-		-var graylog_admin_name=${GRAYLOG_ADMIN} \
-		-var graylog_admin_password=${GRAYLOG_PASSWORD} \
-		-var graylog_endpoint_url=${GRAYLOG_ENDPOINT} \
-		\
-		-var internet_http_proxy_url=${GRAYLOG_HTTP_PROXY} \
-		-var internet_http_no_proxy=${GRAYLOG_NO_PROXY} \
-		-var static_hosts=${GRAYLOG_STATIC_HOSTS} \
-		-var ntp_server=${GRAYLOG_NTP_SERVER} \
-		\
-		-var git_repo_checkout=${GIT_REPO_CHECKOUT} \
-		-var git_repo_url=${GIT_REPO_URL} \
-		\
-		-var consul_usage=${GRAYLOG_CONSUL_USAGE} \
-		-var consul_servers=${GRAYLOG_CONSUL_SERVERS} \
-		-var consul_dns_domain=${GRAYLOG_CONSUL_DNS_DOMAIN} \
-		-var consul_datacenter=${GRAYLOG_CONSUL_DATACENTER} \
-		-var consul_encrypt=${GRAYLOG_CONSUL_ENCRYPT} \
-		-var consul_dns_server=${GRAYLOG_CONSUL_DNS_SERVER} \
-		\
-		-var influxdb_usage=${GRAYLOG_INFLUXDB_USAGE} \
-		-var influxdb_endpoint=${GRAYLOG_INFLUXDB_ENDPOINT} \
-		-var influxdb_token=${GRAYLOG_INFLUXDB_TOKEN} \
-		-var influxdb_org=${GRAYLOG_INFLUXDB_ORG} \
-		-var influxdb_bucket=${GRAYLOG_INFLUXDB_BUCKET}
-
-	@cd logs/single-network && terraform apply logs.tfplan
-
-metrics/single-network/.terraform:
-	cd metrics/single-network/ && terraform init
-
-metrics/dual-network/.terraform:
-	cd metrics/dual-network/ && terraform init
-
-.PHONY: metrics-single-network # Configure metrics service
-metrics-single-network: metrics-check metrics/single-network/.terraform
-	@cd metrics/single-network && terraform plan -input=false -out=metrics.tfplan \
-		\
-		-var metrics_size_gb=${METRICS_SIZE_GB} \
-		\
-		-var flavor=${METRICS_FLAVOR} \
-		-var image_id=${METRICS_IMAGE_ID} \
-		-var front_net_id=${METRICS_FRONT_NET_ID} \
-		-var default_secgroup_id=${METRICS_SECGROUP_ID} \
-		-var os_username=${METRICS_OS_USERNAME} \
-		-var os_password=${METRICS_OS_PASSWORD} \
-		-var os_auth_url=${METRICS_OS_AUTH_URL} \
-		-var os_region_name=${METRICS_OS_REGION_NAME} \
-		-var os_swift_region_name=${METRICS_OS_SWIFT_REGION_NAME} \
-		\
-		-var grafana_admin_name=${GRAFANA_ADMIN} \
-		-var grafana_admin_password=${GRAFANA_PASSWORD} \
-		\
-		-var influxdb_admin_name=${INFLUXDB_ADMIN} \
-		-var influxdb_admin_password=${INFLUXDB_PASSWORD} \
-		-var influxdb_organisation=${INFLUXDB_ORG} \
-		-var influxdb_retention_hours=${INFLUXDB_RETENTION_HOURS} \
-		-var metrics_endpoint_url=${METRICS_ENDPOINT} \
-		-var metrics_container=${METRICS_CONTAINER} \
-		\
-		-var internet_http_proxy_url=${METRICS_HTTP_PROXY} \
-		-var internet_http_no_proxy=${METRICS_NO_PROXY} \
-		-var static_hosts=${METRICS_STATIC_HOSTS} \
-		-var ntp_server=${METRICS_NTP_SERVER} \
-		\
-		-var git_repo_checkout=${GIT_REPO_CHECKOUT} \
-		-var git_repo_url=${GIT_REPO_URL} \
-		\
-		-var consul_usage=${METRICS_CONSUL_USAGE} \
-		-var consul_dns_domain=${METRICS_CONSUL_DNS_DOMAIN} \
-		-var consul_datacenter=${METRICS_CONSUL_DATACENTER} \
-		-var consul_encrypt=${METRICS_CONSUL_ENCRYPT} \
-		-var consul_dns_server=${METRICS_CONSUL_DNS_SERVER}
-
-	@cd metrics/single-network && terraform apply metrics.tfplan
-
-###############################################################################
-#
-# Maintenance
+# Resources deployment
 #
 
-# Prepare
-.PHONY: prepare # Download atifacts from internet to Swift
-prepare:
-	@which skopeo
-	@which swift
-	@which wget
-	@which ansible-galaxy
+.terraform/:
+	terraform init
 
-	@./bin/copy_binaries.sh
-	@./bin/copy_packages.sh
-	@./bin/copy_containers.sh
+.PHONY: dist-clean # Remove terraform distributions files (plugins, modules...)
+dist-clean:
+	rm -rf .terraform
+	rm -f graph.svg
 
-# Clean
-.PHONY: clean-metrics-single # Destroy the logs appliance
-clean-metrics-single:
-	@cd metrics/single-network && terraform destroy -auto-approve \
-		\
-		-var metrics_size_gb=${METRICS_SIZE_GB} \
-		\
-		-var flavor=${METRICS_FLAVOR} \
-		-var image_id=${METRICS_IMAGE_ID} \
-		-var front_net_id=${METRICS_FRONT_NET_ID} \
-		-var default_secgroup_id=${METRICS_SECGROUP_ID} \
-		-var os_username=${METRICS_OS_USERNAME} \
-		-var os_password=${METRICS_OS_PASSWORD} \
-		-var os_auth_url=${METRICS_OS_AUTH_URL} \
-		-var os_region_name=${METRICS_OS_REGION_NAME} \
-		-var os_swift_region_name=${METRICS_OS_SWIFT_REGION_NAME} \
-		\
-		-var grafana_admin_name=${GRAFANA_ADMIN} \
-		-var grafana_admin_password=${GRAFANA_PASSWORD} \
-		\
-		-var influxdb_admin_name=${INFLUXDB_ADMIN} \
-		-var influxdb_admin_password=${INFLUXDB_PASSWORD} \
-		-var influxdb_organisation=${INFLUXDB_ORG} \
-		-var influxdb_retention_hours=${INFLUXDB_RETENTION_HOURS} \
-		-var metrics_endpoint_url=${METRICS_ENDPOINT} \
-		-var metrics_container=${METRICS_CONTAINER} \
-		\
-		-var internet_http_proxy_url=${METRICS_HTTP_PROXY} \
-		-var internet_http_no_proxy=${METRICS_NO_PROXY} \
-		-var static_hosts=${METRICS_STATIC_HOSTS} \
-		-var ntp_server=${METRICS_NTP_SERVER} \
-		\
-		-var git_repo_checkout=${GIT_REPO_CHECKOUT} \
-		-var git_repo_url=${GIT_REPO_URL} \
-		\
-		-var consul_usage=${METRICS_CONSUL_USAGE} \
-		-var consul_dns_domain=${METRICS_CONSUL_DNS_DOMAIN} \
-		-var consul_datacenter=${METRICS_CONSUL_DATACENTER} \
-		-var consul_encrypt=${METRICS_CONSUL_ENCRYPT} \
-		-var consul_dns_server=${METRICS_CONSUL_DNS_SERVER}
-
-.PHONY: clean-logs-single-network # Destroy logs service
-clean-logs-single-network: logs-check
-	@cd logs/single-network && terraform destroy -auto-approve \
-		\
-		-var graylog_size_gb=${GRAYLOG_SIZE_GB} \
-		-var elasticsearch_size_gb=${ELASTECSEARCH_SIZE_GB} \
-		\
-		-var flavor=${GRAYLOG_FLAVOR} \
-		-var image_id=${GRAYLOG_IMAGE_ID} \
-		-var front_net_id=${GRAYLOG_FRONT_NET_ID} \
-		-var default_secgroup_id=${GRAYLOG_SECGROUP_ID} \
-		-var os_username=${GRAYLOG_OS_USERNAME} \
-		-var os_password=${GRAYLOG_OS_PASSWORD} \
-		-var os_auth_url=${GRAYLOG_OS_AUTH_URL} \
-		-var os_region_name=${GRAYLOG_OS_REGION_NAME} \
-		-var os_swift_region_name=${GRAYLOG_OS_SWIFT_REGION_NAME} \
-		\
-		-var graylog_admin_name=${GRAYLOG_ADMIN} \
-		-var graylog_admin_password=${GRAYLOG_PASSWORD} \
-		-var graylog_endpoint_url=${GRAYLOG_ENDPOINT} \
-		\
-		-var internet_http_proxy_url=${GRAYLOG_HTTP_PROXY} \
-		-var internet_http_no_proxy=${GRAYLOG_NO_PROXY} \
-		-var static_hosts=${GRAYLOG_STATIC_HOSTS} \
-		-var ntp_server=${GRAYLOG_NTP_SERVER} \
-		\
-		-var git_repo_checkout=${GIT_REPO_CHECKOUT} \
-		-var git_repo_url=${GIT_REPO_URL} \
-		\
-		-var consul_usage=${GRAYLOG_CONSUL_USAGE} \
-		-var consul_servers=${GRAYLOG_CONSUL_SERVERS} \
-		-var consul_dns_domain=${GRAYLOG_CONSUL_DNS_DOMAIN} \
-		-var consul_datacenter=${GRAYLOG_CONSUL_DATACENTER} \
-		-var consul_encrypt=${GRAYLOG_CONSUL_ENCRYPT} \
-		-var consul_dns_server=${GRAYLOG_CONSUL_DNS_SERVER}
-
-# TODO: write clean target
-.PHONY: clean
-
-# Rebuild
-# TODO: use terraform taint
-.PHONY: rebuild-logs # Rebuild the logs appliance
-rebuild-logs:
-	@openstack server rebuild --wait graylog
-
-.PHONY: rebuild-metrics # Rebuild the metrics appliance
-rebuild-metrics:
-	@openstack server rebuild --wait metrics
-
-.PHONY: rebuild # Rebuild all the servers at once
-rebuild: rebuild-logs rebuild-metrics
+.PHONY: reinit # Download terraform artifacts again
+reinit: dist-clean .terraform/
 	@echo
+
+.PHONY: clean # Destroy the appliances
+clean:
+	@terraform destroy
+
+.PHONY: taint # Terraform taint appliances
+taint:
+	@terraform taint module.observability.module.logs_appliance.openstack_compute_instance_v2.appliance-logs
+	@terraform taint module.observability.module.metrics_appliance.openstack_compute_instance_v2.appliance-metrics
+	@terraform taint module.observability.module.metrics_appliance.openstack_blockstorage_volume_v2.appliance-metrics-containers
+	@terraform taint module.observability.module.logs_appliance.openstack_blockstorage_volume_v2.appliance-logs-containers
+
+plan.tfplan: .terraform/
+	@terraform plan -input=false -out=plan.tfplan
+
+.PHONY: apply # Terraform apply
+apply: plan.tfplan
+	@terraform apply plan.tfplan
+	@rm -f plan.tfplan
+
+.PHONY: clean-containers # Remove objects from containers
+clean-containers:
+	@swift list |grep metrics && for o in $$(swift list metrics | grep -v metrics) ; do swift delete metrics $o ; done || echo
+
+.PHONY: destroy # Destroy terraform deployment
+destroy: clean-containers
+	@terraform destroy -input=false
+	@rm -f plan.tfplan
+
+.PHONY: force-destroy # Destroy terraform deployment
+force-destroy: clean-containers
+	@terraform destroy -input=false -auto-approve
+	@rm -f plan.tfplan
+
+graph.svg: .terraform/
+	@which dot > /dev/null
+	@terraform graph | dot -Tsvg > graph.svg
+
+.PHONY: graph # Generate an SVG deployment graph
+graph: graph.svg
+	@echo graph.svg
+
+.PHONY: all # Deploy the appliances at once
+all: apply
+	@echo
+

@@ -1,0 +1,28 @@
+- name: ansible-bootstrap-system
+  src: git+https://github.com/mgrzybek/ansible-bootstrap-system
+  version: v1.0
+
+- name: ansible-consul
+  src: git+https://github.com/mgrzybek/ansible-consul
+  version: 724922ddfb6a666bd6e6bea6ee7299e3c0f97502
+
+- name: ansible-dnsmasq
+  src: git+https://github.com/mgrzybek/ansible-dnsmasq
+  version: v1.0
+
+- name: ansible-rclone
+  src: git+https://github.com/mgrzybek/ansible-rclone
+  version: v1.0
+
+- name: ansible-telegraf
+  src: git+https://github.com/mgrzybek/ansible-telegraf
+  version: ba0b18e97bb5e5f9d871ba7c362ed55809167da3
+
+- name: ansible-podman
+  src: git+https://github.com/mgrzybek/ansible-podman
+  version: 0fdd76cccea21f37e5a2f0a16daba58a67042806
+
+- name: ansible-get-swift-objects
+  src: git+https://github.com/mgrzybek/ansible-get-swift-objects
+  version: v1.0
+

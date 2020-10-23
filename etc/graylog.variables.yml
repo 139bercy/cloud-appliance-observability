@@ -61,7 +61,7 @@ podman_containers:
 - name: graylog
   description: Logs management
   after: '{{ podman_pods[0].name }}.pod.service'
-  image: docker.io/graylog/graylog:3.2
+  image: docker.io/graylog/graylog:3.3
   run_opts: >
     --pod appliance
     --rm

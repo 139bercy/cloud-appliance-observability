@@ -96,7 +96,7 @@ appliance_containers:
     --mount type=bind,src=/var/lib/influxdb,target=/var/lib/influxdb
     --mount type=bind,src=/var/lib/influxdb/.conf,target=/.influxdbv2
     --mount type=bind,src=/root/appliance/files/influxdb,target=/etc/influxdb,ro=true
-  image: quay.io/influxdb/influxdb:2.0.0-beta
+  image: quay.io/influxdb/influxdb:2.0.0-rc
   command: influxd
   command_opts: >
     --reporting-disabled

@@ -6,7 +6,7 @@ module logs_appliance {
   source = "./logs"
 
   back_net_id             = var.back_net_id
-  image_name                = var.image_name
+  image_name              = var.image_name
   front_net_id            = var.front_net_id
   os_username             = var.os_username
   os_password             = var.os_password
@@ -20,7 +20,7 @@ module logs_appliance {
   internet_http_no_proxy  = var.internet_http_no_proxy
   ntp_server              = var.ntp_server
   static_hosts            = var.static_hosts
-  flavor_name               = var.logs_flavor_name
+  flavor_name             = var.logs_flavor_name
 
   elasticsearch_size_gb  = var.elasticsearch_size_gb
   graylog_size_gb        = var.graylog_size_gb
@@ -35,14 +35,14 @@ module logs_appliance {
   consul_dns_server = var.consul_dns_server
   consul_servers    = var.consul_servers
 
-traefik_consul_prefix = var.traefik_consul_prefix
+  traefik_consul_prefix = var.traefik_consul_prefix
 }
 
 module metrics_appliance {
   source = "./metrics"
 
   back_net_id             = var.back_net_id
-  image_name                = var.image_name
+  image_name              = var.image_name
   front_net_id            = var.front_net_id
   os_username             = var.os_username
   os_password             = var.os_password
@@ -56,7 +56,7 @@ module metrics_appliance {
   internet_http_no_proxy  = var.internet_http_no_proxy
   ntp_server              = var.ntp_server
   static_hosts            = var.static_hosts
-  flavor_name               = var.metrics_flavor_name
+  flavor_name             = var.metrics_flavor_name
 
   metrics_size_gb          = var.metrics_size_gb
   grafana_admin_name       = var.grafana_admin_name
@@ -77,5 +77,5 @@ module metrics_appliance {
 
   syslog_hostname = var.syslog_hostname
 
-traefik_consul_prefix = var.traefik_consul_prefix
+  traefik_consul_prefix = var.traefik_consul_prefix
 }

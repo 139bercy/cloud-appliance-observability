@@ -93,6 +93,7 @@ export GRAYLOG_ADMIN_NAME="${graylog_admin_name}"
 export GRAYLOG_ADMIN_PASSWORD="${graylog_admin_password}"
 # Set Graylog endpoint
 export GRAYLOG_ENDPOINT_URL="${graylog_endpoint_url}"
+export ELASTICSEARCH_ENDPOINT_URL="${elasticsearch_endpoint_url}"
 
 # Set Consul variables
 export CONSUL_USAGE="${consul_usage}"

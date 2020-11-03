@@ -216,8 +216,8 @@
   tasks:
   - name: Graylog | Volume management
     when:
-    - lookup('env', 'ELASTICSEARCH_VOLUME') is defined
-    - lookup('env', 'ELASTICSEARCH_VOLUME') | length > 0
+    - lookup('env', 'GRAYLOG_VOLUME') is defined
+    - lookup('env', 'GRAYLOG_VOLUME') | length > 0
     block:
       - name: VG listing
         command: vgs --options name
@@ -330,7 +330,7 @@
     environment:
       https_proxy: '{{ podman_https_proxy }}'
       http_proxy: '{{ podman_http_proxy }}'
-      no_proxy: '{{ podman_http_no_proxy }}'
+      no_proxy: '{{ podman_no_proxy }}'
 
   - name: Start the POD
     with_items: '{{ podman_pods }}'

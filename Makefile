@@ -75,6 +75,11 @@ graph.svg: .terraform/
 graph: graph.svg
 	@echo graph.svg
 
+.PHONY: test # Use molecule to test deployment
+test:
+	@cd logs && molecule destroy && molecule converge && molecule destroy
+	@cd metrics && molecule destroy && molecule converge && molecule destroy
+
 .PHONY: all # Deploy the appliances at once
 all: apply
 	@echo

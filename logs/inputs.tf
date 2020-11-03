@@ -144,6 +144,12 @@ variable "elasticsearch_size_gb" {
   default     = 100
 }
 
+variable "elasticsearch_endpoint_url" {
+  type        = string
+  default     = "http://127.0.0.1:9200"
+  description = "Public hostname used to connect against Elasticsearch"
+}
+
 variable "graylog_size_gb" {
   type        = number
   description = "Graylog data size (Gb)"

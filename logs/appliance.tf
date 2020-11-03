@@ -2,7 +2,7 @@
 # Instances
 #
 resource "openstack_compute_instance_v2" "appliance-logs" {
-  name      = "logs"
+  name        = "logs"
   image_name  = var.image_name
   flavor_name = var.flavor_name
 
@@ -40,7 +40,8 @@ resource "openstack_compute_instance_v2" "appliance-logs" {
       graylog_admin_name     = var.graylog_admin_name
       graylog_admin_password = var.graylog_admin_password
 
-      graylog_endpoint_url = var.graylog_endpoint_url
+      graylog_endpoint_url       = var.graylog_endpoint_url
+      elasticsearch_endpoint_url = var.elasticsearch_endpoint_url
 
       consul_usage      = var.consul_usage
       consul_dns_domain = var.consul_dns_domain
@@ -53,11 +54,11 @@ resource "openstack_compute_instance_v2" "appliance-logs" {
 
       backoffice_ip_address = openstack_networking_port_v2.appliance-logs-back-port.all_fixed_ips[0]
 
-      influxdb_usage    = var.influxdb_usage
-      influxdb_endpoint = var.influxdb_endpoint
-      influxdb_token    = var.influxdb_token
-      influxdb_organisation      = var.influxdb_organisation
-      influxdb_bucket   = var.influxdb_bucket
+      influxdb_usage        = var.influxdb_usage
+      influxdb_endpoint     = var.influxdb_endpoint
+      influxdb_token        = var.influxdb_token
+      influxdb_organisation = var.influxdb_organisation
+      influxdb_bucket       = var.influxdb_bucket
 
       ntp_server = var.ntp_server
 

@@ -78,7 +78,7 @@ podman_containers:
     --env GRAYLOG_ROOT_TIMEZONE="Europe/Paris"
     --env GRAYLOG_SERVER_JAVA_OPTS="-Xmx{{ (ansible_memtotal_mb * 0.3) | int }}m -Xms{{ (ansible_memtotal_mb * 0.3) | int }}m"
     --env GRAYLOG_MONGODB_URI="mongodb://127.0.0.1/graylog"
-    --env GRAYLOG_ELASTICSEARCH_HOSTS="http://127.0.0.1:9200"
+    --env GRAYLOG_ELASTICSEARCH_HOSTS="{{ lookup('env', 'ELASTICSEARCH_ENDPOINT_URL') }}"
 
 ###############################################################################
 # Consul

@@ -216,8 +216,8 @@
   tasks:
   - name: Graylog | Volume management
     when:
-    - lookup('env', 'ELASTICSEARCH_VOLUME') is defined
-    - lookup('env', 'ELASTICSEARCH_VOLUME') | length > 0
+    - lookup('env', 'GRAYLOG_VOLUME') is defined
+    - lookup('env', 'GRAYLOG_VOLUME') | length > 0
     block:
       - name: VG listing
         command: vgs --options name

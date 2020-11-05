@@ -22,28 +22,19 @@ export no_proxy=${internet_http_no_proxy},127.0.0.1,localhost,0.0.0.0
 # Install required packages to start git-ops-based auto-configuratiom
 if which yum > /dev/null 2>&1 ; then
 	sed -i 's/gpgcheck=1/gpgcheck=1\nproxy=_none_/g' /etc/yum.repos.d/centos.repo
-	sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/epel.repo
 
 	if [ ! -z "$HTTP_PROXY" ] ; then
 		grep -q proxy= /etc/yum.conf || echo "proxy=$HTTP_PROXY" >> /etc/yum.conf
 	fi
 
-	yum install --assumeyes ansible git jq > /dev/null
-	if [ $? -ne 0 ] ; then
-		send_logs
-		exit 1
-	fi
+	_ansible_repo=$(yum search centos-release-ansible | awk '/^centos-release-ansible/ {print $1}' | tail -n1)
+	_openstack_repo=$(yum search centos-release-openstack | awk '/^centos-release-openstack/ {print $1}' | tail -n1)
+	
+	yum install --assumeyes $_ansible_repo $_openstack_repo
+	yum install --assumeyes ansible git jq python3-swiftclient
 else
-	apt update > /dev/null
-	apt -y install \
-		ansible git jq \
-		python3-swiftclient python3-openstackclient \
-		unzip \
-		libgpgme11 > /dev/null
-	if [ $? -ne 0 ] ; then
-		send_logs
-		exit 1
-	fi
+	apt update
+	apt -y install ansible git jq python3-swiftclient unzip
 fi
 
 # DNS: Populate /etc/hosts

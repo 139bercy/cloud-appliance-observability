@@ -1,6 +1,6 @@
 - name: ansible-bootstrap-system
   src: git+https://github.com/mgrzybek/ansible-bootstrap-system
-  version: v1.0
+  version: master
 
 - name: ansible-consul
   src: git+https://github.com/mgrzybek/ansible-consul

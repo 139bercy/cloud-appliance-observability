@@ -1,6 +1,6 @@
 - name: ansible-bootstrap-system
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-bootstrap-system
-  version: v1.0
+  version: master
 
 - name: ansible-consul
   src: git+https://forge.dgfip.finances.rie.gouv.fr/dgfip/cloud/ansible-roles/ansible-consul
